@@ -208,7 +208,7 @@ export default async function Dashboard({
     const attendanceOpen = new Date(start.getTime() - 15 * 60 * 1000); // 15 mins before
     const attendanceClose = new Date(start.getTime() + 30 * 60 * 1000); // 30 mins after start
 
-    let status = 'hidden';
+    let status = 'scheduled';
     const timeDiffMs = start.getTime() - nowManila.getTime();
     const oneHourMs = 60 * 60 * 1000;
 
@@ -217,11 +217,14 @@ export default async function Dashboard({
       status = 'live';
     } else if (nowManila < attendanceOpen && timeDiffMs <= oneHourMs) {
       status = 'upcoming';
+    } else if (nowManila < attendanceOpen) {
+      status = 'scheduled'; // Future class (more than 1 hour away)
     } else if (nowManila > attendanceClose) {
       status = 'completed';
     }
 
-    if (status === 'hidden' || status === 'completed') return null;
+    // Only filter out completed classes - show scheduled, upcoming, and live
+    if (status === 'completed') return null;
 
     return { ...c, status, startTimeObj: start };
   }).filter(Boolean)
