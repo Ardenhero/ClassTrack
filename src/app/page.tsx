@@ -175,37 +175,21 @@ export default async function Dashboard({
   const { data: recentStudents } = await recentStudentQuery;
 
   // 5. Fetch Classes
-  // TEMP DEBUG: Remove instructor_id filter to test if classes exist
-  const classesListQuery = supabase
+  let classesListQuery = supabase
     .from('classes')
     .select('*')
-    .order('start_time', { ascending: true }) // Sort by start time for upcoming display
-    .limit(50);
+    .order('created_at', { ascending: false })
+    .limit(50); // Get enough classes to filter
 
-  // TODO: Re-enable this filter after debugging
-  // if (!isActiveAdmin && profileId) {
-  //   classesListQuery = classesListQuery.eq('instructor_id', profileId);
-  // }
+  if (!isActiveAdmin && profileId) {
+    classesListQuery = classesListQuery.eq('instructor_id', profileId);
+  }
 
   const { data: classes } = await classesListQuery;
 
-  // DEBUG: Log classes count for troubleshooting
-  console.log(`[Dashboard] isActiveAdmin=${isActiveAdmin}, profileId=${profileId}, classesCount=${classes?.length || 0}`);
-  if (classes && classes.length > 0) {
-    // Show ALL classes with their times to debug filtering
-    classes.slice(0, 5).forEach((c, i) => {
-      console.log(`[Dashboard] Class ${i}: name=${c.name}, start_time=${c.start_time}, end_time=${c.end_time}, instructor_id=${c.instructor_id}`);
-    });
-  } else {
-    console.log(`[Dashboard] NO CLASSES RETURNED! Check if instructor_id filter matches.`);
-  }
 
   const upcomingClasses = classes?.map(c => {
-    // Don't filter out classes without times - show all
-    if (!c.start_time || !c.end_time) {
-      // Classes without times - show as 'scheduled' with no specific time
-      return { ...c, status: 'scheduled', startTimeObj: null };
-    }
+    if (!c.start_time || !c.end_time) return null;
 
     // Construct class dates relative to Manila "Today"
     const startString = `${todayManilaStr}T${c.start_time}`;
@@ -219,7 +203,7 @@ export default async function Dashboard({
     const attendanceOpen = new Date(start.getTime() - 15 * 60 * 1000); // 15 mins before
     const attendanceClose = new Date(start.getTime() + 30 * 60 * 1000); // 30 mins after start
 
-    let status = 'scheduled';
+    let status = 'hidden';
     const timeDiffMs = start.getTime() - nowManila.getTime();
     const oneHourMs = 60 * 60 * 1000;
 
@@ -228,14 +212,11 @@ export default async function Dashboard({
       status = 'live';
     } else if (nowManila < attendanceOpen && timeDiffMs <= oneHourMs) {
       status = 'upcoming';
-    } else if (nowManila < attendanceOpen) {
-      status = 'scheduled'; // Future class (more than 1 hour away)
     } else if (nowManila > attendanceClose) {
       status = 'completed';
     }
 
-    // Only filter out completed classes - show scheduled, upcoming, and live
-    if (status === 'completed') return null;
+    if (status === 'hidden' || status === 'completed') return null;
 
     return { ...c, status, startTimeObj: start };
   }).filter(Boolean)
