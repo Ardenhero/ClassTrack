@@ -187,6 +187,11 @@ export default async function Dashboard({
 
   const { data: classes } = await classesListQuery;
 
+  // DEBUG: Log classes count for troubleshooting
+  console.log(`[Dashboard] isActiveAdmin=${isActiveAdmin}, profileId=${profileId}, classesCount=${classes?.length || 0}`);
+  if (classes && classes.length > 0) {
+    console.log(`[Dashboard] First class: id=${classes[0].id}, name=${classes[0].name}, instructor_id=${classes[0].instructor_id}, start_time=${classes[0].start_time}`);
+  }
 
   const upcomingClasses = classes?.map(c => {
     if (!c.start_time || !c.end_time) return null;
