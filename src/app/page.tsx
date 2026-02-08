@@ -175,15 +175,17 @@ export default async function Dashboard({
   const { data: recentStudents } = await recentStudentQuery;
 
   // 5. Fetch Classes
-  let classesListQuery = supabase
+  // TEMP DEBUG: Remove instructor_id filter to test if classes exist
+  const classesListQuery = supabase
     .from('classes')
     .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50); // Get enough classes to filter
+    .order('start_time', { ascending: true }) // Sort by start time for upcoming display
+    .limit(50);
 
-  if (!isActiveAdmin && profileId) {
-    classesListQuery = classesListQuery.eq('instructor_id', profileId);
-  }
+  // TODO: Re-enable this filter after debugging
+  // if (!isActiveAdmin && profileId) {
+  //   classesListQuery = classesListQuery.eq('instructor_id', profileId);
+  // }
 
   const { data: classes } = await classesListQuery;
 
@@ -194,6 +196,8 @@ export default async function Dashboard({
     classes.slice(0, 5).forEach((c, i) => {
       console.log(`[Dashboard] Class ${i}: name=${c.name}, start_time=${c.start_time}, end_time=${c.end_time}, instructor_id=${c.instructor_id}`);
     });
+  } else {
+    console.log(`[Dashboard] NO CLASSES RETURNED! Check if instructor_id filter matches.`);
   }
 
   const upcomingClasses = classes?.map(c => {
