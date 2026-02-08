@@ -3,7 +3,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User, Loader2, ShieldCheck } from "lucide-react";
+import { User, Lock, Loader2, ShieldCheck } from "lucide-react";
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
@@ -14,6 +14,7 @@ export default function ProfilePage() {
     const [isKioskVisible, setIsKioskVisible] = useState(true);
     const [instructorId, setInstructorId] = useState<string | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -55,6 +56,7 @@ export default function ProfilePage() {
                         setPinCode(adminRecord.pin_code);
                         setPinEnabled(adminRecord.pin_enabled);
                         setIsKioskVisible(adminRecord.is_visible_on_kiosk);
+                        setIsAdmin(adminRecord.role === 'admin');
                     } else {
                         // Create the admin record if it truly doesn't exist
                         const { data: newAdmin, error: createError } = await supabase
@@ -73,6 +75,7 @@ export default function ProfilePage() {
                             setPinCode(newAdmin.pin_code);
                             setPinEnabled(newAdmin.pin_enabled);
                             setIsKioskVisible(newAdmin.is_visible_on_kiosk);
+                            setIsAdmin(true);
                         } else if (createError) {
                             console.error("Failed to create admin record:", createError);
                             setMessage(`Critical Error: ${createError.message}`);
@@ -87,6 +90,7 @@ export default function ProfilePage() {
                     setPinCode(instructor.pin_code);
                     setPinEnabled(instructor.pin_enabled);
                     setIsKioskVisible(instructor.is_visible_on_kiosk);
+                    setIsAdmin(instructor.role === 'admin');
                     // Update name display to match the profile being edited
                     setFullName(instructor.name || user.user_metadata.full_name);
                 } else if (fetchError) {
@@ -147,9 +151,11 @@ export default function ProfilePage() {
 
         const formData = new FormData(e.currentTarget);
         const newName = formData.get("fullName") as string;
+        const password = formData.get("password") as string;
 
-        const updates: { data?: { full_name: string } } = {};
+        const updates: { data?: { full_name: string }, password?: string } = {};
         if (newName) updates.data = { full_name: newName };
+        if (password && isAdmin) updates.password = password;
 
         const { error } = await supabase.auth.updateUser(updates);
 
