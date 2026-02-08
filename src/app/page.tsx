@@ -197,7 +197,11 @@ export default async function Dashboard({
   }
 
   const upcomingClasses = classes?.map(c => {
-    if (!c.start_time || !c.end_time) return null;
+    // Don't filter out classes without times - show all
+    if (!c.start_time || !c.end_time) {
+      // Classes without times - show as 'scheduled' with no specific time
+      return { ...c, status: 'scheduled', startTimeObj: null };
+    }
 
     // Construct class dates relative to Manila "Today"
     const startString = `${todayManilaStr}T${c.start_time}`;
