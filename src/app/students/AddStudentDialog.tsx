@@ -50,6 +50,9 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
         if (result?.error) {
             alert(result.error);
         } else {
+            if (result?.message) {
+                alert(result.message);
+            }
             setIsOpen(false);
             (e.target as HTMLFormElement).reset();
             setSelectedClasses([]);
