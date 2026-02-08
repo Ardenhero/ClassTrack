@@ -209,6 +209,23 @@ export default function ProfilePage() {
 
 
 
+                        {isAdmin && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password (Admin Only)</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                    <input
+                                        name="password"
+                                        type="password"
+                                        className="pl-10 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
+                                        placeholder="Set a new password"
+                                        minLength={6}
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to keep current password.</p>
+                            </div>
+                        )}
+
                         {message && (
                             <div className={`p-3 rounded text-sm ${message.includes("Error") ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
                                 {message}
