@@ -54,6 +54,26 @@ export async function addStudent(formData: FormData) {
 
             if (adminProfile) {
                 profileId = adminProfile.id;
+            } else {
+                // AUTO-CREATE Admin Profile if missing
+                const { data: newProfile, error: createProfileError } = await supabase
+                    .from('instructors')
+                    .insert({
+                        user_id: user.id,
+                        name: 'System Admin',
+                        role: 'admin',
+                        email: user.email || 'admin@classtrack.edu'
+                    })
+                    .select('id')
+                    .single();
+
+                if (newProfile) {
+                    console.log("DEBUG: Auto-created admin profile:", newProfile.id);
+                    profileId = newProfile.id;
+                } else if (createProfileError) {
+                    console.error("DEBUG: Failed to auto-create admin profile:", createProfileError);
+                    // Fallback: This will likely fail downstream with UUID error, but we logged it.
+                }
             }
         }
     }
