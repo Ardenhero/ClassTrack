@@ -70,12 +70,32 @@ export default async function Dashboard({
   const isActiveAdmin = activeRole === 'admin';
 
   // 1. Fetch Summary Stats
-  // Students
-  let studentQuery = supabase.from('students').select('*', { count: 'exact', head: true });
-  if (!isActiveAdmin && profileId) {
-    studentQuery = studentQuery.eq('instructor_id', profileId);
+  // Students - Count students either created by OR enrolled in instructor's classes
+  let studentCount = 0;
+  if (isActiveAdmin) {
+    // Admin sees all students
+    const { count } = await supabase.from('students').select('*', { count: 'exact', head: true });
+    studentCount = count || 0;
+  } else if (profileId) {
+    // Instructor: Get unique students (created by them OR enrolled in their classes)
+    const uniqueStudentIds = new Set<string>();
+    
+    // Get students created by this instructor
+    const { data: createdStudents } = await supabase
+      .from('students')
+      .select('id')
+      .eq('instructor_id', profileId);
+    createdStudents?.forEach(s => uniqueStudentIds.add(s.id));
+    
+    // Get students enrolled in this instructor's classes
+    const { data: enrolledData } = await supabase
+      .from('enrollments')
+      .select('student_id, classes!inner(instructor_id)')
+      .eq('classes.instructor_id', profileId);
+    enrolledData?.forEach(e => uniqueStudentIds.add(e.student_id));
+    
+    studentCount = uniqueStudentIds.size;
   }
-  const { count: studentCount } = await studentQuery;
 
   // Classes
   let classQuery = supabase.from('classes').select('*', { count: 'exact', head: true });
