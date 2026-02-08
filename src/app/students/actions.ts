@@ -36,7 +36,7 @@ export async function addStudent(formData: FormData) {
     // Get Profile ID from cookie
     const { cookies } = await import("next/headers");
     const cookieStore = cookies();
-    const profileId = cookieStore.get("sc_profile_id")?.value;
+    let profileId = cookieStore.get("sc_profile_id")?.value;
 
     if (!profileId) {
         return { error: "Profile not found. Please select a profile." };
