@@ -100,17 +100,20 @@ export async function middleware(request: NextRequest) {
     // ============================================
     // 3. API Key Protection for Attendance Endpoint
     // ============================================
-    if (pathname.startsWith("/api/attendance") || pathname.startsWith("/api/sync") || pathname.startsWith("/api/attendance/log")) {
-        const apiKey = request.headers.get("x-api-key") || request.nextUrl.searchParams.get("key");
-        const validKey = "default-secret-change-me"; // process.env.API_SECRET || "default-secret-change-me";
+    // ============================================
+    // 3. API Key Protection for Attendance Endpoint
+    // ============================================
+    // if (pathname.startsWith("/api/attendance") || pathname.startsWith("/api/sync") || pathname.startsWith("/api/attendance/log")) {
+    //     const apiKey = request.headers.get("x-api-key") || request.nextUrl.searchParams.get("key");
+    //     const validKey = "default-secret-change-me"; // process.env.API_SECRET || "default-secret-change-me";
 
-        if (apiKey !== validKey) {
-            return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" }
-            });
-        }
-    }
+    //     if (apiKey !== validKey) {
+    //         return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
+    //             status: 401,
+    //             headers: { "Content-Type": "application/json" }
+    //         });
+    //     }
+    // }
 
     // ============================================
     // 4. Supabase Auth Session
