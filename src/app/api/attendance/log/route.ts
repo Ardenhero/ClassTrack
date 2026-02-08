@@ -14,10 +14,17 @@ const LogSchema = z.object({
 
 // Use Service Role Key to bypass RLS and Auth requirements for this trusted endpoint
 export async function POST(request: Request) {
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+
+
+    // Config: Prefer Service Key for RLS bypass, fallback to Anon Key if missing
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.warn("[API] Service Role Key missing, falling back to Anon Key.");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     try {
         const { searchParams } = new URL(request.url);
