@@ -15,6 +15,13 @@ interface Student {
     year_level: string;
 }
 
+interface RawStudent {
+    id: string;
+    name: string | null;
+    sin: string | null;
+    year_level: string | null;
+}
+
 export default async function StudentsPage({
     searchParams,
 }: {
@@ -29,13 +36,13 @@ export default async function StudentsPage({
     try {
         const rawStudents = await getCachedStudents(query);
         // SANITIZATION: Explicitly map to ensure no non-serializable data (like Date objects) passes to Client Components
-        students = (rawStudents || []).map((s: any) => ({
+        students = ((rawStudents as unknown as RawStudent[]) || []).map((s) => ({
             id: s.id,
-            name: s.name, // Can be null, handled by UI
+            name: s.name || "", // Handle null name
             sin: s.sin || undefined,
-            year_level: s.year_level
+            year_level: s.year_level || ""
         }));
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Failed to load students:", err);
         errorMsg = "Failed to load students. Please try again later.";
     }
