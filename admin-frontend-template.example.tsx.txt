@@ -1,0 +1,364 @@
+// ============================================
+// Admin Dashboard - Proper Data Fetching
+// ============================================
+
+import { createClient } from '@/lib/supabase/client';
+import { useEffect, useState } from 'react';
+
+// ============================================
+// PATTERN 1: Client-Side Data Fetching
+// Use this in your admin dashboard components
+// ============================================
+
+export function AdminDashboard() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [studentsData, setStudentsData] = useState([]);
+  const [error, setError] = useState(null);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    checkAdminAndFetchData();
+  }, []);
+
+  async function checkAdminAndFetchData() {
+    try {
+      setLoading(true);
+      
+      // Step 1: Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Step 2: Check if user is admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw new Error('Could not fetch user profile');
+      }
+
+      const userIsAdmin = profile?.role === 'admin';
+      setIsAdmin(userIsAdmin);
+
+      if (!userIsAdmin) {
+        throw new Error('Access denied: Admin privileges required');
+      }
+
+      // Step 3: Fetch ALL data (no user filtering for admin)
+      await Promise.all([
+        fetchAllAttendance(),
+        fetchAllStudents(),
+        fetchAllClasses()
+      ]);
+
+    } catch (err) {
+      setError(err.message);
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchAllAttendance() {
+    const { data, error } = await supabase
+      .from('attendance')
+      .select(`
+        *,
+        students(*),
+        classes(*)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching attendance:', error);
+      throw error;
+    }
+
+    console.log('Attendance records fetched:', data?.length);
+    setAttendanceData(data || []);
+  }
+
+  async function fetchAllStudents() {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching students:', error);
+      throw error;
+    }
+
+    console.log('Student records fetched:', data?.length);
+    setStudentsData(data || []);
+  }
+
+  async function fetchAllClasses() {
+    // Similar pattern...
+  }
+
+  if (loading) {
+    return <div>Loading admin dashboard...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="error">
+        <h2>Error</h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <div>Access denied. Admin privileges required.</div>;
+  }
+
+  return (
+    <div className="admin-dashboard">
+      <h1>Admin Dashboard</h1>
+      
+      <section>
+        <h2>All Attendance Records</h2>
+        <p>Total: {attendanceData.length}</p>
+        {/* Display attendance data */}
+      </section>
+
+      <section>
+        <h2>All Students</h2>
+        <p>Total: {studentsData.length}</p>
+        {/* Display student data */}
+      </section>
+    </div>
+  );
+}
+
+// ============================================
+// PATTERN 2: Server-Side Data Fetching
+// Use this in your Next.js page.tsx (App Router)
+// ============================================
+
+// app/admin/page.tsx
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+
+export default async function AdminPage() {
+  const supabase = createClient();
+
+  // Get authenticated user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  // Check if user is admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') {
+    redirect('/unauthorized');
+  }
+
+  // Fetch ALL data (admin has access to everything)
+  const { data: allAttendance } = await supabase
+    .from('attendance')
+    .select(`
+      *,
+      students(*),
+      classes(*)
+    `)
+    .order('created_at', { ascending: false });
+
+  const { data: allStudents } = await supabase
+    .from('students')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const { data: allClasses } = await supabase
+    .from('classes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  return (
+    <div>
+      <h1>Admin Dashboard</h1>
+      
+      <div>
+        <h2>Statistics</h2>
+        <p>Total Attendance: {allAttendance?.length || 0}</p>
+        <p>Total Students: {allStudents?.length || 0}</p>
+        <p>Total Classes: {allClasses?.length || 0}</p>
+      </div>
+
+      {/* Rest of your UI */}
+    </div>
+  );
+}
+
+// ============================================
+// PATTERN 3: API Route with Admin Check
+// Use this for protected API endpoints
+// ============================================
+
+// app/api/admin/attendance/route.ts
+import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+
+export async function GET(request: Request) {
+  const supabase = createClient();
+
+  // Authenticate user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  // Check admin role
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || profile?.role !== 'admin') {
+    return NextResponse.json(
+      { error: 'Forbidden: Admin access required' },
+      { status: 403 }
+    );
+  }
+
+  // Fetch all data (no user filtering)
+  const { data: attendance, error } = await supabase
+    .from('attendance')
+    .select(`
+      *,
+      students(*),
+      classes(*)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: attendance,
+    count: attendance?.length || 0
+  });
+}
+
+// ============================================
+// COMMON MISTAKES TO AVOID
+// ============================================
+
+// ❌ WRONG: This filters data even for admin
+async function fetchAttendanceWrong() {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // This will only return current user's records!
+  const { data } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('user_id', user.id); // ← PROBLEM!
+  
+  return data;
+}
+
+// ✅ CORRECT: Check role first, then conditionally filter
+async function fetchAttendanceCorrect() {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Check if admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  let query = supabase
+    .from('attendance')
+    .select('*');
+
+  // Only filter if NOT admin
+  if (profile?.role !== 'admin') {
+    query = query.eq('user_id', user.id);
+  }
+
+  const { data } = await query;
+  return data;
+}
+
+// ❌ WRONG: Hardcoded user check in query
+const { data } = await supabase
+  .from('attendance')
+  .select('*')
+  .or(`user_id.eq.${userId},created_by.eq.${userId}`);
+
+// ✅ CORRECT: Admin bypass
+const isAdmin = await checkIfAdmin(userId);
+let query = supabase.from('attendance').select('*');
+
+if (!isAdmin) {
+  query = query.or(`user_id.eq.${userId},created_by.eq.${userId}`);
+}
+
+const { data } = await query;
+
+// ============================================
+// DEBUGGING HELPERS
+// ============================================
+
+// Add this to your admin page to debug
+async function debugAdminAccess() {
+  const supabase = createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log('Current User ID:', user?.id);
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user?.id)
+    .single();
+  console.log('User Profile:', profile);
+  console.log('Is Admin?', profile?.role === 'admin');
+  
+  // Try to fetch all attendance without filter
+  const { data: allData, error } = await supabase
+    .from('attendance')
+    .select('count');
+  
+  console.log('Can access attendance count:', allData);
+  if (error) console.error('RLS Error:', error);
+  
+  // Try to fetch with explicit user filter
+  const { data: filteredData } = await supabase
+    .from('attendance')
+    .select('count')
+    .eq('user_id', user?.id);
+  
+  console.log('Own attendance count:', filteredData);
+}
+
+// Call this function in useEffect or on page load
+// debugAdminAccess();
