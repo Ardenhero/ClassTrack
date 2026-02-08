@@ -10,11 +10,9 @@ export const dynamic = "force-dynamic";
 
 interface Student {
     id: string;
-    studentId?: string; // Legacy
     name: string;
     sin?: string;
     year_level: string;
-    created_at: string;
 }
 
 export default async function StudentsPage({
@@ -25,17 +23,31 @@ export default async function StudentsPage({
     };
 }) {
     const query = searchParams?.query || "";
-    // Cast the result to Student[] as we know the shape from Supabase
-    const students = (await getCachedStudents(query)) as Student[];
+    let students: Student[] = [];
+    let errorMsg = null;
+
+    try {
+        const rawStudents = await getCachedStudents(query);
+        // SANITIZATION: Explicitly map to ensure no non-serializable data (like Date objects) passes to Client Components
+        students = (rawStudents || []).map((s: any) => ({
+            id: s.id,
+            name: s.name, // Can be null, handled by UI
+            sin: s.sin || undefined,
+            year_level: s.year_level
+        }));
+    } catch (err: any) {
+        console.error("Failed to load students:", err);
+        errorMsg = "Failed to load students. Please try again later.";
+    }
 
     const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
     const groupedStudents = YEAR_LEVELS.reduce((acc, level) => {
-        acc[level] = students?.filter((s) => (s.year_level || "") === level) || [];
+        acc[level] = students.filter((s) => (s.year_level || "") === level);
         return acc;
     }, {} as Record<string, Student[]>);
 
     // Catch-all
-    const otherStudents = students?.filter((s) => !YEAR_LEVELS.includes(s.year_level || "")) || [];
+    const otherStudents = students.filter((s) => !YEAR_LEVELS.includes(s.year_level || ""));
     if (otherStudents.length > 0) groupedStudents["Other"] = otherStudents;
 
     return (
@@ -43,7 +55,7 @@ export default async function StudentsPage({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Students Directory</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Manage enrolled students and fingerprints</p>
+                    <p className="text-gray-500 dark:text-gray-400">Manage enrolled students</p>
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <div className="flex-1 w-full md:w-64">
@@ -57,6 +69,12 @@ export default async function StudentsPage({
                 </div>
             </div>
 
+            {errorMsg && (
+                <div className="p-4 mb-6 bg-red-50 text-red-600 rounded-xl border border-red-100">
+                    {errorMsg}
+                </div>
+            )}
+
             <div className="space-y-6">
                 {Object.entries(groupedStudents).map(([level, items]) => (
                     items && items.length > 0 && (
@@ -64,7 +82,9 @@ export default async function StudentsPage({
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {items.map((student) => (
                                     <StudentListItem key={student.id} student={{
-                                        ...student,
+                                        id: student.id,
+                                        name: student.name,
+                                        sin: student.sin,
                                         year_level: student.year_level || "Unknown"
                                     }} />
                                 ))}
@@ -75,7 +95,7 @@ export default async function StudentsPage({
             </div>
 
             {
-                (!students || students.length === 0) && (
+                (!students || students.length === 0) && !errorMsg && (
                     <div className="p-12 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                         No students found.
                     </div>
