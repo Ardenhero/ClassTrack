@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 const StudentSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters").max(200, "Name must be less than 200 characters"),
-    sin: z.string().regex(/^\d{2}-\d{5}$/, "SIN must be in format YY-XXXXX (e.g. 22-00001)"),
+    sin: z.string().regex(/^\d{2}-\d{5,}$/, "SIN must be in format YY-XXXXXX... (e.g. 22-00001)"),
     year_level: z.string().min(1, "Year level is required"),
     fingerprint_id: z.number().int().positive("Fingerprint ID must be a positive number"),
     class_ids: z.array(z.string().uuid()).optional()
@@ -44,30 +44,54 @@ export async function addStudent(formData: FormData) {
         return { error: "Profile not found. Please select a profile." };
     }
 
-    // 1. Create Student
-    const { data: student, error } = await supabase
-        .from("students")
-        .insert({
-            name,
-            sin,
-            year_level,
-            fingerprint_id,
-            instructor_id: profileId
-        })
-        .select()
-        .single();
+    // 1. Check if student exists (Global Lookup)
+    let studentId: string;
+    let existingStudent: { id: string; name: string; fingerprint_id: number } | null;
 
-    if (error) {
-        console.error(error);
-        if (error.code === '23505') { // Unique violation
-            if (error.message.includes('sin')) {
-                return { error: "A student with this SIN already exists." };
+    const { data: existingStudentData, error: findError } = await supabase
+        .from("students")
+        .select("id, name, fingerprint_id")
+        .eq("sin", sin)
+        .maybeSingle();
+
+    if (findError) {
+        console.error("Error finding student:", findError);
+        return { error: "Database error while checking student existence." };
+    }
+
+    if (existingStudentData) {
+        // MATCH FOUND: Use existing student
+        existingStudent = existingStudentData;
+        studentId = existingStudentData.id;
+
+        // Optional: Verify fingerprint_id matches. If not, it's a conflict!
+        // For now, we assume SIN is the truth. We could update the fingerprint if needed, 
+        // but let's just proceed to enroll.
+    } else {
+        existingStudent = null;
+        // NO MATCH: Create new student
+        const { data: newStudent, error: createError } = await supabase
+            .from("students")
+            .insert({
+                name,
+                sin,
+                year_level,
+                fingerprint_id,
+                instructor_id: profileId // Created by this instructor
+            })
+            .select("id")
+            .single();
+
+        if (createError) {
+            console.error(createError);
+            if (createError.code === '23505') { // Unique violation
+                if (createError.message.includes('fingerprint_id')) {
+                    return { error: "This Fingerprint ID is already assigned to another student." };
+                }
             }
-            if (error.message.includes('fingerprint_id')) {
-                return { error: "This Fingerprint ID is already assigned to another student." };
-            }
+            return { error: "Failed to create student. Please try again." };
         }
-        return { error: "Failed to create student. Please try again." };
+        studentId = newStudent.id;
     }
 
     // 2. Assign Classes if selected
@@ -87,18 +111,19 @@ export async function addStudent(formData: FormData) {
             }
         }
 
+        // Prepare enrollments, ignoring duplicates if already enrolled
         const enrollments = classIds.map(classId => ({
             class_id: classId,
-            student_id: student.id
+            student_id: studentId
         }));
 
         const { error: enrollError } = await supabase
             .from("enrollments")
-            .insert(enrollments);
+            .upsert(enrollments, { onConflict: 'student_id, class_id' }); // Safe upsert to avoid duplicate key errors
 
         if (enrollError) {
             console.error("Enrollment error:", enrollError);
-            // We don't revert student creation, but valid concern. For now just log.
+            return { error: "Failed to enroll student in selected classes." };
         }
     }
 
@@ -107,8 +132,8 @@ export async function addStudent(formData: FormData) {
     if (user) {
         await createNotification(
             user.id,
-            "New Student Added",
-            `${name} has been successfully enrolled.`,
+            existingStudent ? "Student linked" : "New Student Added",
+            `${name} (${sin}) has been successfully enrolled.${existingStudent ? ' (Linked to existing record)' : ''}`,
             "success"
         );
     }
