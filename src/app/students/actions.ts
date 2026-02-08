@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 const StudentSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters").max(200, "Name must be less than 200 characters"),
-    sin: z.string().regex(/^\d{2}-\d{6}$/, "Invalid SIN format. Please use the university standard (e.g., 22-000001)."),
+    sin: z.string().regex(/^\d{2}-\d{5}$/, "Invalid SIN format. Please use the university standard (e.g., 22-00001)."),
     year_level: z.string().min(1, "Year level is required"),
     class_ids: z.array(z.string().uuid()).optional()
 });
