@@ -107,6 +107,7 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                 });
 
                 // Add enrolled students
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (enrolledStudents || []).forEach((item: any) => {
                     if (!allStudents.has(item.id)) {
                         allStudents.set(item.id, {
