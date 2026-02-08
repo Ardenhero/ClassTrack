@@ -47,9 +47,7 @@ export async function addStudent(formData: FormData) {
     let existingStudent: { id: string; name: string } | null;
 
     const { data: existingStudentData, error: findError } = await supabase
-        .from("students")
-        .select("id, name")
-        .eq("sin", sin)
+        .rpc('get_student_by_sin_secure', { p_sin: sin })
         .maybeSingle();
 
     if (findError) {

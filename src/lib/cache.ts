@@ -23,7 +23,12 @@ export const getCachedStudents = async (query?: string) => {
             const isActiveAdmin = role === 'admin';
 
             if (!isActiveAdmin) {
-                queryBuilder = queryBuilder.eq('instructor_id', profileId);
+                const { data, error } = await supabase.rpc('get_my_students', {
+                    p_instructor_id: profileId,
+                    p_search_query: query || ''
+                });
+                if (error) throw error;
+                return data;
             }
         }
 
