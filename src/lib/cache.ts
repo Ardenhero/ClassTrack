@@ -15,7 +15,7 @@ export const getCachedStudents = async (query?: string) => {
         // Admin Query: Explicit Select
         let queryBuilder = supabase
             .from('students')
-            .select('id, name, sin, year_level, created_at') // Explicit columns only
+            .select('id, name, sin, year_level') // Explicit columns, removed created_at
             .order('name');
 
         if (profileId) {
