@@ -3,7 +3,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User, Lock, Loader2, ShieldCheck } from "lucide-react";
+import { User, Loader2, ShieldCheck } from "lucide-react";
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
@@ -147,11 +147,9 @@ export default function ProfilePage() {
 
         const formData = new FormData(e.currentTarget);
         const newName = formData.get("fullName") as string;
-        const password = formData.get("password") as string;
 
-        const updates: { data?: { full_name: string }, password?: string } = {};
+        const updates: { data?: { full_name: string } } = {};
         if (newName) updates.data = { full_name: newName };
-        if (password) updates.password = password;
 
         const { error } = await supabase.auth.updateUser(updates);
 
@@ -161,7 +159,6 @@ export default function ProfilePage() {
             setMessage("Profile updated successfully!");
             if (newName) setFullName(newName);
             (e.target as HTMLFormElement).reset();
-            // Keep the name in the input but clear password
             window.location.reload();
         }
         setLoading(false);
@@ -204,20 +201,7 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">New Password</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                <input
-                                    name="password"
-                                    type="password"
-                                    className="pl-10 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
-                                    placeholder="Set a new password"
-                                    minLength={6}
-                                />
-                            </div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to keep current password.</p>
-                        </div>
+
 
                         {message && (
                             <div className={`p-3 rounded text-sm ${message.includes("Error") ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
