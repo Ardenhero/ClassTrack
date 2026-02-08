@@ -52,7 +52,7 @@ export async function addStudent(formData: FormData) {
 
     if (findError) {
         console.error("Error finding student:", findError);
-        return { error: "Database error while checking student existence." };
+        return { error: `Database error checking existence: ${findError.message} (Code: ${findError.code})` };
     }
 
     if (existingStudentData) {
