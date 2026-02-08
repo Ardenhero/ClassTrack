@@ -35,7 +35,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT DISTINCT s.*
+    SELECT DISTINCT s.id, s.created_at, s.name, s.sin, s.rfid_uid, s.image_url, s.instructor_id, s.year_level
     FROM students s
     LEFT JOIN enrollments e ON s.id = e.student_id
     LEFT JOIN classes c ON e.class_id = c.id
