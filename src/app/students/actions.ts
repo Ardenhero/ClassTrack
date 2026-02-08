@@ -90,13 +90,13 @@ export async function addStudent(formData: FormData) {
             .single();
 
         if (createError) {
-            console.error(createError);
+            console.error("DEBUG: Failed to create student:", JSON.stringify(createError, null, 2));
             if (createError.code === '23505') { // Unique violation
                 if (createError.message.includes('sin')) {
                     return { error: "A student with this SIN already exists." };
                 }
             }
-            return { error: "Failed to create student. Please try again." };
+            return { error: `Failed to create student: ${createError.message} (${createError.code})` };
         }
         studentId = newStudent.id;
     }
