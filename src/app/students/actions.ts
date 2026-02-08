@@ -72,6 +72,21 @@ export async function addStudent(formData: FormData) {
 
     // 2. Assign Classes if selected
     if (classIds && classIds.length > 0) {
+        // Validate ownership if not admin
+        const isAdmin = await import("@/lib/auth-utils").then(m => m.checkIsAdmin());
+
+        if (!isAdmin) {
+            const { count } = await supabase
+                .from("classes")
+                .select("*", { count: 'exact', head: true })
+                .in("id", classIds)
+                .eq("instructor_id", profileId);
+
+            if (count !== classIds.length) {
+                return { error: "Unauthorized: You can only assign students to your own classes." };
+            }
+        }
+
         const enrollments = classIds.map(classId => ({
             class_id: classId,
             student_id: student.id
@@ -100,6 +115,44 @@ export async function addStudent(formData: FormData) {
 
     revalidatePath("/students");
     return { success: true };
+}
+
+export async function getAssignableClasses() {
+    const supabase = createClient();
+    const { cookies } = await import("next/headers");
+    const { getProfileRole } = await import("@/lib/auth-utils");
+
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+    const role = await getProfileRole();
+
+    if (!profileId) return [];
+
+    if (role === 'admin') {
+        // Admin sees all classes, with instructor names for clarity
+        const { data } = await supabase
+            .from("classes")
+            .select("id, name, description, instructors(name)")
+            .order("name");
+
+        return (data || []).map((c: { id: string; name: string; description: string | null; instructors: { name: string }[] | null }) => {
+            const instructorName = c.instructors && c.instructors[0] ? c.instructors[0].name : '';
+            return {
+                id: c.id,
+                name: `${c.name}${instructorName ? ` - ${instructorName}` : ''}`,
+                description: c.description
+            };
+        });
+    } else {
+        // Instructors see only their own classes
+        const { data } = await supabase
+            .from("classes")
+            .select("id, name, description")
+            .eq("instructor_id", profileId)
+            .order("name");
+
+        return data || [];
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { UserPlus, X, Check } from "lucide-react";
-import { addStudent } from "./actions";
-import { createClient } from "@/utils/supabase/client";
+import { addStudent, getAssignableClasses } from "./actions";
+
 import { useRouter } from "next/navigation";
 
 interface ClassItem {
@@ -22,13 +22,12 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
     const [classes, setClasses] = useState<ClassItem[]>([]);
     const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
     const [nameLength, setNameLength] = useState(0);
-    const supabase = createClient();
     const router = useRouter();
 
     useEffect(() => {
         if (isOpen) {
             const fetchClasses = async () => {
-                const { data } = await supabase.from("classes").select("id, name, description").order("name");
+                const data = await getAssignableClasses();
                 if (data) setClasses(data);
             };
             fetchClasses();
@@ -36,7 +35,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
             // Reset selection when closed
             setSelectedClasses([]);
         }
-    }, [isOpen, supabase]);
+    }, [isOpen]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
