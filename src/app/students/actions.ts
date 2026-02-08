@@ -42,6 +42,22 @@ export async function addStudent(formData: FormData) {
         return { error: "Profile not found. Please select a profile." };
     }
 
+    // RESOLVE "admin-profile" to actual UUID
+    if (profileId === 'admin-profile') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: adminProfile } = await supabase
+                .from('instructors')
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle(); // Use maybeSingle to avoid 406
+
+            if (adminProfile) {
+                profileId = adminProfile.id;
+            }
+        }
+    }
+
     // 1. Check if student exists (Global Lookup)
     let studentId: string;
     let existingStudent: { id: string; name: string } | null;
