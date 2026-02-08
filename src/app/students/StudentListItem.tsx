@@ -9,7 +9,7 @@ interface Student {
     name: string;
     sin?: string;
     year_level: string;
-    fingerprint_id: number;
+    fingerprint_id?: string | number;
 }
 
 export function StudentListItem({ student }: { student: Student }) {

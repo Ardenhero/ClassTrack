@@ -10,11 +10,11 @@ export const dynamic = "force-dynamic";
 
 interface Student {
     id: string;
-    studentId: string;
+    studentId?: string; // Legacy
     name: string;
-    sin: string;
-    year_level: string; // Updated to match likely expectation, will fallback if null
-    fingerprint_id: number;
+    sin?: string;
+    year_level: string;
+    fingerprint_id?: string | number; // Updated to allow string from RPC
     created_at: string;
 }
 
