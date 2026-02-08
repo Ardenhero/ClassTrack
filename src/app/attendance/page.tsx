@@ -22,7 +22,6 @@ interface AttendanceLog {
     students: {
         id: string;
         name: string;
-        fingerprint_id: number;
         year_level: string;
         sin: string;
     };
@@ -93,7 +92,6 @@ export default async function AttendancePage({
       students!inner (
         id,
         name,
-        fingerprint_id,
         sin,
         year_level
       )
