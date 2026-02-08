@@ -1,11 +1,11 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
-import { ArrowLeft, UserMinus, Users, Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, UserMinus, Users, Clock, AlertCircle, CheckCircle, Ghost, TimerOff } from "lucide-react";
 import Link from "next/link";
 import { AssignStudentDialog } from "../AssignStudentDialog";
 import { removeStudent } from "./actions";
-import { format, isAfter, addMinutes, parse } from "date-fns";
-import { AttendanceFilter } from "@/app/attendance/AttendanceFilter"; // Import filter
+import { format, parse, differenceInMinutes } from "date-fns";
+import { AttendanceFilter } from "@/app/attendance/AttendanceFilter";
 
 interface Enrollment {
     id: string;
@@ -39,8 +39,6 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     const displayDate = isToday ? "Today's Attendance" : `Attendance for ${format(targetDate, 'MMMM d, yyyy')}`;
 
     // Query boundaries for the selected day in Manila
-    // Using simple ISO string construction assuming offset +08:00
-    // Note: If server logic uses local time, ensuring explicit offset is safer for comparison
     const targetStart = new Date(`${dayString}T00:00:00+08:00`).toISOString();
     const targetEnd = new Date(`${dayString}T23:59:59+08:00`).toISOString();
 
@@ -62,70 +60,131 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
         *,
         students (*)
     `)
-        .eq("class_id", params.id);
+        .eq("class_id", params.id)
+        .order("id"); // Ensure enrollment order is stable
 
     const enrollments = data as unknown as Enrollment[];
 
-    // Fetch attendance logs for selected date
+    // Fetch attendance logs with STATUS
     const studentIds = enrollments?.map(e => e.students.id) || [];
     const { data: logs } = await supabase
         .from("attendance_logs")
-        .select("student_id, timestamp, time_out") // Select time_out
+        .select("student_id, timestamp, time_out, status") // Select status
         .in("student_id", studentIds)
         .eq("class_id", params.id)
         .gte("timestamp", targetStart)
         .lte("timestamp", targetEnd)
-        .order("timestamp", { ascending: true }); // Ordered to find first/last easily
+        .order("timestamp", { ascending: true });
 
-    // Helper to calculate status
-    const getStatus = (studentId: string) => {
-        // With new Logic, each row is a session.
-        // If a student has multiple sessions (rare but possible), we show the latest one.
+    // Helper to calculate status visuals
+    const getStatusVisuals = (studentId: string) => {
         const studentLogs = logs?.filter(l => l.student_id === studentId) || [];
 
-        if (studentLogs.length === 0) return { status: 'Absent', color: 'text-red-500', icon: AlertCircle, timeIn: '-', timeOut: '-' };
+        if (studentLogs.length === 0) {
+            return {
+                statusLabel: 'Absent',
+                badgeColor: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                icon: AlertCircle,
+                timeIn: '-',
+                timeOut: '-'
+            };
+        }
 
         // Take the latest session
         const session = studentLogs[studentLogs.length - 1];
         const firstLog = new Date(session.timestamp); // Time In
 
-        // Helper for Timezone format for display (Manila)
-        const formatTime = (d: Date) => {
-            return d.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit' });
-        };
-
-        const timeIn = formatTime(firstLog);
-
-        // Use the explicit time_out column!
-        const timeOut = session.time_out ? formatTime(new Date(session.time_out)) : "-";
-
-        // Logic: Compare firstLog with Class Start Time (relative to selected date)
-        let status = 'Present';
-        let color = 'text-green-500';
-        let icon = CheckCircle;
-
+        // STRICT SESSION WINDOW LOGIC
+        let isInvalidSession = false;
         if (classData.start_time) {
-            // Parse class start time against "Today" (Manila Date)
-            // We construct the class start timestamp for the TARGET date
-            const classStartString = `${dayString}T${classData.start_time}`; // e.g. 2026-02-01T08:00:00
-            // We should parse this as a Date object. 
-            // Since we want to compare with `firstLog`, which is absolute, we need classStart to be absolute correct time.
-            // If we treat `classStartString` as local time in Manila...
-            const classStart = new Date(`${classStartString}+08:00`);
+            const classStartString = `${dayString}T${classData.start_time}`;
+            const classStart = new Date(`${classStartString}+08:00`); // Manila Time
+            const validSessionStart = new Date(classStart.getTime() - 20 * 60000); // 20 mins before
 
-            if (isAfter(firstLog, addMinutes(classStart, 30))) {
-                status = 'Absent'; // Effectively absent if very late
-                color = 'text-red-500';
-                icon = AlertCircle;
-            } else if (isAfter(firstLog, addMinutes(classStart, 15))) {
-                status = 'Late';
-                color = 'text-yellow-500';
-                icon = AlertCircle;
+            if (firstLog < validSessionStart) {
+                isInvalidSession = true;
             }
         }
 
-        return { status, color, icon, timeIn, timeOut };
+        // Format times
+        const formatTime = (d: Date) => d.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit' });
+        const timeIn = formatTime(firstLog);
+        const timeOut = session.time_out ? formatTime(new Date(session.time_out)) : "-";
+
+        if (isInvalidSession) {
+            return {
+                statusLabel: 'Invalid (Too Early)',
+                badgeColor: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500', // Gray for invalid
+                icon: AlertCircle, // Use a generic alert or maybe a specific "Not Started" icon if available
+                timeIn: timeIn,
+                timeOut: timeOut // Show timeOut even if invalid
+            };
+        }
+
+        // Logic based on DB Status + Timestamps for special icons
+        const dbStatus = session.status || 'Present'; // Default to Present if null
+
+        let statusLabel = dbStatus;
+        let badgeColor = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
+        let icon = CheckCircle;
+
+        if (dbStatus === 'Present') {
+            badgeColor = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+            icon = CheckCircle;
+        } else if (dbStatus === 'Late') {
+            badgeColor = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+            icon = Clock;
+        } else if (dbStatus === 'Absent') {
+            badgeColor = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+            icon = AlertCircle;
+
+            // Check for special "Absent" reasons if Class End Time is known
+            // ONLY check if the session was valid to begin with (which it is if we are here)
+            if (classData.end_time && session.time_out) {
+                const classEndString = `${dayString}T${classData.end_time}`;
+                const classEnd = new Date(`${classEndString}+08:00`); // Manila Time
+                const logOutTime = new Date(session.time_out);
+                // Note: session.time_out is ISO/UTC, so new Date() works correctly for comparison
+                // But we need to compare apples to apples in minutes
+
+                const diffMinutes = differenceInMinutes(logOutTime, classEnd);
+
+                if (diffMinutes < -15) {
+                    // Cutting Class (>15 mins early)
+                    statusLabel = "Cut Class"; // Custom label for UI clarity
+                    icon = TimerOff; // "Runner" icon substitute
+                } else if (diffMinutes > 60) {
+                    // Ghosting (>60 mins late)
+                    statusLabel = "Ghosting"; // Custom label
+                    icon = Ghost;
+                }
+            }
+        }
+
+        return { statusLabel, badgeColor, icon, timeIn, timeOut };
     };
+
+    // Calculate Summary Stats
+    let presentCount = 0;
+    let lateCount = 0;
+    let absentCount = 0;
+
+    enrollments?.forEach(e => {
+        const { statusLabel } = getStatusVisuals(e.students.id);
+        if (statusLabel === 'Present') presentCount++;
+        else if (statusLabel === 'Late') lateCount++;
+        else if (statusLabel === 'Invalid (Too Early)') {
+            // Do nothing (don't count as present/absent/late) or maybe count as Absent depending on policy?
+            // Request says: "An 'Invalid' log should not trigger any attendance status".
+            // So we treat it essentially as if they haven't arrived regarding "Present/Late" counts.
+            // But usually, if they are not Present/Late, they are Absent?
+            // OR do we show a separate "Invalid" count?
+            // For now, let's NOT count them as Present/Late. They will fall into "Absent" bucket if we just use `else absentCount++`.
+            // However, logic below was `else absentCount++`.
+            // Modified to be explicit.
+        }
+        else absentCount++; // Includes 'Absent', 'Cut Class', 'Ghosting', and 'Invalid (Too Early)'
+    });
 
     return (
         <DashboardLayout>
@@ -147,10 +206,25 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                     </div>
                     <div className="flex flex-col items-end gap-2">
                         <AssignStudentDialog classId={params.id} />
-                        {/* Attendance Filter for Class */}
                         <div className="mt-2">
                             <AttendanceFilter />
                         </div>
+                    </div>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="grid grid-cols-3 gap-4 mt-6">
+                    <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-lg border border-green-100 dark:border-green-900/30">
+                        <div className="text-sm text-green-600 dark:text-green-400 font-medium">Present</div>
+                        <div className="text-2xl font-bold text-green-700 dark:text-green-300">{presentCount}</div>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                        <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Late</div>
+                        <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{lateCount}</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/30">
+                        <div className="text-sm text-red-600 dark:text-red-400 font-medium">Absent</div>
+                        <div className="text-2xl font-bold text-red-700 dark:text-red-300">{absentCount}</div>
                     </div>
                 </div>
             </div>
@@ -161,12 +235,11 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                         <Users className="h-5 w-5 text-gray-400 mr-2" />
                         <h3 className="font-bold text-gray-900 dark:text-white">{displayDate}</h3>
                     </div>
-                    {/* <span className="text-xs text-gray-400">Time In / Time Out</span> */}
                 </div>
 
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                     {enrollments?.map((enrollment) => {
-                        const { status, color, icon: Icon, timeIn, timeOut } = getStatus(enrollment.students.id);
+                        const { statusLabel, badgeColor, icon: Icon, timeIn, timeOut } = getStatusVisuals(enrollment.students.id);
                         return (
                             <div key={enrollment.id} className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors gap-4">
                                 <div className="flex items-center min-w-0">
@@ -195,9 +268,9 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                                         </div>
                                     </div>
 
-                                    <div className={`flex items-center ${color} font-medium min-w-[80px]`}>
-                                        <Icon className="h-4 w-4 mr-1.5" />
-                                        {status}
+                                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${badgeColor} min-w-[100px] justify-center`}>
+                                        <Icon className="h-3 w-3 mr-1.5" />
+                                        {statusLabel}
                                     </div>
 
                                     <form action={async () => {
