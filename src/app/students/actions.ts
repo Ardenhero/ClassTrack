@@ -8,9 +8,8 @@ import { z } from 'zod';
 
 const StudentSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters").max(200, "Name must be less than 200 characters"),
-    sin: z.string().regex(/^\d{2}-\d{5,}$/, "SIN must be in format YY-XXXXXX... (e.g. 22-00001)"),
+    sin: z.string().regex(/^\d{2}-\d{6}$/, "Invalid SIN format. Please use the university standard (e.g., 22-000001)."),
     year_level: z.string().min(1, "Year level is required"),
-    fingerprint_id: z.number().int().positive("Fingerprint ID must be a positive number"),
     class_ids: z.array(z.string().uuid()).optional()
 });
 
@@ -21,7 +20,6 @@ export async function addStudent(formData: FormData) {
         name: formData.get("name"),
         sin: formData.get("sin"),
         year_level: formData.get("year_level"),
-        fingerprint_id: parseInt(formData.get("fingerprint_id") as string),
         class_ids: formData.get("class_ids") ? JSON.parse(formData.get("class_ids") as string) : []
     };
 
@@ -33,7 +31,7 @@ export async function addStudent(formData: FormData) {
         return { error: `${firstError.path.join('.')}: ${firstError.message}` };
     }
 
-    const { name, sin, year_level, fingerprint_id, class_ids: classIds } = parseResult.data;
+    const { name, sin, year_level, class_ids: classIds } = parseResult.data;
 
     // Get Profile ID from cookie
     const { cookies } = await import("next/headers");
@@ -46,11 +44,11 @@ export async function addStudent(formData: FormData) {
 
     // 1. Check if student exists (Global Lookup)
     let studentId: string;
-    let existingStudent: { id: string; name: string; fingerprint_id: number } | null;
+    let existingStudent: { id: string; name: string } | null;
 
     const { data: existingStudentData, error: findError } = await supabase
         .from("students")
-        .select("id, name, fingerprint_id")
+        .select("id, name")
         .eq("sin", sin)
         .maybeSingle();
 
@@ -63,10 +61,6 @@ export async function addStudent(formData: FormData) {
         // MATCH FOUND: Use existing student
         existingStudent = existingStudentData;
         studentId = existingStudentData.id;
-
-        // Optional: Verify fingerprint_id matches. If not, it's a conflict!
-        // For now, we assume SIN is the truth. We could update the fingerprint if needed, 
-        // but let's just proceed to enroll.
     } else {
         existingStudent = null;
         // NO MATCH: Create new student
@@ -76,7 +70,6 @@ export async function addStudent(formData: FormData) {
                 name,
                 sin,
                 year_level,
-                fingerprint_id,
                 instructor_id: profileId // Created by this instructor
             })
             .select("id")
@@ -85,8 +78,8 @@ export async function addStudent(formData: FormData) {
         if (createError) {
             console.error(createError);
             if (createError.code === '23505') { // Unique violation
-                if (createError.message.includes('fingerprint_id')) {
-                    return { error: "This Fingerprint ID is already assigned to another student." };
+                if (createError.message.includes('sin')) {
+                    return { error: "A student with this SIN already exists." };
                 }
             }
             return { error: "Failed to create student. Please try again." };

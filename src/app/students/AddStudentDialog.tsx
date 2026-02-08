@@ -104,17 +104,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                         <p className="text-xs text-gray-500 mt-1">Format: YY-XXXXX</p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Fingerprint ID (Device ID)</label>
-                        <input
-                            name="fingerprint_id"
-                            type="number"
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
-                            placeholder="e.g. 101"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Must match ID on hardware terminal</p>
-                    </div>
+
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
