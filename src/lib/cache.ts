@@ -11,7 +11,6 @@ interface StudentData {
     name: string | null;
     sin: string | null;
     year_level: string | null;
-    created_at?: string;
     // NO fingerprint_id - completely removed
 }
 
@@ -47,7 +46,7 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
         // CRITICAL: Only select the columns we actually need - NO fingerprint_id
         let queryBuilder = supabase
             .from('students')
-            .select('id, name, sin, year_level, created_at') // Explicit columns only
+            .select('id, name, sin, year_level') // Explicit columns only
             .order('name');
 
         if (query) {
