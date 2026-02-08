@@ -9,7 +9,6 @@ interface Student {
     name: string;
     sin?: string;
     year_level: string;
-    fingerprint_id?: string | number;
 }
 
 export function StudentListItem({ student }: { student: Student }) {
@@ -95,10 +94,7 @@ export function StudentListItem({ student }: { student: Student }) {
             {student.sin && <p className="text-sm font-mono text-gray-500 dark:text-gray-400">{student.sin}</p>}
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{yearLevel || "Year Level N/A"}</p>
 
-            <div className="pt-4 border-t border-gray-50 dark:border-gray-700 flex justify-between items-center">
-                <div className="text-xs text-gray-400 dark:text-gray-500 font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
-                    ID: {student.fingerprint_id ?? "N/A"}
-                </div>
+            <div className="pt-4 border-t border-gray-50 dark:border-gray-700 flex justify-end items-center">
                 <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-full">
                     Active
                 </span>

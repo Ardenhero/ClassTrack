@@ -14,7 +14,6 @@ interface Student {
     name: string;
     sin?: string;
     year_level: string;
-    fingerprint_id?: string | number; // Updated to allow string from RPC
     created_at: string;
 }
 
