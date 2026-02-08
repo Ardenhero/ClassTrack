@@ -13,8 +13,8 @@ interface Student {
 
 export function StudentListItem({ student }: { student: Student }) {
     const [isEditing, setIsEditing] = useState(false);
-    const [name, setName] = useState(student.name);
-    const [yearLevel, setYearLevel] = useState(student.year_level);
+    const [name, setName] = useState(student.name || "");
+    const [yearLevel, setYearLevel] = useState(student.year_level || "");
     const [loading, setLoading] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
 
@@ -62,7 +62,7 @@ export function StudentListItem({ student }: { student: Student }) {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-shadow group relative">
             <div className="flex justify-between items-start mb-4">
                 <div className="h-12 w-12 bg-nwu-red/10 rounded-full flex items-center justify-center text-lg font-bold text-nwu-red">
-                    {name[0]}
+                    {(name || "U")[0]?.toUpperCase() || "?"}
                 </div>
 
                 <div className="relative">
