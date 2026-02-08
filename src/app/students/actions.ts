@@ -1,0 +1,122 @@
+"use server";
+
+import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/notifications";
+
+import { z } from 'zod';
+
+const StudentSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters").max(200, "Name must be less than 200 characters"),
+    sin: z.string().regex(/^\d{2}-\d{5}$/, "SIN must be in format YY-XXXXX (e.g. 22-00001)"),
+    year_level: z.string().min(1, "Year level is required"),
+    fingerprint_id: z.number().int().positive("Fingerprint ID must be a positive number"),
+    class_ids: z.array(z.string().uuid()).optional()
+});
+
+export async function addStudent(formData: FormData) {
+    const supabase = createClient();
+
+    const rawData = {
+        name: formData.get("name"),
+        sin: formData.get("sin"),
+        year_level: formData.get("year_level"),
+        fingerprint_id: parseInt(formData.get("fingerprint_id") as string),
+        class_ids: formData.get("class_ids") ? JSON.parse(formData.get("class_ids") as string) : []
+    };
+
+    const parseResult = StudentSchema.safeParse(rawData);
+
+    if (!parseResult.success) {
+        // Return first error message
+        const firstError = parseResult.error.issues[0];
+        return { error: `${firstError.path.join('.')}: ${firstError.message}` };
+    }
+
+    const { name, sin, year_level, fingerprint_id, class_ids: classIds } = parseResult.data;
+
+    // Get Profile ID from cookie
+    const { cookies } = await import("next/headers");
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+
+    if (!profileId) {
+        return { error: "Profile not found. Please select a profile." };
+    }
+
+    // 1. Create Student
+    const { data: student, error } = await supabase
+        .from("students")
+        .insert({
+            name,
+            sin,
+            year_level,
+            fingerprint_id,
+            instructor_id: profileId
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error(error);
+        if (error.code === '23505') { // Unique violation
+            if (error.message.includes('sin')) {
+                return { error: "A student with this SIN already exists." };
+            }
+            if (error.message.includes('fingerprint_id')) {
+                return { error: "This Fingerprint ID is already assigned to another student." };
+            }
+        }
+        return { error: "Failed to create student. Please try again." };
+    }
+
+    // 2. Assign Classes if selected
+    if (classIds && classIds.length > 0) {
+        const enrollments = classIds.map(classId => ({
+            class_id: classId,
+            student_id: student.id
+        }));
+
+        const { error: enrollError } = await supabase
+            .from("enrollments")
+            .insert(enrollments);
+
+        if (enrollError) {
+            console.error("Enrollment error:", enrollError);
+            // We don't revert student creation, but valid concern. For now just log.
+        }
+    }
+
+    // Send notification
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        await createNotification(
+            user.id,
+            "New Student Added",
+            `${name} has been successfully enrolled.`,
+            "success"
+        );
+    }
+
+    revalidatePath("/students");
+    return { success: true };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function updateStudent(id: string, data: any) {
+    const supabase = createClient();
+    const { error } = await supabase.from("students").update(data).eq("id", id);
+
+    if (error) return { error: error.message };
+    revalidatePath("/students");
+    return { success: true };
+}
+
+export async function deleteStudent(id: string) {
+    const supabase = createClient();
+    const { error } = await supabase.from("students").delete().eq("id", id);
+
+    if (error) return { error: error.message };
+    revalidatePath("/students");
+    return { success: true };
+}

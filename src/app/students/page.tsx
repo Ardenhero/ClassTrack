@@ -1,0 +1,87 @@
+import DashboardLayout from "@/components/DashboardLayout";
+import { AddStudentDialog } from "./AddStudentDialog";
+import { GlobalSearch } from "@/components/GlobalSearch";
+import { StudentListItem } from "./StudentListItem";
+import { YearGroup } from "@/components/YearGroup";
+import { Suspense } from "react";
+import { getCachedStudents } from "@/lib/cache";
+
+export const dynamic = "force-dynamic";
+
+interface Student {
+    id: string;
+    studentId: string;
+    name: string;
+    sin: string;
+    year_level: string; // Updated to match likely expectation, will fallback if null
+    fingerprint_id: number;
+    created_at: string;
+}
+
+export default async function StudentsPage({
+    searchParams,
+}: {
+    searchParams?: {
+        query?: string;
+    };
+}) {
+    const query = searchParams?.query || "";
+    // Cast the result to Student[] as we know the shape from Supabase
+    const students = (await getCachedStudents(query)) as Student[];
+
+    const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
+    const groupedStudents = YEAR_LEVELS.reduce((acc, level) => {
+        acc[level] = students?.filter((s) => (s.year_level || "") === level) || [];
+        return acc;
+    }, {} as Record<string, Student[]>);
+
+    // Catch-all
+    const otherStudents = students?.filter((s) => !YEAR_LEVELS.includes(s.year_level || "")) || [];
+    if (otherStudents.length > 0) groupedStudents["Other"] = otherStudents;
+
+    return (
+        <DashboardLayout>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Students Directory</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Manage enrolled students and fingerprints</p>
+                </div>
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="flex-1 w-full md:w-64">
+                        <Suspense fallback={<div className="h-10 w-full bg-gray-100 rounded-lg animate-pulse" />}>
+                            <GlobalSearch type="students" placeholder="Search students..." />
+                        </Suspense>
+                    </div>
+                    <div className="flex-shrink-0">
+                        <AddStudentDialog />
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {Object.entries(groupedStudents).map(([level, items]) => (
+                    items && items.length > 0 && (
+                        <YearGroup key={level} title={level} count={items.length} itemLabel="students">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {items.map((student) => (
+                                    <StudentListItem key={student.id} student={{
+                                        ...student,
+                                        year_level: student.year_level || "Unknown"
+                                    }} />
+                                ))}
+                            </div>
+                        </YearGroup>
+                    )
+                ))}
+            </div>
+
+            {
+                (!students || students.length === 0) && (
+                    <div className="p-12 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                        No students found.
+                    </div>
+                )
+            }
+        </DashboardLayout >
+    );
+}
