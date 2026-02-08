@@ -11,7 +11,7 @@ interface StudentData {
     name: string | null;
     sin: string | null;
     year_level: string | null;
-    // NO fingerprint_id - completely removed
+    created_at?: string;
 }
 
 export const getCachedStudents = async (query?: string): Promise<StudentData[]> => {
@@ -20,46 +20,123 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
         const cookieStore = cookies();
         const profileId = cookieStore.get("sc_profile_id")?.value;
 
-        if (profileId) {
-            // STRICT ISOLATION: Check Active Profile Role
-            const role = await getProfileRole();
-            const isActiveAdmin = role === 'admin';
+        if (!profileId) {
+            console.warn("[getCachedStudents] No profile ID found");
+            return [];
+        }
 
-            if (!isActiveAdmin) {
-                // INSTRUCTOR QUERY: Use RPC (enrollment-based visibility)
-                const { data, error } = await supabase.rpc('get_my_students', {
-                    p_instructor_id: profileId,
-                    p_search_query: query || ''
-                });
+        // Check role
+        const role = await getProfileRole();
+        const isActiveAdmin = role === 'admin';
 
-                if (error) {
-                    console.error("RPC Error:", error);
-                    throw error;
+        // CRITICAL: Only select the columns we need - NO fingerprint_id
+        const columns = 'id, name, sin, year_level, created_at';
+
+        if (isActiveAdmin) {
+            // ADMIN: See all students with direct query
+            let queryBuilder = supabase
+                .from('students')
+                .select(columns)
+                .order('name');
+
+            if (query) {
+                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+            }
+
+            const { data, error } = await queryBuilder;
+
+            if (error) {
+                console.error("[getCachedStudents] Admin query error:", error);
+                throw error;
+            }
+
+            return (data || []) as StudentData[];
+        } else {
+            // INSTRUCTOR: Use complex query with enrollment-based visibility
+            // This replaces the RPC with a direct query approach
+            
+            try {
+                // Query for students the instructor created
+                const createdQuery = supabase
+                    .from('students')
+                    .select(columns)
+                    .eq('instructor_id', profileId);
+
+                if (query) {
+                    createdQuery.ilike('name', `%${query}%`);
                 }
 
-                // RPC returns already-typed data - just ensure it's an array
-                return (data || []) as StudentData[];
+                const { data: createdStudents, error: createdError } = await createdQuery;
+
+                if (createdError) {
+                    console.error("[getCachedStudents] Created students query error:", createdError);
+                    throw createdError;
+                }
+
+                // Query for students enrolled in instructor's classes
+                const { data: enrolledStudents, error: enrolledError } = await supabase
+                    .from('students')
+                    .select(`
+                        ${columns},
+                        enrollments!inner (
+                            class_id,
+                            classes!inner (
+                                instructor_id
+                            )
+                        )
+                    `)
+                    .eq('enrollments.classes.instructor_id', profileId);
+
+                if (enrolledError) {
+                    console.error("[getCachedStudents] Enrolled students query error:", enrolledError);
+                    // Don't throw - we can still return created students
+                }
+
+                // Combine and deduplicate
+                const allStudents = new Map<string, StudentData>();
+
+                // Add created students
+                (createdStudents || []).forEach(student => {
+                    allStudents.set(student.id, {
+                        id: student.id,
+                        name: student.name,
+                        sin: student.sin,
+                        year_level: student.year_level,
+                        created_at: student.created_at
+                    });
+                });
+
+                // Add enrolled students
+                (enrolledStudents || []).forEach((item: any) => {
+                    if (!allStudents.has(item.id)) {
+                        allStudents.set(item.id, {
+                            id: item.id,
+                            name: item.name,
+                            sin: item.sin,
+                            year_level: item.year_level,
+                            created_at: item.created_at
+                        });
+                    }
+                });
+
+                // Convert to array and sort
+                const result = Array.from(allStudents.values()).sort((a, b) => 
+                    (a.name || '').localeCompare(b.name || '')
+                );
+
+                // Apply search filter if needed
+                if (query) {
+                    const lowerQuery = query.toLowerCase();
+                    return result.filter(s => 
+                        (s.name || '').toLowerCase().includes(lowerQuery)
+                    );
+                }
+
+                return result;
+            } catch (err) {
+                console.error("[getCachedStudents] Instructor query exception:", err);
+                throw err;
             }
         }
-
-        // ADMIN QUERY: Explicit Column Selection
-        // CRITICAL: Only select the columns we actually need - NO fingerprint_id
-        let queryBuilder = supabase
-            .from('students')
-            .select('id, name, sin, year_level') // Explicit columns only
-            .order('name');
-
-        if (query) {
-            queryBuilder = queryBuilder.ilike('name', `%${query}%`);
-        }
-
-        const { data, error } = await queryBuilder;
-
-        if (error) {
-            console.error("Query Error:", error);
-            throw error;
-        }
-
-        return (data || []) as StudentData[];
     });
 };
