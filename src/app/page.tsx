@@ -190,7 +190,10 @@ export default async function Dashboard({
   // DEBUG: Log classes count for troubleshooting
   console.log(`[Dashboard] isActiveAdmin=${isActiveAdmin}, profileId=${profileId}, classesCount=${classes?.length || 0}`);
   if (classes && classes.length > 0) {
-    console.log(`[Dashboard] First class: id=${classes[0].id}, name=${classes[0].name}, instructor_id=${classes[0].instructor_id}, start_time=${classes[0].start_time}`);
+    // Show ALL classes with their times to debug filtering
+    classes.slice(0, 5).forEach((c, i) => {
+      console.log(`[Dashboard] Class ${i}: name=${c.name}, start_time=${c.start_time}, end_time=${c.end_time}, instructor_id=${c.instructor_id}`);
+    });
   }
 
   const upcomingClasses = classes?.map(c => {
