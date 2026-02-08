@@ -43,7 +43,7 @@ export function AssignStudentDialog({ classId }: { classId: string }) {
                         .eq('instructor_id', profile.id)
                         .order('name');
                     
-                    createdStudents?.forEach(s => uniqueStudents.set(s.id, s as Student));
+                    createdStudents?.forEach((s: Student) => uniqueStudents.set(s.id, s as Student));
                     
                     // Get students enrolled in this instructor's classes
                     const { data: enrolledData } = await supabase
