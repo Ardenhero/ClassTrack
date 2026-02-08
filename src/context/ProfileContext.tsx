@@ -17,6 +17,7 @@ interface ProfileContextType {
     selectProfile: (profile: Profile) => void;
     clearProfile: () => void;
     loading: boolean;
+    isSwitching: boolean;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -24,6 +25,7 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 export function ProfileProvider({ children }: { children: ReactNode }) {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isSwitching, setIsSwitching] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -108,6 +110,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     };
 
     const clearProfile = () => {
+        // Set switching state FIRST to hide stale UI
+        setIsSwitching(true);
         setProfile(null);
         localStorage.removeItem("sc_profile");
 
@@ -118,7 +122,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ProfileContext.Provider value={{ profile, selectProfile, clearProfile, loading }}>
+        <ProfileContext.Provider value={{ profile, selectProfile, clearProfile, loading, isSwitching }}>
             {children}
         </ProfileContext.Provider>
     );

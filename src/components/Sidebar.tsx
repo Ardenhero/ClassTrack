@@ -26,7 +26,7 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const router = useRouter();
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const supabase = createClient();
-    const { profile, clearProfile } = useProfile();
+    const { profile, clearProfile, isSwitching } = useProfile();
 
     const handleAdminClick = () => {
         router.push("/dashboard/admin/departments");
@@ -84,11 +84,11 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                 <div className="p-4 border-t border-nwu-red/50 shrink-0 space-y-4 bg-[#5e0d0e]/50">
                     <Link href="/profile" className="flex items-center hover:bg-[#5e0d0e] p-2 rounded-lg transition-colors group">
                         <div className="h-8 w-8 rounded-full bg-nwu-gold flex items-center justify-center text-xs text-nwu-red font-bold">
-                            {profile?.name?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
+                            {isSwitching ? "..." : (profile?.name?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />)}
                         </div>
                         <div className="ml-3">
                             <p className="text-sm font-medium text-white group-hover:text-nwu-gold transition-colors">
-                                {profile?.name || user?.user_metadata?.full_name || "User"}
+                                {isSwitching ? "Switching..." : (profile?.name || user?.user_metadata?.full_name || "User")}
                             </p>
                             <p className="text-xs text-gray-400">View Profile</p>
                         </div>
