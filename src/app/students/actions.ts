@@ -3,14 +3,13 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications";
-
 import { z } from 'zod';
 
 const StudentSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters").max(200, "Name must be less than 200 characters"),
-    sin: z.string().regex(/^\d{2}-\d{5}$/, "Invalid SIN format. Please use the university standard (e.g., 22-00001)."),
+    sin: z.string().regex(/^\d{2}-\d{5,6}$/, "Invalid SIN format. Use YY-XXXXX or YY-XXXXXX (e.g., 22-00001)"),
     year_level: z.string().min(1, "Year level is required"),
-    class_ids: z.array(z.string().uuid()).optional()
+    class_ids: z.array(z.string().uuid()).min(1, "At least one class must be selected") // MANDATORY
 });
 
 export async function addStudent(formData: FormData) {
@@ -24,9 +23,7 @@ export async function addStudent(formData: FormData) {
     };
 
     const parseResult = StudentSchema.safeParse(rawData);
-
     if (!parseResult.success) {
-        // Return first error message
         const firstError = parseResult.error.issues[0];
         return { error: `${firstError.path.join('.')}: ${firstError.message}` };
     }
@@ -42,7 +39,7 @@ export async function addStudent(formData: FormData) {
         return { error: "Profile not found. Please select a profile." };
     }
 
-    // RESOLVE "admin-profile" to actual UUID
+    // RESOLVE "admin-profile" to actual UUID & Auto-Create if missing
     if (profileId === 'admin-profile') {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -50,7 +47,7 @@ export async function addStudent(formData: FormData) {
                 .from('instructors')
                 .select('id')
                 .eq('user_id', user.id)
-                .maybeSingle(); // Use maybeSingle to avoid 406
+                .maybeSingle();
 
             if (adminProfile) {
                 profileId = adminProfile.id;
@@ -72,32 +69,32 @@ export async function addStudent(formData: FormData) {
                     profileId = newProfile.id;
                 } else if (createProfileError) {
                     console.error("DEBUG: Failed to auto-create admin profile:", createProfileError);
-                    // Fallback: This will likely fail downstream with UUID error, but we logged it.
+                    // Fallback: This will likely fail downstream with UUID error if profileId remains 'admin-profile'
                 }
             }
         }
     }
 
-    // 1. Check if student exists (Global Lookup)
+    // STEP 1: Check if student exists (Global Lookup via Secure RPC)
     let studentId: string;
-    let existingStudent: { id: string; name: string } | null;
+    let existingStudent: { id: string; name: string } | null = null;
 
     const { data: existingStudentData, error: findError } = await supabase
-        .rpc('get_student_by_sin_secure', { p_sin: sin }); // No .maybeSingle() needed for scalar JSON return
+        .rpc('get_student_by_sin_secure', { p_sin: sin });
 
     if (findError) {
         console.error("Error finding student:", findError);
-        return { error: `Database error checking existence: ${findError.message} (Code: ${findError.code})` };
+        return { error: `Database error checking existence: ${findError.message}` };
     }
 
     if (existingStudentData) {
-        // MATCH FOUND: Use existing student
-        // The RPC returns { id, name } as JSON, or null
+        // EXISTING STUDENT FOUND: Use their ID
         existingStudent = existingStudentData as { id: string; name: string };
         studentId = existingStudent.id;
+
+        console.log(`Found existing student: ${existingStudent.name} (${studentId})`);
     } else {
-        existingStudent = null;
-        // NO MATCH: Create new student
+        // NEW STUDENT: Create record
         const { data: newStudent, error: createError } = await supabase
             .from("students")
             .insert({
@@ -110,83 +107,82 @@ export async function addStudent(formData: FormData) {
             .single();
 
         if (createError) {
-            console.error("DEBUG: Failed to create student:", JSON.stringify(createError, null, 2));
+            console.error("Error creating student:", createError);
             if (createError.code === '23505') { // Unique violation
                 if (createError.message.includes('sin')) {
                     return { error: "A student with this SIN already exists." };
                 }
             }
-            return { error: `Failed to create student: ${createError.message} (${createError.code})` };
+            return { error: "Failed to create student. Please try again." };
         }
+
         studentId = newStudent.id;
+        console.log(`Created new student: ${name} (${studentId})`);
     }
 
-    // 2. Assign Classes if selected
-    if (classIds && classIds.length > 0) {
-        // Validate ownership if not admin
-        const isAdmin = await import("@/lib/auth-utils").then(m => m.checkIsAdmin());
+    // STEP 2: Validate Class Ownership (Security Check)
+    const isAdmin = await import("@/lib/auth-utils").then(m => m.checkIsAdmin());
 
-        if (!isAdmin) {
-            const { count } = await supabase
-                .from("classes")
-                .select("*", { count: 'exact', head: true })
-                .in("id", classIds)
-                .eq("instructor_id", profileId);
+    if (!isAdmin) {
+        const { count } = await supabase
+            .from("classes")
+            .select("*", { count: 'exact', head: true })
+            .in("id", classIds)
+            .eq("instructor_id", profileId);
 
-            if (count !== classIds.length) {
-                return { error: "Unauthorized: You can only assign students to your own classes." };
-            }
+        if (count !== classIds.length) {
+            return { error: "Unauthorized: You can only assign students to your own classes." };
         }
-
-        // Prepare enrollments, ignoring duplicates if already enrolled
-        const enrollments = classIds.map(classId => ({
-            class_id: classId,
-            student_id: studentId
-        }));
-
-        const { error: enrollError } = await supabase
-            .from("enrollments")
-            .upsert(enrollments, { onConflict: 'student_id, class_id' }); // Safe upsert to avoid duplicate key errors
-
-        if (enrollError) {
-            console.error("Enrollment error:", enrollError);
-            return { error: "Failed to enroll student in selected classes." };
-        }
-    } else if (existingStudent) {
-        // If EXISTING student but NO class selected, we might want to auto-enroll in a "default" class or just warn?
-        // But for now, if they select no class, they just don't get enrolled. 
-        // HOWEVER, the user requirement says: "Upsert logic correctly creates the enrollment link".
-        // If the user thinks "Add Student" implies "Enroll in MY list", we need a link.
-        // But "My Students" query checks `s.instructor_id` OR `c.instructor_id`.
-        // If I created them (s.instructor_id), they appear.
-        // If I didn't create them, and I don't enroll them in a class, they WON'T appear (Invisible).
-        // The modal usually forces class selection or has a default?
-        // Let's ensure revalidation happens regardless.
     }
 
-    // Send notification (UI will show message based on return value)
+    // STEP 3: Create Enrollments (CRITICAL for Visibility)
+    const enrollments = classIds.map(classId => ({
+        class_id: classId,
+        student_id: studentId
+    }));
+
+    const { error: enrollError } = await supabase
+        .from("enrollments")
+        .upsert(enrollments, { onConflict: 'student_id, class_id' });
+
+    if (enrollError) {
+        console.error("Enrollment error:", enrollError);
+        return { error: "Failed to enroll student in selected classes." };
+    }
+
+    console.log(`Enrolled student ${studentId} in ${classIds.length} class(es)`);
+
+    // STEP 4: Send Success Notification
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
         await createNotification(
             user.id,
-            existingStudent ? "Student linked" : "New Student Added",
-            `${name} (${sin}) has been successfully enrolled.${existingStudent ? ' (Linked to existing record)' : ''}`,
+            existingStudent ? "Student Linked" : "New Student Added",
+            `${name} (${sin}) has been successfully enrolled in ${classIds.length} class(es).${existingStudent ? ' (Linked to existing record)' : ''}`,
             "success"
         );
     }
 
+    // STEP 5: Revalidate Path to Force UI Refresh
     revalidatePath("/students");
 
-    // Return specific messages for UI
+    // Return specific success message
     if (existingStudent) {
-        return { success: true, message: "Existing student found and successfully enrolled in your class." };
+        return {
+            success: true,
+            message: `Existing student "${existingStudent.name}" successfully enrolled in your ${classIds.length} class(es).`
+        };
     } else {
-        return { success: true, message: "New student created and enrolled successfully." };
+        return {
+            success: true,
+            message: `New student "${name}" created and enrolled in ${classIds.length} class(es).`
+        };
     }
 }
 
 export async function checkStudentBySIN(sin: string) {
     const supabase = createClient();
+
     // Use the secure RPC to bypass RLS for lookup
     const { data, error } = await supabase
         .rpc('get_student_by_sin_secure', { p_sin: sin });

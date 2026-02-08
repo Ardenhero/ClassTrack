@@ -8,6 +8,7 @@ import { getCachedStudents } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 
+// PURIFIED INTERFACE: Absolutely NO fingerprint_id
 interface Student {
     id: string;
     name: string;
@@ -15,19 +16,10 @@ interface Student {
     year_level: string;
 }
 
-interface RawStudent {
-    id: string;
-    name: string | null;
-    sin: string | null;
-    year_level: string | null;
-}
-
 export default async function StudentsPage({
     searchParams,
 }: {
-    searchParams?: {
-        query?: string;
-    };
+    searchParams?: { query?: string };
 }) {
     const query = searchParams?.query || "";
     let students: Student[] = [];
@@ -35,12 +27,14 @@ export default async function StudentsPage({
 
     try {
         const rawStudents = await getCachedStudents(query);
-        // SANITIZATION: Explicitly map to ensure no non-serializable data (like Date objects) passes to Client Components
-        students = ((rawStudents as unknown as RawStudent[]) || []).map((s) => ({
+
+        // SANITIZATION: Map to clean Student interface - NO fingerprint_id passthrough
+        students = (rawStudents || []).map((s) => ({
             id: s.id,
-            name: s.name || "", // Handle null name
+            name: s.name || "",
             sin: s.sin || undefined,
-            year_level: s.year_level || ""
+            year_level: s.year_level || "",
+            // CRITICAL: Do NOT add fingerprint_id here - it's completely removed
         }));
     } catch (err: unknown) {
         console.error("Failed to load students:", err);
@@ -53,7 +47,7 @@ export default async function StudentsPage({
         return acc;
     }, {} as Record<string, Student[]>);
 
-    // Catch-all
+    // Catch-all for students with non-standard year levels
     const otherStudents = students.filter((s) => !YEAR_LEVELS.includes(s.year_level || ""));
     if (otherStudents.length > 0) groupedStudents["Other"] = otherStudents;
 
@@ -61,7 +55,9 @@ export default async function StudentsPage({
         <DashboardLayout>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Students Directory</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        Students Directory
+                    </h1>
                     <p className="text-gray-500 dark:text-gray-400">Manage enrolled students</p>
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
@@ -88,12 +84,15 @@ export default async function StudentsPage({
                         <YearGroup key={level} title={level} count={items.length} itemLabel="students">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {items.map((student) => (
-                                    <StudentListItem key={student.id} student={{
-                                        id: student.id,
-                                        name: student.name,
-                                        sin: student.sin,
-                                        year_level: student.year_level || "Unknown"
-                                    }} />
+                                    <StudentListItem
+                                        key={student.id}
+                                        student={{
+                                            id: student.id,
+                                            name: student.name,
+                                            sin: student.sin,
+                                            year_level: student.year_level || "Unknown"
+                                        }}
+                                    />
                                 ))}
                             </div>
                         </YearGroup>
@@ -101,13 +100,11 @@ export default async function StudentsPage({
                 ))}
             </div>
 
-            {
-                (!students || students.length === 0) && !errorMsg && (
-                    <div className="p-12 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                        No students found.
-                    </div>
-                )
-            }
-        </DashboardLayout >
+            {(!students || students.length === 0) && !errorMsg && (
+                <div className="p-12 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                    No students found.
+                </div>
+            )}
+        </DashboardLayout>
     );
 }

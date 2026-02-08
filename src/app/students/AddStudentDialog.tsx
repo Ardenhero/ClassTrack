@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, X, Check, Lock } from "lucide-react";
+import { UserPlus, X, Check, Lock, AlertCircle } from "lucide-react";
 import { addStudent, getAssignableClasses, checkStudentBySIN } from "./actions";
-
 import { useRouter } from "next/navigation";
 
 interface ClassItem {
@@ -50,10 +49,9 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
         setCheckingSin(false);
 
         if (result?.data) {
-            // FOUND: Lock fields
+            // FOUND: Lock fields and auto-populate
             const student = result.data as { id: string; name: string; year_level: string };
             setExistingStudent(student);
-            // Auto-fill form fields logic handles via value/defaultValue or state
         } else {
             // NOT FOUND: Unlock
             setExistingStudent(null);
@@ -62,9 +60,15 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        // VALIDATION: Ensure at least one class is selected
+        if (selectedClasses.length === 0) {
+            alert("Please select at least one class to enroll the student in.");
+            return;
+        }
+
         setLoading(true);
         const formData = new FormData(e.currentTarget);
-
         // Append selected classes as JSON string
         formData.append("class_ids", JSON.stringify(selectedClasses));
 
@@ -122,8 +126,8 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                     <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-start">
                         <Lock className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
                         <div>
-                            <span className="font-semibold block">Student Found via Global Registry</span>
-                            Details are locked to ensure consistency. Saving will enroll them in your class.
+                            <span className="font-semibold block">Student Found in Registry</span>
+                            Name and year level are locked. Select your class(es) to enroll them.
                         </div>
                     </div>
                 )}
@@ -135,12 +139,13 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                             {checkingSin && <span className="ml-2 text-gray-400 text-xs">Checking...</span>}
                         </label>
                         <input
+                            id="sin"
                             name="sin"
                             type="text"
                             required
                             onBlur={handleSinBlur}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
-                            placeholder="e.g. 22-00000"
+                            placeholder="e.g. 22-00001"
                         />
                         <p className="text-xs text-gray-500 mt-1">Format: YY-XXXXX or YY-XXXXXX</p>
                     </div>
@@ -148,6 +153,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                         <input
+                            id="name"
                             name="name"
                             required
                             maxLength={200}
@@ -164,6 +170,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
                         {existingStudent ? (
                             <input
+                                id="year_level"
                                 name="year_level"
                                 readOnly
                                 value={existingStudent.year_level}
@@ -171,6 +178,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                             />
                         ) : (
                             <select
+                                id="year_level"
                                 name="year_level"
                                 required
                                 defaultValue="1st Year"
@@ -185,7 +193,9 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Assign Classes</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Assign Classes <span className="text-red-500">*</span>
+                        </label>
                         <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto divide-y divide-gray-100">
                             {classes.length === 0 ? (
                                 <p className="p-3 text-sm text-gray-500 text-center">No classes found.</p>
@@ -207,7 +217,15 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                                 ))
                             )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">{selectedClasses.length} classes selected</p>
+                        <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-gray-500">{selectedClasses.length} class(es) selected</p>
+                            {selectedClasses.length === 0 && (
+                                <p className="text-xs text-red-500 flex items-center">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    Required
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex justify-end space-x-3 mt-6">
@@ -220,8 +238,8 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || checkingSin}
-                            className="px-4 py-2 bg-nwu-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                            disabled={loading || checkingSin || selectedClasses.length === 0}
+                            className="px-4 py-2 bg-nwu-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? "Saving..." : (existingStudent ? "Enroll Student" : "Save Student")}
                         </button>
