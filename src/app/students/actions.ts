@@ -119,7 +119,7 @@ export async function addStudent(formData: FormData) {
         }
     }
 
-    // Send notification
+    // Send notification (UI will show message based on return value)
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
         await createNotification(
@@ -131,7 +131,13 @@ export async function addStudent(formData: FormData) {
     }
 
     revalidatePath("/students");
-    return { success: true };
+
+    // Return specific messages for UI
+    if (existingStudent) {
+        return { success: true, message: "Existing student found and successfully enrolled in your class." };
+    } else {
+        return { success: true, message: "New student created and enrolled successfully." };
+    }
 }
 
 export async function getAssignableClasses() {
