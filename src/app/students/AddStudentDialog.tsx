@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, X, Check } from "lucide-react";
-import { addStudent, getAssignableClasses } from "./actions";
+import { UserPlus, X, Check, Lock } from "lucide-react";
+import { addStudent, getAssignableClasses, checkStudentBySIN } from "./actions";
 
 import { useRouter } from "next/navigation";
 
@@ -19,9 +19,11 @@ interface AddStudentDialogProps {
 export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [checkingSin, setCheckingSin] = useState(false);
     const [classes, setClasses] = useState<ClassItem[]>([]);
     const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
     const [nameLength, setNameLength] = useState(0);
+    const [existingStudent, setExistingStudent] = useState<{ name: string; year_level: string } | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -32,10 +34,31 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
             };
             fetchClasses();
         } else {
-            // Reset selection when closed
+            // Reset state when closed
             setSelectedClasses([]);
+            setExistingStudent(null);
+            setNameLength(0);
         }
     }, [isOpen]);
+
+    const handleSinBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+        const sin = e.target.value.trim();
+        if (!sin || sin.length < 5) return;
+
+        setCheckingSin(true);
+        const result = await checkStudentBySIN(sin);
+        setCheckingSin(false);
+
+        if (result?.data) {
+            // FOUND: Lock fields
+            const student = result.data as { id: string; name: string; year_level: string };
+            setExistingStudent(student);
+            // Auto-fill form fields logic handles via value/defaultValue or state
+        } else {
+            // NOT FOUND: Unlock
+            setExistingStudent(null);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -56,6 +79,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
             setIsOpen(false);
             (e.target as HTMLFormElement).reset();
             setSelectedClasses([]);
+            setExistingStudent(null);
             router.refresh();
         }
         setLoading(false);
@@ -94,20 +118,32 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
 
                 <h2 className="text-xl font-bold mb-4">Add New Student</h2>
 
+                {existingStudent && (
+                    <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-start">
+                        <Lock className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <span className="font-semibold block">Student Found via Global Registry</span>
+                            Details are locked to ensure consistency. Saving will enroll them in your class.
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">SIN (Student ID)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            SIN (Student ID)
+                            {checkingSin && <span className="ml-2 text-gray-400 text-xs">Checking...</span>}
+                        </label>
                         <input
                             name="sin"
                             type="text"
                             required
+                            onBlur={handleSinBlur}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
                             placeholder="e.g. 22-00000"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Format: YY-XXXXX</p>
+                        <p className="text-xs text-gray-500 mt-1">Format: YY-XXXXX or YY-XXXXXX</p>
                     </div>
-
-
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -115,26 +151,37 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                             name="name"
                             required
                             maxLength={200}
-                            onChange={(e) => setNameLength(e.target.value.length)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
+                            value={existingStudent ? existingStudent.name : undefined}
+                            readOnly={!!existingStudent}
+                            onChange={(e) => !existingStudent && setNameLength(e.target.value.length)}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red ${existingStudent ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''}`}
                             placeholder="e.g. John Doe"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{nameLength}/200 characters</p>
+                        {!existingStudent && <p className="text-xs text-gray-500 mt-1">{nameLength}/200 characters</p>}
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Year Level</label>
-                        <select
-                            name="year_level"
-                            required
-                            defaultValue="1st Year"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
-                        >
-                            <option value="1st Year">1st Year</option>
-                            <option value="2nd Year">2nd Year</option>
-                            <option value="3rd Year">3rd Year</option>
-                            <option value="4th Year">4th Year</option>
-                        </select>
+                        {existingStudent ? (
+                            <input
+                                name="year_level"
+                                readOnly
+                                value={existingStudent.year_level}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
+                            />
+                        ) : (
+                            <select
+                                name="year_level"
+                                required
+                                defaultValue="1st Year"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red"
+                            >
+                                <option value="1st Year">1st Year</option>
+                                <option value="2nd Year">2nd Year</option>
+                                <option value="3rd Year">3rd Year</option>
+                                <option value="4th Year">4th Year</option>
+                            </select>
+                        )}
                     </div>
 
                     <div>
@@ -173,10 +220,10 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || checkingSin}
                             className="px-4 py-2 bg-nwu-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                         >
-                            {loading ? "Adding..." : "Save Student"}
+                            {loading ? "Saving..." : (existingStudent ? "Enroll Student" : "Save Student")}
                         </button>
                     </div>
                 </form>

@@ -14,7 +14,11 @@ AS $$
 DECLARE
     result JSON;
 BEGIN
-    SELECT json_build_object('id', s.id, 'name', s.name)
+    SELECT json_build_object(
+        'id', s.id, 
+        'name', s.name, 
+        'year_level', s.year_level
+    )
     INTO result
     FROM students s
     WHERE s.sin = p_sin;
