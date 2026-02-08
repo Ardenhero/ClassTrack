@@ -139,6 +139,21 @@ export async function addStudent(formData: FormData) {
     }
 }
 
+export async function checkStudentBySIN(sin: string) {
+    const supabase = createClient();
+    // Use the secure RPC to bypass RLS for lookup
+    const { data, error } = await supabase
+        .rpc('get_student_by_sin_secure', { p_sin: sin });
+
+    if (error) {
+        console.error("Error checking student:", error);
+        return { error: error.message };
+    }
+
+    // data is { id, name, year_level } (or null if not found)
+    return { data };
+}
+
 export async function getAssignableClasses() {
     const supabase = createClient();
     const { cookies } = await import("next/headers");
