@@ -57,8 +57,9 @@ export async function addStudent(formData: FormData) {
 
     if (existingStudentData) {
         // MATCH FOUND: Use existing student
-        existingStudent = existingStudentData;
-        studentId = existingStudentData.id;
+        // The RPC returns { id, name } but TS might infer unknown/any
+        existingStudent = existingStudentData as { id: string; name: string };
+        studentId = existingStudent.id;
     } else {
         existingStudent = null;
         // NO MATCH: Create new student
