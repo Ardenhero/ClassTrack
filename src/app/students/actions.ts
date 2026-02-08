@@ -47,8 +47,7 @@ export async function addStudent(formData: FormData) {
     let existingStudent: { id: string; name: string } | null;
 
     const { data: existingStudentData, error: findError } = await supabase
-        .rpc('get_student_by_sin_secure', { p_sin: sin })
-        .maybeSingle();
+        .rpc('get_student_by_sin_secure', { p_sin: sin }); // No .maybeSingle() needed for scalar JSON return
 
     if (findError) {
         console.error("Error finding student:", findError);
@@ -57,7 +56,7 @@ export async function addStudent(formData: FormData) {
 
     if (existingStudentData) {
         // MATCH FOUND: Use existing student
-        // The RPC returns { id, name } but TS might infer unknown/any
+        // The RPC returns { id, name } as JSON, or null
         existingStudent = existingStudentData as { id: string; name: string };
         studentId = existingStudent.id;
     } else {

@@ -3,16 +3,23 @@
 -- ============================================
 
 -- 1. Secure Lookup for "Find or Create" logic (Bypassing RLS)
+-- Changing to RETURNS JSON to avoid "structure of query does not match function result type" (42804)
+DROP FUNCTION IF EXISTS get_student_by_sin_secure(TEXT);
+
 CREATE OR REPLACE FUNCTION get_student_by_sin_secure(p_sin TEXT)
-RETURNS TABLE (id UUID, name TEXT)
+RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+    result JSON;
 BEGIN
-    RETURN QUERY
-    SELECT s.id, s.name
+    SELECT json_build_object('id', s.id, 'name', s.name)
+    INTO result
     FROM students s
     WHERE s.sin = p_sin;
+    
+    RETURN result; -- Returns null if no match
 END;
 $$;
 
