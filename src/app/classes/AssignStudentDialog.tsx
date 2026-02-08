@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UserPlus, X, Search } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { useProfile } from "@/context/ProfileContext";
 import { assignStudent } from "./[id]/actions";
 
 interface Student {
@@ -19,18 +20,54 @@ export function AssignStudentDialog({ classId }: { classId: string }) {
     const [query, setQuery] = useState("");
 
     const supabase = createClient();
+    const { profile } = useProfile();
 
     useEffect(() => {
         if (isOpen) {
-            // Fetch students who are NOT already enrolled (simplified: fetch all, filtered in UI or action ideally, but here just fetching all)
+            // Fetch students visible to this instructor
             const fetchStudents = async () => {
-                const { data } = await supabase.from('students').select('*').order('name');
-                // Safely cast if necessary, though Supabase types are inferred usually if generated.
-                setStudents((data as Student[]) || []);
+                const isAdmin = profile?.role === 'admin';
+                
+                if (isAdmin) {
+                    // Admin sees all students
+                    const { data } = await supabase.from('students').select('*').order('name');
+                    setStudents((data as Student[]) || []);
+                } else if (profile?.id) {
+                    // Instructor: fetch students they created OR enrolled in their classes
+                    const uniqueStudents = new Map<string, Student>();
+                    
+                    // Get students created by this instructor
+                    const { data: createdStudents } = await supabase
+                        .from('students')
+                        .select('*')
+                        .eq('instructor_id', profile.id)
+                        .order('name');
+                    
+                    createdStudents?.forEach(s => uniqueStudents.set(s.id, s as Student));
+                    
+                    // Get students enrolled in this instructor's classes
+                    const { data: enrolledData } = await supabase
+                        .from('enrollments')
+                        .select('student_id, students!inner(*), classes!inner(instructor_id)')
+                        .eq('classes.instructor_id', profile.id);
+                    
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    enrolledData?.forEach((e: any) => {
+                        if (e.students && !uniqueStudents.has(e.students.id)) {
+                            uniqueStudents.set(e.students.id, e.students as Student);
+                        }
+                    });
+                    
+                    // Sort by name and convert to array
+                    const sortedStudents = Array.from(uniqueStudents.values())
+                        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                    
+                    setStudents(sortedStudents);
+                }
             };
             fetchStudents();
         }
-    }, [isOpen, supabase]);
+    }, [isOpen, supabase, profile]);
 
     const handleAssign = async (studentId: string) => {
         setLoading(true);
