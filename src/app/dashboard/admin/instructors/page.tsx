@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
-import { Trash2, Plus, Users, Key } from "lucide-react";
+import { Plus, Users, Key } from "lucide-react";
 import { revalidatePath } from "next/cache";
+import { DeleteInstructorButton } from "./DeleteInstructorButton";
 
 export default async function InstructorsPage() {
     const supabase = createClient();
@@ -49,13 +50,6 @@ export default async function InstructorsPage() {
         if (error) {
             console.error("Error adding instructor:", error);
         }
-        revalidatePath("/dashboard/admin/instructors");
-    }
-
-    async function deleteInstructor(id: string) {
-        "use server";
-        const supabase = createClient();
-        await supabase.from("instructors").delete().eq("id", id);
         revalidatePath("/dashboard/admin/instructors");
     }
 
@@ -175,11 +169,7 @@ export default async function InstructorsPage() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <form action={deleteInstructor.bind(null, inst.id)}>
-                                            <button className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </form>
+                                        <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
                                     </td>
                                 </tr>
                             ))}
