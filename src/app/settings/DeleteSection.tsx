@@ -45,7 +45,7 @@ function DeleteButton({
     label, 
     confirmMsg 
 }: { 
-    action: () => Promise<any>, 
+    action: () => Promise<void | { error?: string }>, 
     label: string, 
     confirmMsg: string 
 }) {
