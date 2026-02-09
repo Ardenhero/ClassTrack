@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 export async function login(formData: FormData) {
     const supabase = createClient();
@@ -22,8 +23,12 @@ export async function login(formData: FormData) {
         return { error: error.message };
     }
 
+    // Clear the profile cookie so user goes to profile selection
+    const cookieStore = await cookies();
+    cookieStore.delete("sc_profile_id");
+
     revalidatePath("/", "layout");
-    redirect("/");
+    redirect("/select-profile");
 }
 
 export async function signup(formData: FormData) {
@@ -75,6 +80,11 @@ export async function signup(formData: FormData) {
 
 export async function signout() {
     const supabase = createClient();
+    
+    // Clear the profile cookie
+    const cookieStore = await cookies();
+    cookieStore.delete("sc_profile_id");
+    
     await supabase.auth.signOut();
     revalidatePath("/", "layout");
     redirect("/login");
