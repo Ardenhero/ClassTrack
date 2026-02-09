@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 export async function deleteAccount() {
     const supabase = createClient();
@@ -24,20 +25,32 @@ export async function deleteAccount() {
 export async function deleteProfile() {
     const supabase = createClient();
     
-    // Get the current authenticated user
+    // Get the current authenticated user (just to verify session)
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
         return { error: "Unauthenticated" };
     }
 
-    // Call the newly created RPC function to delete the profile and related data
-    // This handles cleanup of dependent rows and avoids RLS/FK issues
-    const { error } = await supabase.rpc('delete_own_instructor_profile');
+    // Get the active profile ID from the cookie
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+
+    if (!profileId) {
+        return { error: "No active profile found to delete." };
+    }
+
+    // Call the updated RPC function with the profile ID
+    const { error } = await supabase.rpc('delete_active_instructor_profile', {
+        p_instructor_id: profileId
+    });
 
     if (error) {
         console.error("Error deleting profile:", error);
         return { error: error.message };
     }
+
+    // Clear the profile cookie
+    cookieStore.delete("sc_profile_id");
 
     // Sign out after successful deletion
     await supabase.auth.signOut();
