@@ -30,12 +30,9 @@ export async function deleteProfile() {
         return { error: "Unauthenticated" };
     }
 
-    // Attempt to delete the instructor profile linked to this user
-    // This allows deleting data without deleting the auth account (which only admins can do)
-    const { error } = await supabase
-        .from('instructors')
-        .delete()
-        .eq('auth_user_id', user.id);
+    // Call the newly created RPC function to delete the profile and related data
+    // This handles cleanup of dependent rows and avoids RLS/FK issues
+    const { error } = await supabase.rpc('delete_own_instructor_profile');
 
     if (error) {
         console.error("Error deleting profile:", error);
