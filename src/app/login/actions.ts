@@ -23,28 +23,54 @@ export async function login(formData: FormData) {
     }
 
     revalidatePath("/", "layout");
-    redirect("/select-profile");
+    redirect("/");
 }
 
 export async function signup(formData: FormData) {
     const supabase = createClient();
 
-    const data = {
-        email: formData.get("email") as string,
-        password: formData.get("password") as string,
-    };
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const name = formData.get("name") as string || email.split("@")[0];
 
-    const { error } = await supabase.auth.signUp(data);
-
-    if (error) {
-        if (error.message.includes("rate limit") || error.message.includes("429")) {
-            return { error: "Too many attempts. Please wait a moment or check your inbox." };
-        }
-        return { error: error.message };
+    if (!email || !password) {
+        return { error: "Email and password are required" };
     }
 
-    // Return success to display the welcome message
-    return { success: true };
+    // Create the auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+    });
+
+    if (authError) {
+        if (authError.message.includes("rate limit") || authError.message.includes("429")) {
+            return { error: "Too many attempts. Please wait a moment." };
+        }
+        return { error: authError.message };
+    }
+
+    if (!authData.user) {
+        return { error: "Failed to create account." };
+    }
+
+    // Create the account request (pending approval)
+    const { error: requestError } = await supabase
+        .from("account_requests")
+        .insert({
+            user_id: authData.user.id,
+            email: email,
+            name: name,
+            status: "pending"
+        });
+
+    if (requestError) {
+        console.error("Error creating account request:", requestError);
+        // Still return success - the user exists, just request might have failed
+    }
+
+    // Return success to display the pending message
+    return { success: true, pending: true };
 }
 
 export async function signout() {

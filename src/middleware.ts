@@ -98,25 +98,7 @@ export async function middleware(request: NextRequest) {
     supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
     // ============================================
-    // 3. API Key Protection for Attendance Endpoint
-    // ============================================
-    // ============================================
-    // 3. API Key Protection for Attendance Endpoint
-    // ============================================
-    // if (pathname.startsWith("/api/attendance") || pathname.startsWith("/api/sync") || pathname.startsWith("/api/attendance/log")) {
-    //     const apiKey = request.headers.get("x-api-key") || request.nextUrl.searchParams.get("key");
-    //     const validKey = "default-secret-change-me"; // process.env.API_SECRET || "default-secret-change-me";
-
-    //     if (apiKey !== validKey) {
-    //         return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-    //             status: 401,
-    //             headers: { "Content-Type": "application/json" }
-    //         });
-    //     }
-    // }
-
-    // ============================================
-    // 4. Supabase Auth Session
+    // 3. Supabase Auth Session
     // ============================================
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -161,46 +143,73 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     // ============================================
-    // 5. Protected Route Redirect
+    // 4. Protected Route Redirect (Not Logged In)
     // ============================================
-    if (
-        !user &&
-        !pathname.startsWith("/login") &&
-        !pathname.startsWith("/auth") &&
-        !pathname.startsWith("/api/attendance") &&
-        !pathname.startsWith("/api/sync") &&
-        !pathname.startsWith("/api/health") &&
-        !pathname.startsWith("/api/metrics") &&
-        !pathname.startsWith("/api/kiosk")
-    ) {
+    const publicPaths = [
+        "/login",
+        "/auth",
+        "/pending-approval",
+        "/api/attendance",
+        "/api/sync",
+        "/api/health",
+        "/api/metrics",
+        "/api/kiosk",
+        "/api/auth/signout"
+    ];
+
+    const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
+
+    if (!user && !isPublicPath) {
         const url = request.nextUrl.clone();
         url.pathname = "/login";
         return NextResponse.redirect(url);
     }
 
     // ============================================
-    // 6. Profile Gate (Netflix-Style)
+    // 5. Account Approval Check
     // ============================================
-    // If user IS logged in, accessing a protected page (like /dashboard),
-    // but hasn't selected a profile yet (no cookie), redirect to selection screen.
-    const profileId = request.cookies.get("sc_profile_id")?.value;
+    // If user is logged in, check if they have an approved instructor profile
+    if (user && !isPublicPath && !pathname.startsWith("/_next") && !pathname.includes(".")) {
+        // Check if user has an instructor profile (meaning they're approved)
+        const { data: instructor } = await supabase
+            .from("instructors")
+            .select("id, role")
+            .eq("auth_user_id", user.id)
+            .maybeSingle();
 
-    if (
-        user &&
-        !profileId &&
-        pathname !== "/select-profile" &&
-        !pathname.startsWith("/api") && // Don't block API calls
-        !pathname.startsWith("/_next") && // Don't block Next.js assets
-        !pathname.includes(".") // Don't block static files
-    ) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/select-profile";
-        return NextResponse.redirect(url);
+        // If no instructor profile, redirect to pending approval page
+        if (!instructor && pathname !== "/pending-approval") {
+            const url = request.nextUrl.clone();
+            url.pathname = "/pending-approval";
+            return NextResponse.redirect(url);
+        }
+
+        // If user has profile but is on pending-approval page, redirect to home
+        if (instructor && pathname === "/pending-approval") {
+            const url = request.nextUrl.clone();
+            url.pathname = "/";
+            return NextResponse.redirect(url);
+        }
+
+        // ============================================
+        // 6. Profile Gate (Netflix-Style) - Only for approved users
+        // ============================================
+        if (instructor) {
+            const profileId = request.cookies.get("sc_profile_id")?.value;
+
+            // Admin users OR users with profiles can access
+            // Non-admin users without profile selection go to select-profile
+            if (
+                !profileId &&
+                pathname !== "/select-profile" &&
+                !pathname.startsWith("/api")
+            ) {
+                const url = request.nextUrl.clone();
+                url.pathname = "/select-profile";
+                return NextResponse.redirect(url);
+            }
+        }
     }
-
-    // If user has a profile but tries to go to /select-profile manually, let them (to switch),
-    // OR we could redirect them to dashboard. For "Netflix" style, usually /browse is default.
-    // Let's decide to allow it so they can switch.
 
     return supabaseResponse;
 }
