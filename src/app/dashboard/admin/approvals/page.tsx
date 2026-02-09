@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { UserCheck, UserX, Clock, CheckCircle, XCircle } from "lucide-react";
+import { UserCheck, Clock, CheckCircle, XCircle } from "lucide-react";
 import { ApprovalButton } from "./ApprovalButton";
 
 export default async function ApprovalsPage() {
