@@ -21,6 +21,33 @@ export async function deleteAccount() {
     redirect("/login");
 }
 
+export async function deleteProfile() {
+    const supabase = createClient();
+    
+    // Get the current authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { error: "Unauthenticated" };
+    }
+
+    // Attempt to delete the instructor profile linked to this user
+    // This allows deleting data without deleting the auth account (which only admins can do)
+    const { error } = await supabase
+        .from('instructors')
+        .delete()
+        .eq('auth_user_id', user.id);
+
+    if (error) {
+        console.error("Error deleting profile:", error);
+        return { error: error.message };
+    }
+
+    // Sign out after successful deletion
+    await supabase.auth.signOut();
+    revalidatePath("/", "layout");
+    redirect("/login");
+}
+
 export async function togglePin(instructorId: string, enabled: boolean) {
     const supabase = createClient();
     const { error } = await supabase
