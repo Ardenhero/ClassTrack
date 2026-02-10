@@ -1,7 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { Trash2, Plus, Building2 } from "lucide-react";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export default async function DepartmentsPage() {

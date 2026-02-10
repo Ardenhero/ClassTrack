@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { Activity } from "lucide-react";
 
-export function TrafficAnalytics({ data }: { data: any[] }) {
+export function TrafficAnalytics({ data }: { data: { hour: string, count: number }[] }) {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-full">
             <div className="flex justify-between items-center mb-6">

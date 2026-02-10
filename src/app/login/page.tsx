@@ -8,7 +8,7 @@ import { login, signup } from "./actions";
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
-    const [isSignUp, setIsSignUp] = useState(false);
+    const [isSignUp] = useState(false);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

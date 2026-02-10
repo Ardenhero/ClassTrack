@@ -1,8 +1,13 @@
 import { createClient } from "@/utils/supabase/server";
-import { ShieldAlert, User, Activity, Calendar, Filter } from "lucide-react";
+import { ShieldAlert, User, Calendar, Filter } from "lucide-react";
 import { format } from "date-fns";
 
 export const dynamic = "force-dynamic";
+
+interface Actor {
+    name: string;
+    email: string;
+}
 
 export default async function AuditLogsPage({
     searchParams,
@@ -90,15 +95,15 @@ export default async function AuditLogsPage({
                                                 <User className="h-4 w-4 text-gray-500" />
                                             </div>
                                             <div className="text-xs">
-                                                <p className="font-bold text-gray-900 dark:text-white">{(log.actor as any)?.name || "System"}</p>
-                                                <p className="text-gray-400">{(log.actor as any)?.email}</p>
+                                                <p className="font-bold text-gray-900 dark:text-white">{(log.actor as unknown as Actor)?.name || "System"}</p>
+                                                <p className="text-gray-400">{(log.actor as unknown as Actor)?.email}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${log.action.includes('DELETE') ? 'bg-red-50 text-red-600' :
-                                                log.action.includes('ADD') || log.action.includes('CREATE') ? 'bg-green-50 text-green-600' :
-                                                    'bg-blue-50 text-blue-600'
+                                            log.action.includes('ADD') || log.action.includes('CREATE') ? 'bg-green-50 text-green-600' :
+                                                'bg-blue-50 text-blue-600'
                                             }`}>
                                             {log.action.replace(/_/g, ' ')}
                                         </span>
