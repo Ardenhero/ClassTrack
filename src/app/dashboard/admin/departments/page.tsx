@@ -15,7 +15,10 @@ export default async function DepartmentsPage() {
         const code = formData.get("code") as string;
         const supabase = createClient();
 
-        await supabase.from("departments").insert({ name, code });
+        // Get current user to set as owner
+        const { data: { user } } = await supabase.auth.getUser();
+
+        await supabase.from("departments").insert({ name, code, owner_id: user?.id });
         revalidatePath("/dashboard/admin/departments");
     }
 

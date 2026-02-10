@@ -1,87 +1,44 @@
-import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 import { Clock, LogOut } from "lucide-react";
-import Link from "next/link";
 
-export default async function PendingApprovalPage() {
+export default function PendingApprovalPage() {
     const supabase = createClient();
-    
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-        redirect("/login");
-    }
+    const router = useRouter();
 
-    // Check if user has been approved (has instructor profile)
-    const { data: instructor } = await supabase
-        .from("instructors")
-        .select("id")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
-
-    // If approved, redirect to home
-    if (instructor) {
-        redirect("/");
-    }
-
-    // Check request status
-    const { data: request } = await supabase
-        .from("account_requests")
-        .select("status, created_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-    const isRejected = request?.status === "rejected";
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        // Clear profile cookie
+        document.cookie = "sc_profile_id=; path=/; max-age=0";
+        router.push("/login");
+    };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-                {isRejected ? (
-                    <>
-                        <div className="h-16 w-16 mx-auto mb-6 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                            <Clock className="h-8 w-8 text-red-600 dark:text-red-400" />
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            Account Request Rejected
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            Unfortunately, your account request has been declined. Please contact the administrator for more information.
-                        </p>
-                    </>
-                ) : (
-                    <>
-                        <div className="h-16 w-16 mx-auto mb-6 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                            <Clock className="h-8 w-8 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                            Pending Approval
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            Your account is awaiting administrator approval. You&apos;ll be able to access the system once approved.
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
-                            Requested: {request?.created_at ? new Date(request.created_at).toLocaleDateString() : "Just now"}
-                        </p>
-                    </>
-                )}
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
+            <div className="max-w-md w-full text-center space-y-8">
+                <div className="flex justify-center">
+                    <div className="h-20 w-20 rounded-full bg-nwu-gold/20 flex items-center justify-center">
+                        <Clock className="h-10 w-10 text-nwu-gold" />
+                    </div>
+                </div>
 
-                <form action="/api/auth/signout" method="POST">
-                    <button
-                        type="submit"
-                        className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out
-                    </button>
-                </form>
+                <div>
+                    <h1 className="text-3xl font-bold mb-3">Account Pending Approval</h1>
+                    <p className="text-gray-400 text-lg">
+                        Your account has been created and is waiting for administrator approval.
+                        You&apos;ll be able to access the system once approved.
+                    </p>
+                </div>
 
-                <Link 
-                    href="/" 
-                    className="mt-4 inline-block text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                <button
+                    onClick={handleSignOut}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-nwu-red text-white rounded-lg font-medium hover:bg-[#5e0d0e] transition-colors"
                 >
-                    Check status again
-                </Link>
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                </button>
             </div>
         </div>
     );
