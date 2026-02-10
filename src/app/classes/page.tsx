@@ -17,7 +17,7 @@ interface ClassItem {
 }
 
 import { cookies } from "next/headers";
-import { getProfileRole } from "@/lib/auth-utils";
+import { getProfileRole, checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export default async function ClassesPage({
     searchParams,
@@ -37,6 +37,7 @@ export default async function ClassesPage({
         .order("created_at", { ascending: false });
 
     const role = await getProfileRole();
+    const isSuperAdmin = await checkIsSuperAdmin();
     const isActiveAdmin = role === 'admin';
 
     if (!isActiveAdmin && profileId) {
@@ -75,7 +76,12 @@ export default async function ClassesPage({
                         </Suspense>
                     </div>
                     <div className="flex-shrink-0">
-                        <AddClassDialog />
+                        {!isSuperAdmin && <AddClassDialog />}
+                        {isSuperAdmin && (
+                            <div className="px-4 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl border border-blue-100 uppercase tracking-wider">
+                                Read-Only Mode
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -91,7 +97,7 @@ export default async function ClassesPage({
                                             <div className="h-10 w-10 bg-nwu-red/10 rounded-lg flex items-center justify-center">
                                                 <BookOpen className="h-5 w-5 text-nwu-red" />
                                             </div>
-                                            <DeleteClassButton id={c.id} />
+                                            {!isSuperAdmin && <DeleteClassButton id={c.id} />}
                                         </div>
 
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{c.name}</h3>
@@ -106,7 +112,7 @@ export default async function ClassesPage({
                                                 href={`/classes/${c.id}`}
                                                 className="text-sm font-medium text-nwu-red hover:underline"
                                             >
-                                                Manage &rarr;
+                                                {isSuperAdmin ? "View" : "Manage"} &rarr;
                                             </Link>
                                         </div>
                                     </div>

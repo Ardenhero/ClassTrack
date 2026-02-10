@@ -13,7 +13,9 @@ import { AddStudentDialog } from "./students/AddStudentDialog";
 import { AddClassDialog } from "./classes/AddClassDialog";
 import { markAttendance } from "./actions";
 import { cookies } from "next/headers";
-import { getProfileRole } from "@/lib/auth-utils";
+import { getProfileRole, checkIsSuperAdmin } from "@/lib/auth-utils";
+import { CommandCenter } from "@/components/dashboard/super-admin/CommandCenter";
+import { startOfHour, endOfHour, eachHourOfInterval, subHours } from "date-fns";
 
 export default async function Dashboard({
   searchParams,
@@ -68,6 +70,120 @@ export default async function Dashboard({
   // 1. Get the Active Profile's ROLE (not just a boolean check)
   const activeRole = await getProfileRole();
   const isActiveAdmin = activeRole === 'admin';
+  const isSuperAdmin = await checkIsSuperAdmin();
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // --- SUPER ADMIN VIEW LOGIC ---
+  if (isSuperAdmin) {
+    // 1. Infrastructure Status
+    const { count: activeDepartments } = await supabase
+      .from('departments')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    const { count: instructorCount } = await supabase
+      .from('instructors')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: totalStudents } = await supabase
+      .from('students')
+      .select('*', { count: 'exact', head: true });
+
+    // Active Sessions (Distinct classes with activity in last 2 hours)
+    const twoHoursAgo = subHours(new Date(), 2).toISOString();
+    const { data: activeSessionsData } = await supabase
+      .from('attendance_logs')
+      .select('class_id', { count: 'exact' })
+      .gte('timestamp', twoHoursAgo);
+    const activeSessions = new Set(activeSessionsData?.map(s => s.class_id)).size;
+
+    const stats = {
+      activeDepartments: activeDepartments || 0,
+      totalPopulation: (instructorCount || 0) + (totalStudents || 0),
+      activeSessions: activeSessions || 0,
+      isOperational: true // If we are here, DB is up
+    };
+
+    // 2. Traffic Analytics (Check-ins per hour for last 24h)
+    const dayAgo = subHours(new Date(), 24).toISOString();
+    const { data: trafficLogs } = await supabase
+      .from('attendance_logs')
+      .select('timestamp')
+      .gte('timestamp', dayAgo);
+
+    const hours = eachHourOfInterval({
+      start: subHours(new Date(), 23),
+      end: new Date()
+    });
+
+    const trafficData = hours.map(hour => {
+      const hStart = startOfHour(hour);
+      const hEnd = endOfHour(hour);
+      const count = trafficLogs?.filter(l => {
+        const d = new Date(l.timestamp);
+        return d >= hStart && d <= hEnd;
+      }).length || 0;
+      return {
+        hour: format(hour, 'ha'),
+        count
+      };
+    });
+
+    // 3. Security Audit Feed
+    const { data: auditLogs } = await supabase
+      .from('audit_logs')
+      .select('*, instructor:actor_id(name)')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // 4. Notifications (Super Admin sees all system alerts)
+    const { data: systemNotifs } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    return (
+      <DashboardLayout>
+        {/* Header (Shared) */}
+        <div className="bg-nwu-red rounded-xl p-6 mb-8 text-white flex justify-between items-center shadow-md relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+          <div className="relative z-10">
+            <p className="text-xs font-mono mb-1 opacity-75">{format(new Date(), 'M/d/yyyy')}</p>
+            <h1 className="text-xl md:text-3xl font-bold uppercase tracking-wide leading-tight">
+              Command Center <br className="md:hidden" /> Infrastructure
+            </h1>
+            <p className="text-nwu-gold text-xs md:text-sm font-medium tracking-wider mt-1 uppercase opacity-90">
+              University-Wide System Monitor
+            </p>
+          </div>
+          <div className="hidden md:block flex-shrink-0 relative z-10 ml-6">
+            <Image src="/branding/icpep_logo.png" alt="ICPEP Logo" width={80} height={80} className="h-20 w-20 object-contain drop-shadow-lg rounded-full border-2 border-white" />
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 space-y-4 md:space-y-0">
+          <div className="relative w-full md:w-96">
+            <GlobalSearch />
+          </div>
+          <div className="flex items-center space-x-4 w-full md:w-auto justify-end">
+            <NotificationDropdown notifications={systemNotifs || []} />
+            <ProfileDropdown user={user} />
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">University Pulse</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Real-time infrastructure health and security audit</p>
+        </div>
+
+        <CommandCenter stats={stats} logs={auditLogs || []} trafficData={trafficData} />
+      </DashboardLayout>
+    );
+  }
+
+  // --- REGULAR DASHBOARD LOGIC (Original) ---
 
   // 1. Fetch Summary Stats
   // Students - Count students either created by OR enrolled in instructor's classes
@@ -79,21 +195,21 @@ export default async function Dashboard({
   } else if (profileId) {
     // Instructor: Get unique students (created by them OR enrolled in their classes)
     const uniqueStudentIds = new Set<string>();
-    
+
     // Get students created by this instructor
     const { data: createdStudents } = await supabase
       .from('students')
       .select('id')
       .eq('instructor_id', profileId);
     createdStudents?.forEach(s => uniqueStudentIds.add(s.id));
-    
+
     // Get students enrolled in this instructor's classes
     const { data: enrolledData } = await supabase
       .from('enrollments')
       .select('student_id, classes!inner(instructor_id)')
       .eq('classes.instructor_id', profileId);
     enrolledData?.forEach(e => uniqueStudentIds.add(e.student_id));
-    
+
     studentCount = uniqueStudentIds.size;
   }
 
@@ -223,10 +339,6 @@ export default async function Dashboard({
     .sort((a, b) => (a?.startTimeObj?.getTime() || 0) - (b?.startTimeObj?.getTime() || 0)) || [];
 
   const activeOrNextClass = upcomingClasses[0];
-
-  // 6. User Profile
-  const { data: { user } } = await supabase.auth.getUser();
-
 
   // --- NOTIFICATIONS ---
   // Lazy Trigger: Check for Class Alerts

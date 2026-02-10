@@ -5,6 +5,7 @@ import { StudentListItem } from "./StudentListItem";
 import { YearGroup } from "@/components/YearGroup";
 import { Suspense } from "react";
 import { getCachedStudents } from "@/lib/cache";
+import { checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ export default async function StudentsPage({
     searchParams?: { query?: string };
 }) {
     const query = searchParams?.query || "";
+    const isSuperAdmin = await checkIsSuperAdmin();
     let students: Student[] = [];
     let errorMsg = null;
 
@@ -67,7 +69,12 @@ export default async function StudentsPage({
                         </Suspense>
                     </div>
                     <div className="flex-shrink-0">
-                        <AddStudentDialog />
+                        {!isSuperAdmin && <AddStudentDialog />}
+                        {isSuperAdmin && (
+                            <div className="px-4 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl border border-blue-100 uppercase tracking-wider">
+                                Read-Only Mode
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -86,6 +93,7 @@ export default async function StudentsPage({
                                 {items.map((student) => (
                                     <StudentListItem
                                         key={student.id}
+                                        isSuperAdmin={isSuperAdmin}
                                         student={{
                                             id: student.id,
                                             name: student.name,
