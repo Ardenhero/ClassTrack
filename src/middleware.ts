@@ -175,6 +175,7 @@ export async function middleware(request: NextRequest) {
             .from("instructors")
             .select("id, role")
             .eq("auth_user_id", user.id)
+            .limit(1)
             .maybeSingle();
 
         // If no instructor profile, redirect to pending approval page

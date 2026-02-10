@@ -100,7 +100,6 @@ export default async function InstructorsPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                         <select name="role" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
                             <option value="instructor">Instructor</option>
-                            <option value="admin">Admin</option>
                         </select>
                     </div>
                     <div className="md:col-span-2">
