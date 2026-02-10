@@ -23,7 +23,7 @@ export default async function AuditLogsPage({
         .from("audit_logs")
         .select(`
             *,
-            actor:instructors(name, email)
+            actor:instructors(name)
         `)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -96,7 +96,6 @@ export default async function AuditLogsPage({
                                             </div>
                                             <div className="text-xs">
                                                 <p className="font-bold text-gray-900 dark:text-white">{(log.actor as unknown as Actor)?.name || "System"}</p>
-                                                <p className="text-gray-400">{(log.actor as unknown as Actor)?.email}</p>
                                             </div>
                                         </div>
                                     </td>
