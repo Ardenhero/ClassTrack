@@ -23,15 +23,13 @@ export default function LoginPage() {
 
         if (result && typeof result === 'object' && 'error' in result && result.error) {
             setMessage(result.error);
+        } else if (isSignUp && result && 'pending' in result) {
+            setMessage("Success! Your account has been created and is pending admin approval. You'll be notified once approved.");
         } else if (isSignUp) {
-            // Signup usually requires email confirmation or auto-login depending on config.
-            // Assuming default Supabase behavior which sends an email.
             setMessage("Success! Your account has been created. You can now use it to log in.");
         }
         setLoading(false);
     };
-
-
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -92,6 +90,21 @@ export default function LoginPage() {
 
                     <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                         <div className="space-y-4">
+                            {isSignUp && (
+                                <div>
+                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Full Name
+                                    </label>
+                                    <input
+                                        id="name"
+                                        name="name"
+                                        type="text"
+                                        required
+                                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-nwu-red focus:border-nwu-red sm:text-sm transition-colors"
+                                        placeholder="e.g. Engr. John Doe"
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
                                     Email address
