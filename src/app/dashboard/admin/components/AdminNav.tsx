@@ -16,7 +16,8 @@ const tabs = [
 export function AdminNav() {
     const pathname = usePathname();
     const { profile } = useProfile();
-    const isSuperAdmin = profile?.is_super_admin ?? false;
+    // Fallback to name check if flag is missing from cache
+    const isSuperAdmin = profile?.is_super_admin || profile?.name === 'Super Admin';
 
     const visibleTabs = tabs.filter(tab => {
         if (isSuperAdmin) {
