@@ -67,8 +67,9 @@ export async function checkIsAdmin() {
         const { data: adminRecord } = await supabase
             .from('instructors')
             .select('id')
-            .eq('user_id', user.id)
+            .eq('auth_user_id', user.id)
             .eq('role', 'admin')
+            .limit(1)
             .maybeSingle();
 
         if (adminRecord) return true;
