@@ -79,16 +79,25 @@ export async function POST(request: Request) {
             console.warn("RPC Failed (APP Error):", resultData.error);
             console.log("Attempting Manual Fallback...");
 
-            // FALLBACK: Manual Insert
             // 1. Find the Class (using ID or Name+Instructor)
-            let classRef = null;
+            let classRef: any = null;
             if (classIdInput) {
-                const { data: c } = await supabase.from('classes').select('id, instructor_id, start_time, end_time').eq('id', classIdInput).single();
+                const { data: c } = await supabase
+                    .from('classes')
+                    .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
+                    .eq('id', classIdInput)
+                    .single();
                 classRef = c;
             }
 
             if (!classRef && instructorIdInput) {
-                const { data: c } = await supabase.from('classes').select('id, instructor_id, start_time, end_time').eq('name', className).eq('instructor_id', instructorIdInput).limit(1).maybeSingle();
+                const { data: c } = await supabase
+                    .from('classes')
+                    .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
+                    .eq('name', className)
+                    .eq('instructor_id', instructorIdInput)
+                    .limit(1)
+                    .maybeSingle();
                 classRef = c;
             }
 
@@ -211,10 +220,15 @@ export async function POST(request: Request) {
                     }
                 }
 
+                // Resolve the actual auth user ID (owner_id) for attendance_logs
+                // This fixes the FK constraint error (must be a valid auth.users.id)
+                // Note: classRef.instructors is the object returned by the join
+                const targetOwnerId = classRef.instructors?.owner_id || classRef.instructor_id;
+
                 const { error: insertError } = await supabase.from('attendance_logs').insert({
                     student_id: student.id,
                     class_id: classRef.id,
-                    user_id: targetInstructorId, // Important: Link to Instructor
+                    user_id: targetOwnerId, // Use the resolved Owner ID
                     status: calculatedStatus,
                     timestamp: timestamp,
                     // time_out is null

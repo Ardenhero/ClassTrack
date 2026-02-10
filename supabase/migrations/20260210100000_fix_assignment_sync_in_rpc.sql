@@ -1,16 +1,20 @@
--- Migration: Fix Attendance Logging to respect instructor_id_input
--- Created: 2026-02-10
--- Description: Ensures students/classes can be identified even if they are assigned to an instructor not "owned" by the kiosk actor.
+-- Migration: Fix Attendance Logging RPC (UUID Mismatch & Missing Column)
+-- Description: Ensures full_name column exists and fixes s_id data type.
 
--- Ensure schema matches "Attendance Concept" (Working Folder)
+-- 1. Ensure full_name exists (Using table-level check)
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'students' AND column_name = 'full_name') THEN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'full_name'
+    ) THEN
         ALTER TABLE students ADD COLUMN full_name TEXT;
+        -- Sync from existing name column
         UPDATE students SET full_name = name WHERE full_name IS NULL;
     END IF;
 END $$;
 
+-- 2. Update RPC Function
 CREATE OR REPLACE FUNCTION log_attendance(
     email_input TEXT,
     student_name_input TEXT,
@@ -23,7 +27,7 @@ CREATE OR REPLACE FUNCTION log_attendance(
 RETURNS JSON AS $$
 DECLARE
     u_id UUID;
-    s_id UUID;
+    s_id UUID; -- Fixed: UUID to match students.id
     c_id UUID;
     c_start_time TIME;
     c_end_time TIME;
@@ -41,9 +45,7 @@ BEGIN
     END IF;
 
     -- 2. Resolve Student
-    -- Priorities: 
-    -- 1st: Use instructor_id_input + name
-    -- 2nd: Use owner_id bridge + name (legacy fallback)
+    -- Priorities: 1st: Use instructor_id_input + name/full_name, 2nd: Use owner_id bridge
     IF instructor_id_input IS NOT NULL THEN
         SELECT s.id, s.instructor_id INTO s_id, v_instructor_id 
         FROM students s
@@ -52,7 +54,6 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- If still not found, try bridge
     IF s_id IS NULL THEN
         SELECT s.id, s.instructor_id INTO s_id, v_instructor_id 
         FROM students s
@@ -67,10 +68,6 @@ BEGIN
     END IF;
 
     -- 3. Resolve Class
-    -- Priorities:
-    -- 1st: Use class_id_input
-    -- 2nd: Use name + instructor_id_input
-    -- 3rd: Use name + owner bridge
     IF class_id_input IS NOT NULL THEN
         SELECT c.id, c.start_time, c.end_time INTO c_id, c_start_time, c_end_time 
         FROM classes c
@@ -98,7 +95,7 @@ BEGIN
 
     -- 5. Logic Implementation
     IF status_input = 'TIME_IN' THEN
-        -- Prevent double-logging same day/class
+        -- Prevent double-logging
         SELECT id INTO log_id FROM attendance_logs 
         WHERE student_id = s_id AND class_id = c_id 
           AND (timestamp AT TIME ZONE 'Asia/Manila')::DATE = current_day 
@@ -140,6 +137,7 @@ BEGIN
             END IF;
             UPDATE attendance_logs SET time_out = timestamp_input, status = final_status WHERE id = log_id;
         ELSE
+            -- Missing Time In record
             INSERT INTO attendance_logs (student_id, user_id, class_id, status, timestamp, time_out)
             VALUES (s_id, u_id, c_id, 'Absent', timestamp_input, timestamp_input);
             RETURN json_build_object('success', true, 'message', 'Missing Time In - Marked Absent');
