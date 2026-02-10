@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { UserPlus, Shield, Mail, Key, Loader2, CheckCircle2, Building2, ShieldCheck, ShieldOff, Copy, Check } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { provisionAdmin, toggleAdminStatus } from "./actions";
+import { cn } from "@/utils/cn";
 
 interface Department {
     id: string;
@@ -15,6 +16,8 @@ interface AdminProfile {
     name: string;
     role: string;
     auth_user_id: string;
+    is_locked: boolean;
+    is_super_admin: boolean;
     departments?: {
         name: string;
     } | null;
@@ -27,6 +30,7 @@ export default function AdminManagementPage() {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [admins, setAdmins] = useState<AdminProfile[]>([]);
     const [copied, setCopied] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         email: "",
@@ -52,6 +56,9 @@ export default function AdminManagementPage() {
 
     useEffect(() => {
         async function fetchData() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) setCurrentUserId(user.id);
+
             const { data: depts } = await supabase.from('departments').select('id, name').eq('is_active', true).order('name');
             if (depts) setDepartments(depts);
             fetchAdmins();
@@ -85,8 +92,10 @@ export default function AdminManagementPage() {
     };
 
     const toggleLock = async (admin: AdminProfile) => {
+        if (admin.is_super_admin) return; // UI should disable this, but safety first
+
         try {
-            await toggleAdminStatus(admin.auth_user_id, true);
+            await toggleAdminStatus(admin.auth_user_id, !admin.is_locked);
             fetchAdmins();
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "Failed to toggle status");
@@ -154,15 +163,30 @@ export default function AdminManagementPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end space-x-2">
-                                                <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-bold border border-green-100 uppercase">
-                                                    Active
-                                                </div>
+                                                {admin.is_locked ? (
+                                                    <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-bold border border-red-100 uppercase">
+                                                        Locked
+                                                    </div>
+                                                ) : (
+                                                    <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-bold border border-green-100 uppercase">
+                                                        Active
+                                                    </div>
+                                                )}
+
                                                 <button
                                                     onClick={() => toggleLock(admin)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                    title="Lock Account"
+                                                    disabled={admin.is_super_admin || admin.auth_user_id === currentUserId}
+                                                    className={cn(
+                                                        "p-1.5 rounded-lg transition-all",
+                                                        admin.is_super_admin || admin.auth_user_id === currentUserId
+                                                            ? "text-gray-200 cursor-not-allowed"
+                                                            : admin.is_locked
+                                                                ? "text-blue-400 hover:text-blue-500 hover:bg-blue-50"
+                                                                : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                                    )}
+                                                    title={admin.is_super_admin ? "Super Admin Protective Lock" : admin.is_locked ? "Unlock Account" : "Lock Account"}
                                                 >
-                                                    <ShieldOff className="h-3.5 w-3.5" />
+                                                    {admin.is_locked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
                                                 </button>
                                             </div>
                                         </td>
