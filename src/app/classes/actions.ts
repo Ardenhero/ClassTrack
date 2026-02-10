@@ -8,8 +8,8 @@ import { z } from 'zod';
 const ClassSchema = z.object({
     name: z.string().min(1, "Class name is required").max(200, "Class name must be less than 200 characters"),
     description: z.string().max(500, "Description must be less than 500 characters").optional(),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, "Start time must be in HH:MM format"),
-    end_time: z.string().regex(/^\d{2}:\d{2}$/, "End time must be in HH:MM format"),
+    start_time: z.string().regex(/^(\d{1,2}:\d{2}(\s?[AP]M)?)$/i, "Start time must be in HH:MM or HH:MM AM/PM format"),
+    end_time: z.string().regex(/^(\d{1,2}:\d{2}(\s?[AP]M)?)$/i, "End time must be in HH:MM or HH:MM AM/PM format"),
     year_level: z.string().min(1, "Year level is required")
 });
 
@@ -109,10 +109,26 @@ export async function bulkImportClasses(rows: ClassRow[], instructorIdOverride?:
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
 
-        // Normalize time formats: accept "8:00" → "08:00"
+        // Normalize time formats: handle "8:00 AM" -> "08:00", "01:30 PM" -> "13:30", etc.
         const normalizeTime = (t: string) => {
             if (!t) return t;
-            const parts = t.trim().split(':');
+            let timeStr = t.trim().toUpperCase();
+
+            // Handle AM/PM
+            const ampmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s?([AP]M)$/);
+            if (ampmMatch) {
+                let hours = parseInt(ampmMatch[1], 10);
+                const minutes = ampmMatch[2];
+                const ampm = ampmMatch[3];
+
+                if (ampm === 'PM' && hours < 12) hours += 12;
+                if (ampm === 'AM' && hours === 12) hours = 0;
+
+                return hours.toString().padStart(2, '0') + ':' + minutes;
+            }
+
+            // Handle standard HH:MM
+            const parts = timeStr.split(':');
             if (parts.length === 2) {
                 return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
             }

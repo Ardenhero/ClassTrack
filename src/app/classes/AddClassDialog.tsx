@@ -165,8 +165,8 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
     const downloadTemplate = () => {
         const ws = XLSX.utils.aoa_to_sheet([
             ["Class Name", "Start Time", "End Time", "Year Level", "Description"],
-            ["Science 101", "08:00", "09:30", "1st Year", "MWF Room 3B"],
-            ["Math 201", "10:00", "11:30", "2nd Year", "TTH Room 4A"],
+            ["Science 101", "08:00 AM", "09:30 AM", "1st Year", "MWF Room 3B"],
+            ["Math 201", "01:00 PM", "02:30 PM", "2nd Year", "TTH Room 4A"],
         ]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Classes");
@@ -385,7 +385,7 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
                                     Click to upload <span className="text-nwu-red">.csv</span> or <span className="text-nwu-red">.xlsx</span>
                                 </p>
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                    Columns: Class Name, Start Time, End Time, Year Level, Description
+                                    Columns: Class Name, Start Time (e.g. 08:00 AM), End Time (e.g. 01:00 PM), Year Level, Description
                                 </p>
                                 <input
                                     type="file"
