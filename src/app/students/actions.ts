@@ -252,3 +252,155 @@ export async function deleteStudent(id: string) {
     revalidatePath("/students");
     return { success: true };
 }
+
+// ─── Bulk Import ────────────────────────────────────────────────────────────
+
+interface StudentRow {
+    name: string;
+    sin: string;
+    year_level: string;
+}
+
+interface BulkStudentResult {
+    success: number;
+    linked: number;
+    failed: { row: number; reason: string }[];
+}
+
+const SIN_REGEX = /^\d{2}-\d{5,6}$/;
+
+export async function bulkImportStudents(rows: StudentRow[], classIds: string[]): Promise<BulkStudentResult> {
+    const { cookies } = await import("next/headers");
+    const cookieStore = cookies();
+    let profileId = cookieStore.get("sc_profile_id")?.value;
+
+    if (!profileId) {
+        return { success: 0, linked: 0, failed: [{ row: 0, reason: "Profile not found. Please select a profile." }] };
+    }
+
+    const supabase = createClient();
+
+    // Resolve admin-profile to actual UUID
+    if (profileId === 'admin-profile') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: adminProfile } = await supabase
+                .from('instructors')
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            if (adminProfile) profileId = adminProfile.id;
+        }
+    }
+
+    if (!classIds || classIds.length === 0) {
+        return { success: 0, linked: 0, failed: [{ row: 0, reason: "At least one class must be selected." }] };
+    }
+
+    // Validate class ownership (skip for admin)
+    const isAdmin = await import("@/lib/auth-utils").then(m => m.checkIsAdmin());
+
+    if (!isAdmin) {
+        const { count } = await supabase
+            .from("classes")
+            .select("*", { count: 'exact', head: true })
+            .in("id", classIds)
+            .eq("instructor_id", profileId);
+
+        if (count !== classIds.length) {
+            return { success: 0, linked: 0, failed: [{ row: 0, reason: "Unauthorized: You can only import students into your own classes." }] };
+        }
+    }
+
+    const result: BulkStudentResult = { success: 0, linked: 0, failed: [] };
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const name = row.name?.trim();
+        const sin = row.sin?.trim();
+        const yearLevel = row.year_level?.trim();
+
+        // Validate required fields
+        if (!name || name.length < 2) {
+            result.failed.push({ row: i + 1, reason: "Name is missing or too short (min 2 chars)." });
+            continue;
+        }
+        if (!sin || !SIN_REGEX.test(sin)) {
+            result.failed.push({ row: i + 1, reason: `Invalid SIN format "${sin || ''}". Expected YY-XXXXX.` });
+            continue;
+        }
+        if (!yearLevel) {
+            result.failed.push({ row: i + 1, reason: "Year level is missing." });
+            continue;
+        }
+
+        // Registry check
+        let studentId: string;
+        let wasLinked = false;
+
+        try {
+            const { data: existing, error: findError } = await supabase
+                .rpc('get_student_by_sin_secure', { p_sin: sin });
+
+            if (findError) {
+                result.failed.push({ row: i + 1, reason: `Registry check failed: ${findError.message}` });
+                continue;
+            }
+
+            if (existing) {
+                // Existing student — link to class
+                studentId = (existing as { id: string }).id;
+                wasLinked = true;
+            } else {
+                // New student — insert
+                const { data: newStudent, error: createError } = await supabase
+                    .from("students")
+                    .insert({
+                        name,
+                        sin,
+                        year_level: yearLevel,
+                        instructor_id: profileId,
+                    })
+                    .select("id")
+                    .single();
+
+                if (createError) {
+                    if (createError.code === '23505') {
+                        result.failed.push({ row: i + 1, reason: `Duplicate SIN "${sin}".` });
+                    } else {
+                        result.failed.push({ row: i + 1, reason: createError.message });
+                    }
+                    continue;
+                }
+                studentId = newStudent.id;
+            }
+
+            // Create enrollments
+            const enrollments = classIds.map(classId => ({
+                class_id: classId,
+                student_id: studentId,
+            }));
+
+            const { error: enrollError } = await supabase
+                .from("enrollments")
+                .upsert(enrollments, { onConflict: 'student_id, class_id' });
+
+            if (enrollError) {
+                result.failed.push({ row: i + 1, reason: `Enrollment failed: ${enrollError.message}` });
+                continue;
+            }
+
+            if (wasLinked) {
+                result.linked++;
+            } else {
+                result.success++;
+            }
+        } catch (err) {
+            result.failed.push({ row: i + 1, reason: `Unexpected error: ${String(err)}` });
+        }
+    }
+
+    revalidatePath("/students");
+    revalidatePath("/classes");
+    return result;
+}
