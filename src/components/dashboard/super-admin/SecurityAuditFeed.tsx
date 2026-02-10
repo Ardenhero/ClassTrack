@@ -7,7 +7,7 @@ interface AuditLog {
     id: string;
     action: string;
     target_type: string;
-    details: Record<string, any>;
+    details: Record<string, unknown>;
     created_at: string;
     instructor?: {
         name: string;
@@ -29,8 +29,8 @@ export function SecurityAuditFeed({ logs }: { logs: AuditLog[] }) {
         return (
             <span className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-bold text-nwu-red">{actor}</span> {action} {log.target_type}
-                {log.details?.instructor_name && <span className="font-medium"> [{log.details.instructor_name}]</span>}
-                {log.details?.name && <span className="font-medium"> [{log.details.name}]</span>}
+                {(log.details as any)?.instructor_name && <span className="font-medium"> [{(log.details as any).instructor_name}]</span>}
+                {(log.details as any)?.name && <span className="font-medium"> [{(log.details as any).name}]</span>}
             </span>
         );
     };
