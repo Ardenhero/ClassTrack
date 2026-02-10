@@ -1,8 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { Trash2, Plus, Building2 } from "lucide-react";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export default async function DepartmentsPage() {
+    // SECURITY: Super Admin should not manage specific departments
+    const isSuperAdmin = await checkIsSuperAdmin();
+    if (isSuperAdmin) {
+        redirect("/dashboard/admin/approvals");
+    }
     const supabase = createClient();
     const { data: departments } = await supabase
         .from("departments")
