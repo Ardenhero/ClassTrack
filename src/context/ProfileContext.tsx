@@ -10,6 +10,7 @@ export interface Profile {
     role: "admin" | "instructor";
     department_id?: string;
     has_pin?: boolean;
+    is_super_admin?: boolean;
 }
 
 interface ProfileContextType {
@@ -55,7 +56,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                 // 1. Resolve Profile Record (Handle legacy string vs UUID)
                 let query = supabase
                     .from('instructors')
-                    .select('id, name, department_id, role, pin_enabled');
+                    .select('id, name, department_id, role, pin_enabled, is_super_admin');
 
                 if (cookieProfileId === 'admin-profile') {
                     // Specific fallback for legacy admin request
@@ -74,7 +75,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                         name: isAdmin ? "System Admin" : data.name,
                         role: (data.role as "admin" | "instructor") || "instructor",
                         department_id: data.department_id,
-                        has_pin: data.pin_enabled
+                        has_pin: data.pin_enabled,
+                        is_super_admin: data.is_super_admin || false
                     };
                     setProfile(hydratedProfile);
                     localStorage.setItem("sc_profile", JSON.stringify(hydratedProfile));

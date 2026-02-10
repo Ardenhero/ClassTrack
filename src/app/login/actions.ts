@@ -59,19 +59,16 @@ export async function signup(formData: FormData) {
         return { error: "Failed to create account." };
     }
 
-    // Create the account request (pending approval)
+    // Create the account request via RPC (bypasses RLS since new user has no session)
     const { error: requestError } = await supabase
-        .from("account_requests")
-        .insert({
-            user_id: authData.user.id,
-            email: email,
-            name: name,
-            status: "pending"
+        .rpc("create_account_request", {
+            p_user_id: authData.user.id,
+            p_email: email,
+            p_name: name,
         });
 
     if (requestError) {
         console.error("Error creating account request:", requestError);
-        // Still return success - the user exists, just request might have failed
     }
 
     // Return success to display the pending message
@@ -80,11 +77,11 @@ export async function signup(formData: FormData) {
 
 export async function signout() {
     const supabase = createClient();
-    
+
     // Clear the profile cookie
     const cookieStore = await cookies();
     cookieStore.delete("sc_profile_id");
-    
+
     await supabase.auth.signOut();
     revalidatePath("/", "layout");
     redirect("/login");
