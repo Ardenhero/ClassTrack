@@ -80,7 +80,13 @@ export async function POST(request: Request) {
             console.log("Attempting Manual Fallback...");
 
             // 1. Find the Class (using ID or Name+Instructor)
-            let classRef: any = null;
+            let classRef: {
+                id: string;
+                instructor_id: string;
+                start_time: string | null;
+                end_time: string | null;
+                instructors: { owner_id: string } | null;
+            } | null = null;
             if (classIdInput) {
                 const { data: c } = await supabase
                     .from('classes')
