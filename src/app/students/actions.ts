@@ -35,6 +35,12 @@ export async function addStudent(formData: FormData) {
     const cookieStore = cookies();
     let profileId = cookieStore.get("sc_profile_id")?.value;
 
+    // System Admin override
+    const instructorIdOverride = formData.get("instructor_id_override") as string | null;
+    if (instructorIdOverride) {
+        profileId = instructorIdOverride;
+    }
+
     if (!profileId) {
         return { error: "Profile not found. Please select a profile." };
     }
@@ -269,10 +275,15 @@ interface BulkStudentResult {
 
 const SIN_REGEX = /^\d{2}-\d{5,6}$/;
 
-export async function bulkImportStudents(rows: StudentRow[], classIds: string[]): Promise<BulkStudentResult> {
+export async function bulkImportStudents(rows: StudentRow[], classIds: string[], instructorIdOverride?: string): Promise<BulkStudentResult> {
     const { cookies } = await import("next/headers");
     const cookieStore = cookies();
     let profileId = cookieStore.get("sc_profile_id")?.value;
+
+    // System Admin override
+    if (instructorIdOverride) {
+        profileId = instructorIdOverride;
+    }
 
     if (!profileId) {
         return { success: 0, linked: 0, failed: [{ row: 0, reason: "Profile not found. Please select a profile." }] };
