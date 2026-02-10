@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { UserPlus, Shield, Mail, Key, Loader2, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
 
 export default function ProvisioningPage() {
     const [loading, setLoading] = useState(false);
@@ -17,7 +16,6 @@ export default function ProvisioningPage() {
     });
 
     const supabase = createClient();
-    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,8 +62,8 @@ export default function ProvisioningPage() {
                 departmentId: "",
                 password: Math.random().toString(36).slice(-10)
             });
-        } catch (err: any) {
-            setError(err.message || "An unexpected error occurred");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An unexpected error occurred");
         } finally {
             setLoading(false);
         }

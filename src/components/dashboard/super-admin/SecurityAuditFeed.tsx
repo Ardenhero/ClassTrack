@@ -1,13 +1,13 @@
 "use client";
 
 import { format } from "date-fns";
-import { User, ShieldAlert, UserPlus, UserMinus, Settings } from "lucide-react";
+import { ShieldAlert, UserPlus, UserMinus } from "lucide-react";
 
 interface AuditLog {
     id: string;
     action: string;
     target_type: string;
-    details: any;
+    details: Record<string, any>;
     created_at: string;
     instructor?: {
         name: string;

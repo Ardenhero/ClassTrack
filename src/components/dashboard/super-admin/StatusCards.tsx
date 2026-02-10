@@ -3,13 +3,13 @@ import { Building2, Users, Radio, Activity } from "lucide-react";
 interface StatusCardProps {
     title: string;
     value: string | number;
-    icon: any;
+    icon: React.ElementType;
     description: string;
     color: string;
     trend?: string;
 }
 
-export function StatusCards({ stats }: { stats: any }) {
+export function StatusCards({ stats }: { stats: { activeDepartments: number, totalPopulation: number, activeSessions: number, isOperational: boolean } }) {
     const cards: StatusCardProps[] = [
         {
             title: "Active Departments",
