@@ -18,7 +18,7 @@ export function CommandCenter({ stats, logs, trafficData }: { stats: { activeDep
 
                 {/* 3. Live Security Audit Feed (Right Sidebar) */}
                 <div className="lg:col-span-1">
-                    <SecurityAuditFeed logs={logs} />
+                    <SecurityAuditFeed logs={logs as any} />
                 </div>
             </div>
         </div>
