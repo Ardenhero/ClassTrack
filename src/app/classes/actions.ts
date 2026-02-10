@@ -112,7 +112,7 @@ export async function bulkImportClasses(rows: ClassRow[], instructorIdOverride?:
         // Normalize time formats: handle "8:00 AM" -> "08:00", "01:30 PM" -> "13:30", etc.
         const normalizeTime = (t: string) => {
             if (!t) return t;
-            let timeStr = t.trim().toUpperCase();
+            const timeStr = t.trim().toUpperCase();
 
             // Handle AM/PM
             const ampmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s?([AP]M)$/);
