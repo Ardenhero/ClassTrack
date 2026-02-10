@@ -44,7 +44,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                             .select('is_super_admin')
                             .eq('id', parsed.id)
                             .maybeSingle()
-                            .then(({ data }) => {
+                            .then(({ data }: { data: { is_super_admin: boolean } | null }) => {
                                 if (data) {
                                     const updated = { ...parsed, is_super_admin: data.is_super_admin };
                                     setProfile(updated);
