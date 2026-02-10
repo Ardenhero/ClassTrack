@@ -14,53 +14,53 @@ const ClassSchema = z.object({
 });
 
 export async function addClass(formData: FormData) {
-    const supabase = createClient();
-
-    const rawData = {
-        name: formData.get("name") as string,
-        description: formData.get("description") as string || "",
-        start_time: formData.get("start_time") as string,
-        end_time: formData.get("end_time") as string,
-        year_level: formData.get("year_level") as string
-    };
-
-    const parseResult = ClassSchema.safeParse(rawData);
-
-    if (!parseResult.success) {
-        const firstError = parseResult.error.issues[0];
-        return { error: `${firstError.path.join('.')}: ${firstError.message}` };
-    }
-
-    const { name, description, start_time, end_time, year_level } = parseResult.data;
-
-    // Get Profile ID from cookie
     const { cookies } = await import("next/headers");
     const cookieStore = cookies();
-    const profileId = cookieStore.get("sc_profile_id")?.value;
+    let profileId = cookieStore.get("sc_profile_id")?.value;
+
+    // System Admin override
+    const instructorIdOverride = formData.get("instructor_id_override") as string | null;
+    if (instructorIdOverride) {
+        profileId = instructorIdOverride;
+    }
 
     if (!profileId) {
         return { error: "Profile not found. Please select a profile." };
     }
 
-    const { error } = await supabase
-        .from("classes")
-        .insert({
-            name,
-            description,
-            start_time,
-            end_time,
-            year_level,
-            instructor_id: profileId
-        });
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const start_time = formData.get("start_time") as string;
+    const end_time = formData.get("end_time") as string;
+    const year_level = formData.get("year_level") as string;
 
-    if (error) {
-        return { error: error.message };
+    const parseResult = ClassSchema.safeParse({
+        name,
+        description,
+        start_time,
+        end_time,
+        year_level,
+    });
+
+    if (!parseResult.success) {
+        const firstError = parseResult.error.issues[0];
+        return { error: `${firstError.path.join(".")}: ${firstError.message}` };
     }
 
+    const supabase = createClient();
+    const { error } = await supabase.from("classes").insert({
+        name,
+        description: description || '',
+        start_time,
+        end_time,
+        year_level,
+        instructor_id: profileId,
+    });
+
+    if (error) return { error: error.message };
     revalidatePath("/classes");
     return { success: true };
 }
-
 
 export async function deleteClass(classId: string) {
     const supabase = createClient();
@@ -89,10 +89,15 @@ interface BulkClassResult {
     failed: { row: number; reason: string }[];
 }
 
-export async function bulkImportClasses(rows: ClassRow[]): Promise<BulkClassResult> {
+export async function bulkImportClasses(rows: ClassRow[], instructorIdOverride?: string): Promise<BulkClassResult> {
     const { cookies } = await import("next/headers");
     const cookieStore = cookies();
-    const profileId = cookieStore.get("sc_profile_id")?.value;
+    let profileId = cookieStore.get("sc_profile_id")?.value;
+
+    // System Admin override
+    if (instructorIdOverride) {
+        profileId = instructorIdOverride;
+    }
 
     if (!profileId) {
         return { success: 0, failed: [{ row: 0, reason: "Profile not found. Please select a profile." }] };

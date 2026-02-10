@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { UserPlus, X, Check, Lock, AlertCircle, Upload, FileSpreadsheet, CheckCircle, Trash2, Download, Link2 } from "lucide-react";
 import { addStudent, getAssignableClasses, checkStudentBySIN, bulkImportStudents } from "./actions";
+import { getInstructorList } from "@/app/instructors/actions";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/context/ProfileContext";
 import { cn } from "@/utils/cn";
@@ -47,14 +48,17 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
     const { profile } = useProfile();
 
     const isSuperAdmin = profile?.is_super_admin;
+    const isSystemAdmin = profile?.role === 'admin' && !isSuperAdmin;
+
+    const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
+    const [selectedInstructor, setSelectedInstructor] = useState<string>("");
 
     useEffect(() => {
         if (isOpen) {
-            const fetchClasses = async () => {
-                const data = await getAssignableClasses();
-                if (data) setClasses(data);
-            };
-            fetchClasses();
+            getAssignableClasses().then(setClasses);
+            if (isSystemAdmin) {
+                getInstructorList().then(setInstructors);
+            }
         } else {
             // Reset state when closed
             setSelectedClasses([]);
@@ -63,7 +67,7 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
             setActiveTab("manual");
             resetImportState();
         }
-    }, [isOpen]);
+    }, [isOpen, isSystemAdmin]);
 
     const resetImportState = () => {
         setParsedRows([]);
@@ -74,6 +78,11 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
 
     const handleClose = () => {
         setIsOpen(false);
+        setActiveTab("manual");
+        resetImportState();
+        setExistingStudent(null);
+        setSelectedClasses([]);
+        setSelectedInstructor("");
     };
 
     // ─── Manual SIN Check (unchanged) ───────────────────────────────────────
@@ -98,13 +107,22 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
         e.preventDefault();
 
         if (selectedClasses.length === 0) {
-            alert("Please select at least one class to enroll the student in.");
+            alert("Please select at least one class.");
+            return;
+        }
+
+        if (isSystemAdmin && !selectedInstructor) {
+            alert("Please select an instructor.");
             return;
         }
 
         setLoading(true);
         const formData = new FormData(e.currentTarget);
         formData.append("class_ids", JSON.stringify(selectedClasses));
+
+        if (isSystemAdmin && selectedInstructor) {
+            formData.append("instructor_id_override", selectedInstructor);
+        }
 
         const result = await addStudent(formData);
 
@@ -177,17 +195,25 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
 
     // ─── Bulk Import Submit ─────────────────────────────────────────────────
     const handleBulkImport = async () => {
-        if (parsedRows.length === 0) return;
-        if (importClasses.length === 0) {
-            setFileError("Please select at least one class to enroll the imported students in.");
+        if (parsedRows.length === 0 || importClasses.length === 0) {
+            alert("Please load a file and select at least one class.");
             return;
         }
+
+        if (isSystemAdmin && !selectedInstructor) {
+            alert("Please select an instructor.");
+            return;
+        }
+
         setLoading(true);
         setImportResult(null);
-        setFileError(null);
 
         try {
-            const result = await bulkImportStudents(parsedRows, importClasses);
+            const result = await bulkImportStudents(
+                parsedRows,
+                importClasses,
+                isSystemAdmin ? selectedInstructor : undefined
+            );
             setImportResult(result);
             if (result.success > 0 || result.linked > 0) {
                 router.refresh();
@@ -282,6 +308,28 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                         )}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* System Admin: Instructor Selector */}
+                            {isSystemAdmin && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Assign to Instructor <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={selectedInstructor}
+                                        onChange={(e) => setSelectedInstructor(e.target.value)}
+                                        required
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white"
+                                    >
+                                        <option value="">Select Instructor</option>
+                                        {instructors.map((inst) => (
+                                            <option key={inst.id} value={inst.id}>
+                                                {inst.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     SIN (Student ID)
@@ -400,6 +448,28 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                 {/* ─── BULK IMPORT TAB ────────────────────────────────────── */}
                 {activeTab === "import" && (
                     <div className="space-y-4">
+                        {/* System Admin: Instructor Selector */}
+                        {isSystemAdmin && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Assign to Instructor <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={selectedInstructor}
+                                    onChange={(e) => setSelectedInstructor(e.target.value)}
+                                    required
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">Select Instructor</option>
+                                    {instructors.map((inst) => (
+                                        <option key={inst.id} value={inst.id}>
+                                            {inst.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         {/* Template Download */}
                         <button
                             type="button"

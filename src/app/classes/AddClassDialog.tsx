@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Plus, X, Upload, FileSpreadsheet, CheckCircle, AlertCircle, Trash2, Download } from "lucide-react";
 import { addClass, bulkImportClasses } from "./actions";
+import { getInstructorList } from "@/app/instructors/actions";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/context/ProfileContext";
 import { cn } from "@/utils/cn";
@@ -38,6 +39,10 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
     const { profile } = useProfile();
 
     const isSuperAdmin = profile?.is_super_admin;
+    const isSystemAdmin = profile?.role === 'admin' && !isSuperAdmin;
+
+    const [instructors, setInstructors] = useState<{ id: string; name: string }[]>([]);
+    const [selectedInstructor, setSelectedInstructor] = useState<string>("");
 
     const resetImportState = () => {
         setParsedRows([]);
@@ -45,19 +50,36 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
         setFileError(null);
     };
 
+    // Fetch instructor list for System Admin
+    useEffect(() => {
+        if (isOpen && isSystemAdmin) {
+            getInstructorList().then(setInstructors);
+        }
+    }, [isOpen, isSystemAdmin]);
+
     const handleClose = () => {
         setIsOpen(false);
         setActiveTab("manual");
         resetImportState();
         setNameLength(0);
         setDescLength(0);
+        setSelectedInstructor("");
     };
 
-    // ─── Manual Submit (unchanged logic) ────────────────────────────────────
+    // ─── Manual Submit ─────────────────────────────────────────────────────
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (isSystemAdmin && !selectedInstructor) {
+            alert("Please select an instructor.");
+            return;
+        }
+
         setLoading(true);
         const formData = new FormData(e.currentTarget);
+        if (isSystemAdmin && selectedInstructor) {
+            formData.append("instructor_id_override", selectedInstructor);
+        }
         const result = await addClass(formData);
 
         if (result?.error) {
@@ -115,11 +137,20 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
     // ─── Bulk Import Submit ─────────────────────────────────────────────────
     const handleBulkImport = async () => {
         if (parsedRows.length === 0) return;
+
+        if (isSystemAdmin && !selectedInstructor) {
+            alert("Please select an instructor.");
+            return;
+        }
+
         setLoading(true);
         setImportResult(null);
 
         try {
-            const result = await bulkImportClasses(parsedRows);
+            const result = await bulkImportClasses(
+                parsedRows,
+                isSystemAdmin ? selectedInstructor : undefined
+            );
             setImportResult(result);
             if (result.success > 0) {
                 router.refresh();
@@ -200,9 +231,31 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
                     </div>
                 )}
 
-                {/* ─── MANUAL TAB (original form, untouched) ──────────────── */}
+                {/* ─── MANUAL TAB ──────────────────────────────────────── */}
                 {activeTab === "manual" && (
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* System Admin: Instructor Selector */}
+                        {isSystemAdmin && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Assign to Instructor <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={selectedInstructor}
+                                    onChange={(e) => setSelectedInstructor(e.target.value)}
+                                    required
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">Select Instructor</option>
+                                    {instructors.map((inst) => (
+                                        <option key={inst.id} value={inst.id}>
+                                            {inst.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class Name</label>
                             <input
@@ -293,6 +346,27 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
                 {/* ─── IMPORT TAB ─────────────────────────────────────────── */}
                 {activeTab === "import" && (
                     <div className="space-y-4">
+                        {/* System Admin: Instructor Selector */}
+                        {isSystemAdmin && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Assign to Instructor <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={selectedInstructor}
+                                    onChange={(e) => setSelectedInstructor(e.target.value)}
+                                    required
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white"
+                                >
+                                    <option value="">Select Instructor</option>
+                                    {instructors.map((inst) => (
+                                        <option key={inst.id} value={inst.id}>
+                                            {inst.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>)}
+
                         {/* Template Download */}
                         <button
                             type="button"
