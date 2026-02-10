@@ -29,7 +29,7 @@ export default function SelectProfilePage() {
             const { data: instructors, error } = await supabase
                 .from("instructors")
                 .select("id, name, department_id, pin_enabled, role")
-                .eq("auth_user_id", user.id)
+                .eq("owner_id", user.id)
                 .order("name");
 
             if (error) {

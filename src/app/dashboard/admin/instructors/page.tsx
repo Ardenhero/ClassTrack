@@ -6,7 +6,10 @@ import { DeleteInstructorButton } from "./DeleteInstructorButton";
 export default async function InstructorsPage() {
     const supabase = createClient();
 
-    // Fetch instructors with their departments
+    // Get the current auth user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Fetch only this owner's instructors with their departments
     const { data: instructors } = await supabase
         .from("instructors")
         .select(`
@@ -19,6 +22,7 @@ export default async function InstructorsPage() {
         code
       )
     `)
+        .eq("owner_id", user?.id ?? "")
         .order("name");
 
     // Fetch departments for the dropdown
@@ -35,6 +39,9 @@ export default async function InstructorsPage() {
         const role = formData.get("role") as string;
         const supabase = createClient();
 
+        // Get current user to set as owner
+        const { data: { user } } = await supabase.auth.getUser();
+
         // Handle empty strings
         const pin = pin_code && pin_code.trim() !== "" ? pin_code : null;
         const dept = department_id && department_id !== "" ? department_id : null;
@@ -44,7 +51,8 @@ export default async function InstructorsPage() {
             name,
             pin_code: pin,
             department_id: dept,
-            role: userRole
+            role: userRole,
+            owner_id: user?.id
         });
 
         if (error) {
@@ -54,132 +62,93 @@ export default async function InstructorsPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
-                    <Users className="mr-2 h-6 w-6 text-nwu-red" />
-                    Instructors
-                </h2>
-            </div>
-
+        <div className="space-y-8">
             {/* Add Instructor Form */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Add New Instructor</h3>
-                <form action={addInstructor} className="flex flex-col md:flex-row gap-4 items-end">
-                    <div className="flex-1 space-y-1 w-full">
-                        <label className="text-xs font-medium text-gray-500">Full Name</label>
+            <div className="bg-white rounded-2xl shadow-md border p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Plus className="h-5 w-5 text-nwu-red" />
+                    Add Instructor
+                </h2>
+                <form action={addInstructor} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                         <input
                             name="name"
-                            placeholder="e.g. Engr. John Doe"
                             required
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm"
+                            placeholder="Instructor name"
                         />
                     </div>
-
-                    <div className="w-full md:w-48 space-y-1">
-                        <label className="text-xs font-medium text-gray-500">Department</label>
-                        <select
-                            name="department_id"
-                            required
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors appearance-none bg-white dark:bg-gray-900"
-                        >
-                            <option value="">Select Dept...</option>
-                            {departments?.map(d => (
-                                <option key={d.id} value={d.id}>{d.code} - {d.name}</option>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                        <select name="department_id" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
+                            <option value="">No Department</option>
+                            {departments?.map((d) => (
+                                <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
                             ))}
                         </select>
                     </div>
-
-                    <div className="w-full md:w-32 space-y-1">
-                        <label className="text-xs font-medium text-gray-500">Role</label>
-                        <select
-                            name="role"
-                            defaultValue="instructor"
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors appearance-none bg-white dark:bg-gray-900"
-                        >
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">PIN Code (optional)</label>
+                        <input
+                            name="pin_code"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm"
+                            placeholder="Optional PIN"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <select name="role" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
                             <option value="instructor">Instructor</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-
-                    <div className="w-full md:w-32 space-y-1">
-                        <label className="text-xs font-medium text-gray-500">PIN (Optional)</label>
-                        <input
-                            name="pin_code"
-                            placeholder="1234"
-                            maxLength={4}
-                            pattern="[0-9]{4}"
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors font-mono"
-                        />
+                    <div className="md:col-span-2">
+                        <button
+                            type="submit"
+                            className="w-full md:w-auto px-6 py-2 bg-nwu-red text-white text-sm font-bold rounded-lg hover:bg-[#5e0d0e] transition-colors shadow-md"
+                        >
+                            Add Instructor
+                        </button>
                     </div>
-
-                    <button type="submit" className="bg-nwu-red text-white px-6 py-2.5 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center justify-center w-full md:w-auto">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                    </button>
                 </form>
             </div>
 
             {/* Instructors List */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 text-xs uppercase tracking-wider">
-                            <tr>
-                                <th className="px-6 py-4 font-bold">Name</th>
-                                <th className="px-6 py-4 font-bold">Department</th>
-                                <th className="px-6 py-4 font-bold">Security</th>
-                                <th className="px-6 py-4 font-bold text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {instructors?.map((inst: any) => (
-                                <tr key={inst.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white flex items-center">
-                                        <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs mr-3">
-                                            {inst.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            {inst.name}
-                                            {inst.role === 'admin' && (
-                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                                    Admin
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {inst.departments ? (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                                {inst.departments.code}
+            <div className="bg-white rounded-2xl shadow-md border p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-nwu-red" />
+                    Instructors ({instructors?.length || 0})
+                </h2>
+                <div className="divide-y">
+                    {instructors?.map((inst) => (
+                        <div key={inst.id} className="flex items-center justify-between py-4 group">
+                            <div className="flex items-center space-x-4">
+                                <div className="h-10 w-10 rounded-full bg-nwu-red/10 flex items-center justify-center text-nwu-red font-bold text-sm">
+                                    {inst.name[0]}
+                                </div>
+                                <div>
+                                    <p className="font-medium text-gray-900">{inst.name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        {/* @ts-expect-error departments join */}
+                                        {inst.departments?.name && <span>{inst.departments.name}</span>}
+                                        {inst.role === "admin" && (
+                                            <span className="px-2 py-0.5 bg-nwu-gold/20 text-nwu-red rounded-full font-bold">Admin</span>
+                                        )}
+                                        {inst.pin_code && (
+                                            <span className="flex items-center gap-1 text-amber-600">
+                                                <Key className="h-3 w-3" /> PIN
                                             </span>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs italic">Unassigned</span>
                                         )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {inst.pin_code ? (
-                                            <div className="flex items-center text-green-600 text-xs font-medium">
-                                                <Key className="h-3 w-3 mr-1" />
-                                                PIN Set
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs">No PIN</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
-                                    </td>
-                                </tr>
-                            ))}
-                            {instructors?.length === 0 && (
-                                <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">No instructors found. Add one above.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
+                        </div>
+                    ))}
+                    {(!instructors || instructors.length === 0) && (
+                        <p className="text-sm text-gray-400 py-4 text-center">No instructors yet. Add one above.</p>
+                    )}
                 </div>
             </div>
         </div>
