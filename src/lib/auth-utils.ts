@@ -23,7 +23,7 @@ export async function getProfileRole() {
     // If it's a UUID, check the database
     const { data: profileData, error } = await supabase
         .from('instructors')
-        .select('role')
+        .select('role, is_super_admin')
         .eq('id', profileId)
         .maybeSingle();
 
@@ -33,6 +33,25 @@ export async function getProfileRole() {
     }
 
     return profileData?.role || null;
+}
+
+export async function checkIsSuperAdmin() {
+    const supabase = createClient();
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+
+    if (!profileId) return false;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(profileId)) return false;
+
+    const { data } = await supabase
+        .from('instructors')
+        .select('is_super_admin')
+        .eq('id', profileId)
+        .maybeSingle();
+
+    return data?.is_super_admin === true;
 }
 
 export async function checkIsAdmin() {

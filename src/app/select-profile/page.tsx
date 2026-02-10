@@ -138,7 +138,9 @@ export default function SelectProfilePage() {
                             {profile.name}
                         </span>
                         {profile.role === 'admin' && (
-                            <span className="text-xs uppercase tracking-widest text-nwu-gold mt-1">Admin</span>
+                            <span className={`text-xs uppercase tracking-widest mt-1 ${profile.is_super_admin ? 'text-red-400' : 'text-nwu-gold'}`}>
+                                {profile.is_super_admin ? 'Super Admin' : 'Admin'}
+                            </span>
                         )}
                     </div>
                 ))}
