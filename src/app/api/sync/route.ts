@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,11 +30,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: syncError.message }, { status: 500 });
     }
 
-    // The RPC now returns everything in one go, including instructors
     return NextResponse.json({
         classes: syncData?.classes || [],
         students: syncData?.students || [],
         instructors: syncData?.instructors || [],
-        error: syncData?.error // Include optional error message from RPC
+        error: syncData?.error
     });
 }
