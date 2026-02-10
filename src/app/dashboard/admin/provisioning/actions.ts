@@ -91,14 +91,35 @@ export async function toggleAdminStatus(authUserId: string, isLocked: boolean) {
 
     if (!profile?.is_super_admin) throw new Error("Forbidden");
 
+    // Protection: Verify target is NOT a Super Admin
+    const { data: targetProfile } = await supabase
+        .from('instructors')
+        .select('is_super_admin, id')
+        .eq('auth_user_id', authUserId)
+        .single();
+
+    if (targetProfile?.is_super_admin) {
+        throw new Error("Cannot modify Super Admin accounts.");
+    }
+
     const adminSupabase = createAdminClient();
 
     // Toggle ban/unban status in Auth
-    const { error } = await adminSupabase.auth.admin.updateUserById(authUserId, {
-        ban_duration: isLocked ? 'none' : '876000h' // Lock for ~100 years if locking
+    // isLocked = true means we want to LOCK it (ban)
+    // isLocked = false means we want to UNLOCK it (unban)
+    const { error: authError } = await adminSupabase.auth.admin.updateUserById(authUserId, {
+        ban_duration: isLocked ? '876000h' : 'none' // Lock for ~100 years or unlock
     });
 
-    if (error) throw error;
+    if (authError) throw authError;
+
+    // Update the is_locked state in the instructors table
+    const { error: dbError } = await adminSupabase
+        .from('instructors')
+        .update({ is_locked: isLocked })
+        .eq('auth_user_id', authUserId);
+
+    if (dbError) throw dbError;
 
     revalidatePath("/dashboard/admin/provisioning");
     return { success: true };
