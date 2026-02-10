@@ -102,35 +102,38 @@ export async function POST(request: Request) {
 
             let { data: student } = await supabase.from('students')
                 .select('id')
-                .eq('name', student_name) // check column name (name or full_name?)
+                .or(`name.eq."${student_name}",full_name.eq."${student_name}"`)
                 .eq('instructor_id', targetInstructorId)
                 .limit(1)
                 .maybeSingle();
 
             if (!student) {
-                // Try 'full_name' just in case schema differs
-                const { data: student2 } = await supabase.from('students')
+                // If .or() fails due to missing column, try simple name
+                const { data: fallbackStudent } = await supabase.from('students')
                     .select('id')
-                    .eq('full_name', student_name)
+                    .eq('name', student_name)
                     .eq('instructor_id', targetInstructorId)
                     .limit(1)
                     .maybeSingle();
 
-                if (!student2) {
+                if (!fallbackStudent) {
                     return NextResponse.json({ error: `Student '${student_name}' not found for this instructor.` }, { status: 404 });
                 }
-                // Found via full_name
-                student = student2;
+                student = fallbackStudent;
             }
 
             // GRADING LOGIC HELPER
-            const getMinutes = (timeStr: string) => {
-                const [h, m] = timeStr.split(':').map(Number);
-                return h * 60 + m;
+            const getMinutes = (timeStr: string | null | undefined) => {
+                if (!timeStr) return 0;
+                const parts = timeStr.split(':').map(Number);
+                if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return 0;
+                return parts[0] * 60 + parts[1];
             };
 
             const nowManila = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour12: false });
             const currentMinutes = getMinutes(nowManila);
+
+            console.log(`[API] Fallback Grading: Now=${nowManila} (${currentMinutes}m)`);
 
             let calculatedStatus = 'Present';
 
@@ -139,7 +142,7 @@ export async function POST(request: Request) {
                 // Try to find an efficient open session for this student + class + today
                 const todayStart = new Date().toISOString().split('T')[0]; // YYYY-MM-DD checks
 
-                const { data: openSession } = await supabase.from('attendance_logs')
+                const { data: openSession, error: sessionError } = await supabase.from('attendance_logs')
                     .select('id, status, timestamp')
                     .eq('student_id', student.id)
                     .eq('class_id', classRef.id)
@@ -149,25 +152,27 @@ export async function POST(request: Request) {
                     .limit(1)
                     .maybeSingle();
 
+                if (sessionError) {
+                    console.error("[API] Session Lookup Error:", sessionError);
+                    throw sessionError;
+                }
+
                 if (openSession) {
                     calculatedStatus = openSession.status; // Default to existing
-
-                    // PERSISTENCE RULE: If already Absent, stay Absent
-                    // Also: Detect if initial session was INVALID (Too Early)
-                    // If invalid, we probably shouldn't even be here effectively, or we let them close it but status remains invalid.
-                    // But for now, let's stick to standard strict grading.
+                    console.log(`[API] Found Open Session: ${openSession.id} (Status: ${calculatedStatus})`);
 
                     if (openSession.status !== 'Absent' && classRef.end_time) {
                         const endMinutes = getMinutes(classRef.end_time);
 
                         // Check Early Departure (> 15 mins before end)
-                        // Handle date rollover if needed? Assuming same day classes for now.
                         if ((endMinutes - currentMinutes) > 15) {
                             calculatedStatus = 'Absent'; // Cutting Class
+                            console.log(`[API] Early Departure: End=${classRef.end_time} (${endMinutes}m), Current=${currentMinutes}m -> Absent`);
                         }
                         // Check Ghosting (> 60 mins after end)
                         else if ((currentMinutes - endMinutes) > 60) {
                             calculatedStatus = 'Absent'; // Ghosting
+                            console.log(`[API] Ghosting: End=${classRef.end_time} (${endMinutes}m), Current=${currentMinutes}m -> Absent`);
                         }
                     }
 
@@ -179,9 +184,13 @@ export async function POST(request: Request) {
                         })
                         .eq('id', openSession.id);
 
-                    if (updateError) throw updateError;
+                    if (updateError) {
+                        console.error("[API] Session Update Error:", updateError);
+                        throw updateError;
+                    }
                 } else {
                     // STRICT SEQUENCE RULE: Reject Time Out if no Time In
+                    console.warn(`[API] Time Out Denied: No open session found for Student=${student.id}, Class=${classRef.id}`);
                     return NextResponse.json(
                         { error: "Access Denied: You must Time In first." },
                         { status: 400 }
@@ -195,8 +204,10 @@ export async function POST(request: Request) {
 
                     if (delta > 30) {
                         calculatedStatus = 'Absent';
+                        console.log(`[API] Late (Absent): Start=${classRef.start_time} (${startMinutes}m), Delta=${delta}m -> Absent`);
                     } else if (delta > 15) {
                         calculatedStatus = 'Late';
+                        console.log(`[API] Late: Start=${classRef.start_time} (${startMinutes}m), Delta=${delta}m -> Late`);
                     }
                 }
 
@@ -208,7 +219,10 @@ export async function POST(request: Request) {
                     timestamp: timestamp,
                     // time_out is null
                 });
-                if (insertError) throw insertError;
+                if (insertError) {
+                    console.error("[API] Attendance Insert Error:", insertError);
+                    throw insertError;
+                }
             }
 
             return NextResponse.json({ success: true, message: "Attendance Logged (Fallback)" });
