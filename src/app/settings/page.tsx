@@ -1,8 +1,8 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Fingerprint } from "lucide-react";
+import { DeleteSection } from "./DeleteSection";
 import { getProfileRole } from "@/lib/auth-utils";
-import { DeleteAccountSection } from "./DeleteAccountSection";
 
 export default async function SettingsPage() {
     const role = await getProfileRole();
@@ -24,6 +24,8 @@ export default async function SettingsPage() {
                     </div>
                 </section>
 
+
+
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Hardware Info</h2>
                     <div className="flex items-center space-x-4">
@@ -37,8 +39,7 @@ export default async function SettingsPage() {
                     </div>
                 </section>
 
-                {/* Only show Delete Account for Admins */}
-                {role === 'admin' && <DeleteAccountSection />}
+                <DeleteSection role={role} />
             </div>
         </DashboardLayout>
     );
