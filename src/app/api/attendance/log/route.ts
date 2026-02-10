@@ -85,7 +85,7 @@ export async function POST(request: Request) {
                 instructor_id: string;
                 start_time: string | null;
                 end_time: string | null;
-                instructors: { owner_id: string } | null;
+                instructors: any | null; // Use any here but cast below if needed, or better, suppress eslint for this line
             } | null = null;
             if (classIdInput) {
                 const { data: c } = await supabase
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
                     .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
                     .eq('id', classIdInput)
                     .single();
-                classRef = c;
+                classRef = c as any;
             }
 
             if (!classRef && instructorIdInput) {
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
                     .eq('instructor_id', instructorIdInput)
                     .limit(1)
                     .maybeSingle();
-                classRef = c;
+                classRef = c as any;
             }
 
             if (!classRef) {
@@ -228,8 +228,11 @@ export async function POST(request: Request) {
 
                 // Resolve the actual auth user ID (owner_id) for attendance_logs
                 // This fixes the FK constraint error (must be a valid auth.users.id)
-                // Note: classRef.instructors is the object returned by the join
-                const targetOwnerId = classRef.instructors?.owner_id || classRef.instructor_id;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const instructorData: any = classRef.instructors;
+                const targetOwnerId = Array.isArray(instructorData)
+                    ? instructorData[0]?.owner_id
+                    : (instructorData?.owner_id || classRef.instructor_id);
 
                 const { error: insertError } = await supabase.from('attendance_logs').insert({
                     student_id: student.id,
