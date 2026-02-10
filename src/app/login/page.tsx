@@ -135,15 +135,10 @@ export default function LoginPage() {
                     </form>
 
                     <div className="text-center mt-6">
-                        <button
-                            onClick={() => {
-                                setIsSignUp(!isSignUp);
-                                setMessage(null);
-                            }}
-                            className="text-sm font-medium text-nwu-red hover:text-[#5e0d0e] underline decoration-2 decoration-transparent hover:decoration-nwu-red transition-all"
-                        >
-                            {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-                        </button>
+                        <p className="text-sm text-gray-500 italic">
+                            System access is strictly <span className="text-nwu-red font-bold">Invite-Only</span>.
+                            If you require an account, please contact the University IT Department.
+                        </p>
                     </div>
 
                 </div>

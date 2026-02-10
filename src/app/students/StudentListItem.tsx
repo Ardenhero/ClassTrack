@@ -11,7 +11,7 @@ interface Student {
     year_level: string;
 }
 
-export function StudentListItem({ student }: { student: Student }) {
+export function StudentListItem({ student, isSuperAdmin }: { student: Student; isSuperAdmin?: boolean }) {
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(student.name || "");
     const [yearLevel, setYearLevel] = useState(student.year_level || "");
@@ -66,9 +66,11 @@ export function StudentListItem({ student }: { student: Student }) {
                 </div>
 
                 <div className="relative">
-                    <button onClick={() => setShowMenu(!showMenu)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <MoreHorizontal className="h-5 w-5" />
-                    </button>
+                    {!isSuperAdmin && (
+                        <button onClick={() => setShowMenu(!showMenu)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </button>
+                    )}
 
                     {/* Dropdown Menu */}
                     {showMenu && (

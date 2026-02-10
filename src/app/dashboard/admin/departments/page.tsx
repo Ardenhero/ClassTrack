@@ -5,11 +5,8 @@ import { redirect } from "next/navigation";
 import { checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export default async function DepartmentsPage() {
-    // SECURITY: Super Admin should not manage specific departments
     const isSuperAdmin = await checkIsSuperAdmin();
-    if (isSuperAdmin) {
-        redirect("/dashboard/admin/approvals");
-    }
+    // Super Admin sees ALL departments, Regular Admin sees owned/linked
     const supabase = createClient();
     const { data: departments } = await supabase
         .from("departments")
@@ -26,6 +23,22 @@ export default async function DepartmentsPage() {
         const { data: { user } } = await supabase.auth.getUser();
 
         await supabase.from("departments").insert({ name, code, owner_id: user?.id });
+        revalidatePath("/dashboard/admin/departments");
+    }
+    async function toggleDepartmentStatus(id: string, currentStatus: boolean) {
+        "use server";
+        const supabase = createClient();
+        await supabase.from("departments").update({ is_active: !currentStatus }).eq("id", id);
+
+        // Log action
+        const { data: dept } = await supabase.from("departments").select("name").eq("id", id).single();
+        await supabase.rpc('log_action', {
+            p_action: currentStatus ? 'FREEZE_DEPARTMENT' : 'ACTIVATE_DEPARTMENT',
+            p_target_type: 'departments',
+            p_target_id: id,
+            p_details: { name: dept?.name }
+        });
+
         revalidatePath("/dashboard/admin/departments");
     }
 
@@ -82,6 +95,7 @@ export default async function DepartmentsPage() {
                             <tr>
                                 <th className="px-6 py-4 font-bold">Code</th>
                                 <th className="px-6 py-4 font-bold">Department Name</th>
+                                <th className="px-6 py-4 font-bold">Status</th>
                                 <th className="px-6 py-4 font-bold text-right">Actions</th>
                             </tr>
                         </thead>
@@ -90,12 +104,29 @@ export default async function DepartmentsPage() {
                                 <tr key={dept.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                     <td className="px-6 py-4 font-mono text-sm font-bold text-nwu-red">{dept.code}</td>
                                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{dept.name}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`h-2 w-2 rounded-full ${dept.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                {dept.is_active ? 'Active' : 'Frozen'}
+                                            </span>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-right">
-                                        <form action={deleteDepartment.bind(null, dept.id)}>
-                                            <button className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        </form>
+                                        <div className="flex items-center justify-end space-x-2">
+                                            {isSuperAdmin && (
+                                                <form action={toggleDepartmentStatus.bind(null, dept.id, dept.is_active)}>
+                                                    <button className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all uppercase tracking-wider ${dept.is_active ? 'text-red-600 border-red-200 hover:bg-red-50' : 'text-green-600 border-green-200 hover:bg-green-50'}`}>
+                                                        {dept.is_active ? 'Freeze' : 'Activate'}
+                                                    </button>
+                                                </form>
+                                            )}
+                                            <form action={deleteDepartment.bind(null, dept.id)}>
+                                                <button className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
