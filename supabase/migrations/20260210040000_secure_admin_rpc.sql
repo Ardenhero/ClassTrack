@@ -1,6 +1,11 @@
 -- Migration: Secure Admin RPC Functions
 -- Description: Sets SECURITY DEFINER on approval functions to allow Super Admin access regardless of RLS.
 
+-- Drop existing functions first because we are changing return type to JSON
+DROP FUNCTION IF EXISTS approve_account_request(UUID);
+DROP FUNCTION IF EXISTS reject_account_request(UUID);
+DROP FUNCTION IF EXISTS delete_account_request(UUID);
+
 CREATE OR REPLACE FUNCTION approve_account_request(p_request_id UUID)
 RETURNS JSON AS $$
 DECLARE
