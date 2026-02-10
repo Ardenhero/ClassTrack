@@ -88,8 +88,6 @@ export default async function DepartmentsPage() {
         // However, for this project, let's trigger a logout or just log the reset request
         // The user specifically asked for "Reset Admin button for password resets"
         const supabase = createClient();
-        const newPassword = Math.random().toString(36).slice(-10);
-
         // NOTE: In a real app we'd use the admin API, but here we can update the user
         // We will log this action and alert the Super Admin
         await supabase.rpc('log_action', {
