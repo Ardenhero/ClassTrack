@@ -1,9 +1,16 @@
 import { createClient } from "@/utils/supabase/server";
 import { Plus, Users, Key } from "lucide-react";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { checkIsSuperAdmin } from "@/lib/auth-utils";
 import { DeleteInstructorButton } from "./DeleteInstructorButton";
 
 export default async function InstructorsPage() {
+    // SECURITY: Super Admin should not manage specific instructors
+    const isSuperAdmin = await checkIsSuperAdmin();
+    if (isSuperAdmin) {
+        redirect("/dashboard/admin/approvals");
+    }
     const supabase = createClient();
 
     // Get the current auth user
