@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { PerformanceMonitor } from './metrics';
 import { cookies } from 'next/headers';
-import { getProfileRole } from './auth-utils';
+import { getProfileRole, checkIsSuperAdmin } from './auth-utils';
 
 // PURIFIED RETURN TYPE: Explicitly define what we expect from the database
 interface StudentData {
