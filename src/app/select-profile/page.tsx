@@ -17,18 +17,25 @@ export default function SelectProfilePage() {
 
     useEffect(() => {
         const fetchProfiles = async () => {
-            // 1. Fetch Profiles from instructors table
+            // Get the current authenticated user
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error("No authenticated user");
+                setLoading(false);
+                return;
+            }
+
+            // Fetch ONLY this user's linked profiles
             const { data: instructors, error } = await supabase
                 .from("instructors")
                 .select("id, name, department_id, pin_enabled, role")
+                .eq("auth_user_id", user.id)
                 .order("name");
 
             if (error) {
                 console.error("Error fetching profiles:", error);
             }
 
-            // 2. Map profiles and ensure Admin is correctly handled
-            // 2. Map profiles
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const allProfiles: Profile[] = (instructors || []).map((inst: any) => {
                 return {
@@ -40,22 +47,17 @@ export default function SelectProfilePage() {
                 };
             });
 
-            // 3. Ensure Admin priority in list
+            // Sort: admin first, then alphabetical
             const adminProfile = allProfiles.find(p => p.role === 'admin');
             const otherProfiles = allProfiles.filter(p => p.role !== 'admin').sort((a, b) => a.name.localeCompare(b.name));
 
             if (adminProfile) {
-                // If real admin exists, show them first
                 setProfiles([adminProfile, ...otherProfiles]);
+            } else if (otherProfiles.length > 0) {
+                setProfiles(otherProfiles);
             } else {
-                // Only inject Virtual Admin if NO real admin exists in DB
-                const virtualAdmin: Profile = {
-                    id: 'admin-profile',
-                    name: "System Admin",
-                    role: "admin",
-                    has_pin: false
-                };
-                setProfiles([virtualAdmin, ...otherProfiles]);
+                // No profiles linked to this user yet
+                setProfiles([]);
             }
 
             setLoading(false);
@@ -69,14 +71,12 @@ export default function SelectProfilePage() {
             setSelectedProfileForPin(profile);
             setIsPinModalOpen(true);
         } else {
-            // No PIN needed, direct login
             completeLogin(profile);
         }
     };
 
     const completeLogin = (profile: Profile) => {
         selectProfile(profile);
-        // Force full reload to ensure middleware and context sync perfectly
         window.location.replace("/");
     };
 
@@ -84,6 +84,26 @@ export default function SelectProfilePage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nwu-red"></div>
+            </div>
+        );
+    }
+
+    // No profiles linked - show a message
+    if (profiles.length === 0) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
+                <h1 className="text-3xl md:text-5xl font-bold mb-6">No Profiles Found</h1>
+                <p className="text-gray-400 text-lg mb-8 text-center max-w-md">
+                    Your account doesn&apos;t have any profiles yet. Please contact an administrator to get your account approved.
+                </p>
+                <form action="/login">
+                    <button
+                        type="submit"
+                        className="px-6 py-3 bg-nwu-red text-white rounded-lg font-medium hover:bg-[#5e0d0e] transition-colors"
+                    >
+                        Back to Login
+                    </button>
+                </form>
             </div>
         );
     }
@@ -99,7 +119,6 @@ export default function SelectProfilePage() {
                         onClick={() => handleProfileClick(profile)}
                         className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
                     >
-                        {/* Avatar Image */}
                         <div className="w-32 h-32 md:w-40 md:h-40 rounded relative overflow-hidden mb-4 border-2 border-transparent group-hover:border-2 group-hover:border-white transition-all shadow-xl bg-gray-800 flex items-center justify-center">
                             {profile.role === "admin" ? (
                                 <ShieldCheck className="h-16 w-16 text-nwu-gold" />
@@ -108,24 +127,16 @@ export default function SelectProfilePage() {
                                     {profile.name[0]}
                                 </div>
                             )}
-
-                            {/* Overlay Gradient */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                            {/* Lock Icon if PIN enabled */}
                             {profile.has_pin && (
                                 <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-sm">
                                     <Lock className="h-3 w-3 text-white/80" />
                                 </div>
                             )}
                         </div>
-
-                        {/* Name */}
                         <span className="text-lg md:text-xl text-gray-400 group-hover:text-white font-medium text-center transition-colors">
                             {profile.name}
                         </span>
-
-                        {/* Role Badge */}
                         {profile.role === 'admin' && (
                             <span className="text-xs uppercase tracking-widest text-nwu-gold mt-1">Admin</span>
                         )}
@@ -133,7 +144,6 @@ export default function SelectProfilePage() {
                 ))}
             </div>
 
-            {/* PIN Verification Modal */}
             <PinVerificationModal
                 isOpen={isPinModalOpen}
                 onClose={() => setIsPinModalOpen(false)}
