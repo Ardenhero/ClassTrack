@@ -173,10 +173,12 @@ export async function middleware(request: NextRequest) {
         // Check if user has an instructor profile (meaning they're approved)
         const { data: instructor } = await supabase
             .from("instructors")
-            .select("id, role")
+            .select("id, role, department_id, is_super_admin")
             .eq("auth_user_id", user.id)
             .limit(1)
             .maybeSingle();
+
+        const isSuperAdmin = !!instructor?.is_super_admin;
 
         // If no instructor profile, redirect to pending approval page
         if (!instructor && pathname !== "/pending-approval") {
@@ -192,8 +194,25 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(url);
         }
 
+        // 6. Department Health Check
+        // If the user's department is "Frozen", block access (unless Super Admin)
+        if (instructor && !isSuperAdmin) {
+            const { data: dept } = await supabase
+                .from('departments')
+                .select('is_active')
+                .eq('id', instructor.department_id)
+                .single();
+
+            if (dept && !dept.is_active) {
+                const url = request.nextUrl.clone();
+                url.pathname = "/login";
+                // Optionally add a query param for the error message
+                return NextResponse.redirect(url);
+            }
+        }
+
         // ============================================
-        // 6. Profile Gate (Netflix-Style) - Only for approved users
+        // 7. Profile Gate (Netflix-Style) - Only for approved users
         // ============================================
         if (instructor) {
             const profileId = request.cookies.get("sc_profile_id")?.value;

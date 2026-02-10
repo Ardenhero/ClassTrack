@@ -32,10 +32,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null; // Or a "Not Authorized" message, but redirect will handle it
     }
 
+    const isSuperAdmin = profile?.is_super_admin;
+
     return (
         <div className="max-w-7xl mx-auto p-4 md:p-8">
-            <h1 className="text-3xl font-bold text-nwu-red mb-2">Admin Console</h1>
-            <p className="text-gray-500 mb-8">Manage departments, instructors, and system settings.</p>
+            {!isSuperAdmin && (
+                <>
+                    <h1 className="text-3xl font-bold text-nwu-red mb-2">Admin Console</h1>
+                    <p className="text-gray-500 mb-8">Manage departments, instructors, and system settings.</p>
+                </>
+            )}
 
             <AdminNav />
 

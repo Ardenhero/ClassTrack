@@ -5,12 +5,28 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { signout } from "@/app/login/actions";
 import { useProfile } from "@/context/ProfileContext";
-import { LayoutDashboard, Users, ClipboardList, Settings, BookOpen, LogOut, User, Info } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import {
+    LayoutDashboard,
+    Users,
+    ClipboardList,
+    Settings,
+    BookOpen,
+    LogOut,
+    User,
+    Info,
+    ShieldCheck,
+    Building2,
+    ShieldAlert,
+    ChevronDown,
+    ChevronRight,
+    Search
+} from "lucide-react";
 
-const navigation = [
+// Standard Instructor/Admin Navigation
+const standardNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Classes", href: "/classes", icon: BookOpen },
@@ -19,14 +35,28 @@ const navigation = [
     { name: "About", href: "/about", icon: Info },
 ];
 
+// Super Admin "Unpacked" Navigation
+const superAdminNavigation = [
+    { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
+    { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
+    // Global Directory is handled separately as a dropdown
+    { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
+    { name: "System Info", href: "/about", icon: Info },
+];
+
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const pathname = usePathname();
     const router = useRouter();
     const [user, setUser] = useState<SupabaseUser | null>(null);
+    const [isDirOpen, setIsDirOpen] = useState(false);
     const supabase = createClient();
     const { profile, clearProfile, isSwitching } = useProfile();
+
+    const isSuperAdmin = profile?.is_super_admin || profile?.role === 'admin' && profile?.name === 'Super Admin';
+    const navItems = isSuperAdmin ? superAdminNavigation : standardNavigation;
 
     const handleAdminClick = () => {
         router.push("/dashboard/admin/departments");
@@ -60,7 +90,67 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                 </div>
 
                 <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-                    {navigation.map((item) => {
+                    {navItems.map((item) => {
+                        // Handle the gap where Global Directory should be for Super Admin
+                        if (isSuperAdmin && item.name === 'Departments') {
+                            return (
+                                <div key="nav-group-admin" className="space-y-2">
+                                    <Link
+                                        key={item.name}
+                                        href={item.href}
+                                        onClick={onLinkClick}
+                                        className={cn(
+                                            "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200",
+                                            pathname === item.href
+                                                ? "bg-white text-nwu-red shadow-md font-bold"
+                                                : "text-white/80 hover:bg-[#5e0d0e] hover:text-white"
+                                        )}
+                                    >
+                                        <item.icon className="mr-3 h-5 w-5" />
+                                        {item.name}
+                                    </Link>
+
+                                    {/* Global Directory Dropdown */}
+                                    <div className="space-y-1">
+                                        <button
+                                            onClick={() => setIsDirOpen(!isDirOpen)}
+                                            className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-white/80 hover:bg-[#5e0d0e] hover:text-white rounded-md transition-all group"
+                                        >
+                                            <div className="flex items-center">
+                                                <Search className="mr-3 h-5 w-5" />
+                                                <span>Global Directory</span>
+                                            </div>
+                                            {isDirOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                        </button>
+                                        {isDirOpen && (
+                                            <div className="pl-12 space-y-1 animate-in slide-in-from-top-2 duration-200">
+                                                <Link
+                                                    href="/classes"
+                                                    onClick={onLinkClick}
+                                                    className={cn(
+                                                        "block py-2 text-sm transition-colors",
+                                                        pathname === "/classes" ? "text-nwu-gold font-bold" : "text-white/60 hover:text-white"
+                                                    )}
+                                                >
+                                                    Read-Only Classes
+                                                </Link>
+                                                <Link
+                                                    href="/students"
+                                                    onClick={onLinkClick}
+                                                    className={cn(
+                                                        "block py-2 text-sm transition-colors",
+                                                        pathname === "/students" ? "text-nwu-gold font-bold" : "text-white/60 hover:text-white"
+                                                    )}
+                                                >
+                                                    Read-Only Students
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         const isActive = pathname === item.href;
                         return (
                             <Link
@@ -112,8 +202,8 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                         </button>
                     </form>
 
-                    {/* Admin Console Link - Only for Admin Role */}
-                    {profile?.role === "admin" && (
+                    {/* Admin Console Link - Only for Regular Admin Role (Super Admin console is unpacked) */}
+                    {profile?.role === "admin" && !isSuperAdmin && (
                         <div className="pt-2 border-t border-white/10 mt-2">
                             <button
                                 onClick={handleAdminClick}
