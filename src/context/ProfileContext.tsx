@@ -35,7 +35,24 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             const stored = localStorage.getItem("sc_profile");
             if (stored) {
                 try {
-                    setProfile(JSON.parse(stored));
+                    const parsed = JSON.parse(stored);
+                    setProfile(parsed);
+
+                    // Background hydration for the is_super_admin flag if missing from cache
+                    if (parsed.role === 'admin' && typeof parsed.is_super_admin === 'undefined') {
+                        supabase.from('instructors')
+                            .select('is_super_admin')
+                            .eq('id', parsed.id)
+                            .maybeSingle()
+                            .then(({ data }) => {
+                                if (data) {
+                                    const updated = { ...parsed, is_super_admin: data.is_super_admin };
+                                    setProfile(updated);
+                                    localStorage.setItem("sc_profile", JSON.stringify(updated));
+                                }
+                            });
+                    }
+
                     setLoading(false);
                     return;
                 } catch (e) {
