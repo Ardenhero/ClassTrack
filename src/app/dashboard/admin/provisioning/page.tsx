@@ -5,12 +5,27 @@ import { UserPlus, Shield, Mail, Key, Loader2, CheckCircle2, Building2, ShieldCh
 import { createClient } from "@/utils/supabase/client";
 import { provisionAdmin, toggleAdminStatus } from "./actions";
 
+interface Department {
+    id: string;
+    name: string;
+}
+
+interface AdminProfile {
+    id: string;
+    name: string;
+    role: string;
+    auth_user_id: string;
+    departments?: {
+        name: string;
+    } | null;
+}
+
 export default function AdminManagementPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState<{ email: string, pass: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [departments, setDepartments] = useState<{ id: string, name: string }[]>([]);
-    const [admins, setAdmins] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [admins, setAdmins] = useState<AdminProfile[]>([]);
     const [copied, setCopied] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -69,12 +84,12 @@ export default function AdminManagementPage() {
         }
     };
 
-    const toggleLock = async (admin: any) => {
+    const toggleLock = async (admin: AdminProfile) => {
         try {
             await toggleAdminStatus(admin.auth_user_id, true);
             fetchAdmins();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to toggle status");
         }
     };
 
