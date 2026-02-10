@@ -4,7 +4,7 @@ import { StatusCards } from "./StatusCards";
 import { SecurityAuditFeed } from "./SecurityAuditFeed";
 import { TrafficAnalytics } from "./TrafficAnalytics";
 
-export function CommandCenter({ stats, logs, trafficData }: { stats: { activeDepartments: number, totalPopulation: number, activeSessions: number, isOperational: boolean }, logs: any[], trafficData: any[] }) {
+export function CommandCenter({ stats, logs, trafficData }: { stats: { activeDepartments: number, totalPopulation: number, activeSessions: number, isOperational: boolean }, logs: unknown[], trafficData: { hour: string, count: number }[] }) {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* 1. Infrastructure Status Cards */}
