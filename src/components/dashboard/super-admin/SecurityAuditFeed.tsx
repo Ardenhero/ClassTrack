@@ -3,11 +3,15 @@
 import { format } from "date-fns";
 import { ShieldAlert, UserPlus, UserMinus } from "lucide-react";
 
-interface AuditLog {
+export interface AuditLog {
     id: string;
     action: string;
     target_type: string;
-    details: Record<string, unknown>;
+    details: {
+        instructor_name?: string;
+        name?: string;
+        [key: string]: unknown;
+    };
     created_at: string;
     instructor?: {
         name: string;
@@ -29,8 +33,8 @@ export function SecurityAuditFeed({ logs }: { logs: AuditLog[] }) {
         return (
             <span className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-bold text-nwu-red">{actor}</span> {action} {log.target_type}
-                {(log.details as any)?.instructor_name && <span className="font-medium"> [{(log.details as any).instructor_name}]</span>}
-                {(log.details as any)?.name && <span className="font-medium"> [{(log.details as any).name}]</span>}
+                {log.details.instructor_name && <span className="font-medium"> [{log.details.instructor_name as string}]</span>}
+                {log.details.name && <span className="font-medium"> [{log.details.name as string}]</span>}
             </span>
         );
     };
