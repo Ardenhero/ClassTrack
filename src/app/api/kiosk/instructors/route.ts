@@ -48,11 +48,10 @@ export async function GET(request: Request) {
     }
 
     // Flatten logic for ESP32 easy parsing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const flattened = data.map((i: any) => ({
+    const flattened = data.map((i) => ({
         id: i.id,
         name: i.name,
-        department_code: i.departments?.code || ""
+        department_code: (i.departments as unknown as { code: string })?.code || ""
     }));
 
     return NextResponse.json(flattened);

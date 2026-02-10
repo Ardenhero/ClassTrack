@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+interface InstructorSync {
+    id: string;
+    name: string;
+    department_code: string;
+}
+
 export async function GET(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +39,7 @@ export async function GET(request: Request) {
         .maybeSingle();
 
     const ownerId = userData?.owner_id;
-    let flattenedInstructors: any[] = [];
+    let flattenedInstructors: InstructorSync[] = [];
 
     if (ownerId) {
         const { data: instructors } = await supabase
@@ -49,12 +55,11 @@ export async function GET(request: Request) {
             .eq("is_visible_on_kiosk", true)
             .order("name", { ascending: true });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        flattenedInstructors = instructors?.map((i: any) => ({
+        flattenedInstructors = (instructors || []).map((i) => ({
             id: i.id,
             name: i.name,
-            department_code: i.departments?.code || ""
-        })) || [];
+            department_code: (i.departments as unknown as { code: string })?.code || ""
+        }));
     }
 
     return NextResponse.json({
