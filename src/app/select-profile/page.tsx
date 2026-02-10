@@ -28,7 +28,7 @@ export default function SelectProfilePage() {
             // Fetch ONLY this user's linked profiles
             const { data: instructors, error } = await supabase
                 .from("instructors")
-                .select("id, name, department_id, pin_enabled, role")
+                .select("id, name, department_id, pin_enabled, role, is_super_admin")
                 .eq("owner_id", user.id)
                 .order("name");
 
@@ -43,7 +43,8 @@ export default function SelectProfilePage() {
                     name: inst.name,
                     role: inst.role === 'admin' ? 'admin' : 'instructor',
                     department_id: inst.department_id,
-                    has_pin: inst.pin_enabled
+                    has_pin: inst.pin_enabled,
+                    is_super_admin: inst.is_super_admin
                 };
             });
 
