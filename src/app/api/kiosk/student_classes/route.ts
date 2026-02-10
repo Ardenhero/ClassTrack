@@ -17,7 +17,6 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Fetch classes for the instructor bypassing RLS via Service Role
         const { data: classes, error } = await supabase
             .from('classes')
             .select('id, name, start_time, end_time')

@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +16,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Email required" }, { status: 400 });
     }
 
-    // Reuse the same secure RPC to get instructors
+    // Reuse the atomic secure RPC
     const { data: syncData, error: syncError } = await supabase.rpc('get_sync_data_v2', {
         email_input: email.trim()
     });
@@ -27,6 +29,5 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: syncData.error }, { status: 404 });
     }
 
-    // Return just the instructors part
     return NextResponse.json(syncData?.instructors || []);
 }
