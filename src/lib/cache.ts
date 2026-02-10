@@ -27,7 +27,8 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
 
         // Check role
         const role = await getProfileRole();
-        const isActiveAdmin = role === 'admin';
+        const isSuperAdmin = await checkIsSuperAdmin();
+        const isActiveAdmin = role === 'admin' || isSuperAdmin;
 
         // CRITICAL: Only select the columns we need - NO fingerprint_id
         const columns = 'id, name, sin, year_level, created_at';
@@ -54,7 +55,7 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
         } else {
             // INSTRUCTOR: Use complex query with enrollment-based visibility
             // This replaces the RPC with a direct query approach
-            
+
             try {
                 // Query for students the instructor created
                 const createdQuery = supabase
@@ -121,14 +122,14 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                 });
 
                 // Convert to array and sort
-                const result = Array.from(allStudents.values()).sort((a, b) => 
+                const result = Array.from(allStudents.values()).sort((a, b) =>
                     (a.name || '').localeCompare(b.name || '')
                 );
 
                 // Apply search filter if needed
                 if (query) {
                     const lowerQuery = query.toLowerCase();
-                    return result.filter(s => 
+                    return result.filter(s =>
                         (s.name || '').toLowerCase().includes(lowerQuery)
                     );
                 }

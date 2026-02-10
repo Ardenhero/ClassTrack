@@ -29,6 +29,8 @@ export function AdminNav() {
         }
     });
 
+    if (isSuperAdmin) return null;
+
     return (
         <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
             {visibleTabs.map((tab) => {
