@@ -1,7 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { AddStudentDialog } from "./AddStudentDialog";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { StudentListItem } from "./StudentListItem";
+import { StudentGrid } from "./StudentGrid";
 import { YearGroup } from "@/components/YearGroup";
 import { Suspense } from "react";
 import { getCachedStudents } from "@/lib/cache";
@@ -89,20 +89,7 @@ export default async function StudentsPage({
                 {Object.entries(groupedStudents).map(([level, items]) => (
                     items && items.length > 0 && (
                         <YearGroup key={level} title={level} count={items.length} itemLabel="students">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {items.map((student) => (
-                                    <StudentListItem
-                                        key={student.id}
-                                        isSuperAdmin={isSuperAdmin}
-                                        student={{
-                                            id: student.id,
-                                            name: student.name,
-                                            sin: student.sin,
-                                            year_level: student.year_level || "Unknown"
-                                        }}
-                                    />
-                                ))}
-                            </div>
+                            <StudentGrid students={items} isSuperAdmin={isSuperAdmin} />
                         </YearGroup>
                     )
                 ))}

@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Users, LayoutDashboard, UserCheck, ShieldAlert } from "lucide-react";
+import { Building2, Users, UserCheck, ShieldAlert } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useProfile } from "@/context/ProfileContext";
 
 const tabs = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Provisioning", href: "/dashboard/admin/provisioning", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
-    { name: "Departments", href: "/dashboard/admin/departments", icon: Building2, superAdminOnly: false, hideForSuperAdmin: false }, // Allow Super Admin to see it for status toggles
+    { name: "Departments", href: "/dashboard/admin/departments", icon: Building2, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Instructors", href: "/dashboard/admin/instructors", icon: Users, superAdminOnly: false, hideForSuperAdmin: true },
     { name: "Approvals", href: "/dashboard/admin/approvals", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert, superAdminOnly: true, hideForSuperAdmin: false },

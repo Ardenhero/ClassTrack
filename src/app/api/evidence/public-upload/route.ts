@@ -185,19 +185,41 @@ export async function GET(request: NextRequest) {
             .select("class_id, classes(id, subject_name, section, year_level, instructor_id, instructors(id, name))")
             .eq("student_id", student.id);
 
-        // Build classes list with instructor info
-        const classesWithInstructor = (enrollments || []).map((e: Record<string, unknown>) => {
-            const c = e.classes as Record<string, unknown>;
-            const instructor = c?.instructors as Record<string, unknown>;
-            return {
-                id: c?.id,
-                subject_name: c?.subject_name,
-                section: c?.section,
-                year_level: c?.year_level,
-                instructor_id: instructor?.id || c?.instructor_id,
-                instructor_name: instructor?.name || "Unknown",
-            };
-        });
+        let classesWithInstructor: { id: unknown; subject_name: unknown; section: unknown; year_level: unknown; instructor_id: unknown; instructor_name: string }[] = [];
+
+        if (enrollments && enrollments.length > 0) {
+            // Build classes list from enrollment data
+            classesWithInstructor = enrollments.map((e: Record<string, unknown>) => {
+                const c = e.classes as Record<string, unknown>;
+                const instructor = c?.instructors as Record<string, unknown>;
+                return {
+                    id: c?.id,
+                    subject_name: c?.subject_name,
+                    section: c?.section,
+                    year_level: c?.year_level,
+                    instructor_id: instructor?.id || c?.instructor_id,
+                    instructor_name: (instructor?.name as string) || "Unknown",
+                };
+            });
+        } else {
+            // Fallback: fetch classes matching student year_level
+            const { data: fallbackClasses } = await supabase
+                .from("classes")
+                .select("id, subject_name, section, year_level, instructor_id, instructors(id, name)")
+                .eq("year_level", student.year_level);
+
+            classesWithInstructor = (fallbackClasses || []).map((c: Record<string, unknown>) => {
+                const instructor = c?.instructors as Record<string, unknown>;
+                return {
+                    id: c?.id,
+                    subject_name: c?.subject_name,
+                    section: c?.section,
+                    year_level: c?.year_level,
+                    instructor_id: instructor?.id || c?.instructor_id,
+                    instructor_name: (instructor?.name as string) || "Unknown",
+                };
+            });
+        }
 
         // Build distinct instructors list for the dropdown
         const instructorMap = new Map<string, string>();
