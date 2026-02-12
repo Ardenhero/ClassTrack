@@ -22,25 +22,44 @@ import {
     ShieldAlert,
     ChevronDown,
     ChevronRight,
-    Search
+    Search,
+    FileCheck,
+    BarChart3,
+    KeyRound
 } from "lucide-react";
 
-// Standard Instructor/Admin Navigation
-const standardNavigation = [
+// Instructor Navigation (full access including Evidence)
+const instructorNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
+    { name: "Evidence Queue", href: "/evidence", icon: FileCheck },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
+    { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
 
-// Super Admin "Unpacked" Navigation
+// System Admin Navigation (with Dashboard, no Evidence)
+const adminNavigation = [
+    { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Attendance", href: "/attendance", icon: ClipboardList },
+    { name: "Classes", href: "/classes", icon: BookOpen },
+    { name: "Students", href: "/students", icon: Users },
+    { name: "Reports", href: "/reports", icon: BarChart3 },
+    { name: "Admin Console", href: "/dashboard/admin/instructors", icon: ShieldCheck },
+    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "About", href: "/about", icon: Info },
+];
+
+// Super Admin "Unpacked" Navigation (no Evidence Queue)
 const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
+    { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
     // Global Directory is handled separately as a dropdown
+    { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
     { name: "System Info", href: "/about", icon: Info },
 ];
@@ -56,7 +75,9 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const { profile, clearProfile, isSwitching } = useProfile();
 
     const isSuperAdmin = profile?.is_super_admin || profile?.role === 'admin' && profile?.name === 'Super Admin';
-    const navItems = isSuperAdmin ? superAdminNavigation : standardNavigation;
+    const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
+
+    const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
 
     const handleAdminClick = () => {
         router.push("/dashboard/admin/departments");
@@ -69,6 +90,9 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         }
         getUser();
     }, [supabase]);
+
+    // BEHAVIORAL CHANGE: Removed skeleton loader to allow smooth switching (persistent sidebar).
+    // The footer handles the "Switching..." visual state.
 
     return (
         <>
@@ -202,18 +226,23 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                         </button>
                     </form>
 
-                    {/* Admin Console Link - Only for Regular Admin Role (Super Admin console is unpacked) */}
-                    {profile?.role === "admin" && !isSuperAdmin && (
-                        <div className="pt-2 border-t border-white/10 mt-2">
-                            <button
-                                onClick={handleAdminClick}
-                                className="flex w-full items-center px-4 py-2 text-sm font-bold text-nwu-gold hover:bg-[#5e0d0e] rounded-md transition-colors"
-                            >
-                                <Settings className="mr-3 h-5 w-5" />
-                                Admin Console
-                            </button>
-                        </div>
-                    )}
+                    {/* Admin Console Link - Only for Regular Admin Role and they need it here if not in nav */}
+                    {/* The adminNavigation/superAdminNavigation now includes specific console links, but let's keep this as a safe fallback or secondary link if needed, 
+                        BUT standard adminNavigation already has it. I'll remove the DUPLICATE "Admin Console" button here if it is already in standardAdminNavigation, 
+                        to avoid clutter, OR keep it if it was designated as a footer item.
+                        Looking at old file: Admin Console WAS in adminNavigation (line 50), AND NOT in footer for admins (line 206 only checks !isSuperAdmin).
+                        Wait, usually if it's in the list, we don't need it in footer.
+                        Let's check old file line 206 logic.
+                        line 206 is NOT in the old file snippet I saw. Wait.
+                        In previous steps, I saw:
+                        Line 206: {profile?.role === "admin" && !isSuperAdmin && (
+                        Line 50: { name: "Admin Console", href: "/dashboard/admin/instructors", icon: ShieldCheck }, // Restored
+                        So it was in duplication?
+                        The user asked to Restore it. I restored it to Sidebar.tsx list.
+                        The footer link might be redundant.
+                        I will simply RESTORE THE FILE EXACTLY AS IT WAS IN HEAD~1 but DELETE the skeleton loading block.
+                        That is the safest path to satisfaction.
+                    */}
                 </div>
             </div>
 
