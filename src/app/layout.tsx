@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/react";
@@ -32,6 +33,7 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         <GlobalSync />
+        <Script src="https://code.tidio.co/l2ku6fso4mgu6edrecohpstuiab5qk8b.js" strategy="afterInteractive" />
       </body>
     </html>
   );
