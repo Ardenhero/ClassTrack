@@ -45,8 +45,9 @@ export async function GET(request: NextRequest) {
                 .eq("auth_user_id", actorProfile.auth_user_id);
 
             const profileIds = (accountProfiles || []).map((p: { id: string }) => p.id);
+            const studentIdSet = new Set<number>();
 
-            // Get classes taught by these profiles
+            // 1. Enrolled in classes taught by these profiles
             const { data: classes } = await supabase
                 .from("classes")
                 .select("id")
@@ -59,11 +60,25 @@ export async function GET(request: NextRequest) {
                     .from("enrollments")
                     .select("student_id")
                     .in("class_id", classIds);
-                studentIds = Array.from(new Set((enrollments || []).map((e: { student_id: number }) => e.student_id)));
+                enrollments?.forEach((e: { student_id: number }) => studentIdSet.add(e.student_id));
             }
 
+            // 2. Created by these profiles (even if not enrolled)
+            if (profileIds.length > 0) {
+                const { data: createdStudents } = await supabase
+                    .from("students")
+                    .select("id")
+                    .in("instructor_id", profileIds);
+                createdStudents?.forEach((s: { id: number }) => studentIdSet.add(s.id));
+            }
+
+            studentIds = Array.from(studentIdSet);
+
         } else {
-            // Instructor: only students in their own classes
+            // Instructor: only students in their own classes OR created by them
+            const studentIdSet = new Set<number>();
+
+            // 1. Enrolled
             const { data: classes } = await supabase
                 .from("classes")
                 .select("id")
@@ -76,8 +91,17 @@ export async function GET(request: NextRequest) {
                     .from("enrollments")
                     .select("student_id")
                     .in("class_id", classIds);
-                studentIds = Array.from(new Set((enrollments || []).map((e: { student_id: number }) => e.student_id)));
+                enrollments?.forEach((e: { student_id: number }) => studentIdSet.add(e.student_id));
             }
+
+            // 2. Created by them
+            const { data: createdStudents } = await supabase
+                .from("students")
+                .select("id")
+                .eq("instructor_id", requestedProfileId);
+            createdStudents?.forEach((s: { id: number }) => studentIdSet.add(s.id));
+
+            studentIds = Array.from(studentIdSet);
         }
 
         if (studentIds.length === 0) {

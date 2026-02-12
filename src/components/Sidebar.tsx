@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signout } from "@/app/login/actions";
 import { useProfile } from "@/context/ProfileContext";
 import { cn } from "@/utils/cn";
@@ -22,44 +22,25 @@ import {
     ShieldAlert,
     ChevronDown,
     ChevronRight,
-    Search,
-    FileCheck,
-    BarChart3,
-    KeyRound,
+    Search
 } from "lucide-react";
 
-// Instructor Navigation (full access including Evidence)
-const instructorNavigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Attendance", href: "/attendance", icon: ClipboardList },
-    { name: "Evidence Queue", href: "/evidence", icon: FileCheck },
-    { name: "Classes", href: "/classes", icon: BookOpen },
-    { name: "Students", href: "/students", icon: Users },
-    { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Settings", href: "/settings", icon: Settings },
-    { name: "About", href: "/about", icon: Info },
-];
-
-// System Admin Navigation (with Dashboard, no Evidence)
-const adminNavigation = [
+// Standard Instructor/Admin Navigation
+const standardNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
-    { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Admin Console", href: "/dashboard/admin/instructors", icon: ShieldCheck }, // Restored
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
 
-// Super Admin "Unpacked" Navigation (no Evidence Queue)
+// Super Admin "Unpacked" Navigation
 const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
-    { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
     // Global Directory is handled separately as a dropdown
-    { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
     { name: "System Info", href: "/about", icon: Info },
 ];
@@ -68,16 +49,18 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const pathname = usePathname();
-
+    const router = useRouter();
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const [isDirOpen, setIsDirOpen] = useState(false);
     const supabase = createClient();
     const { profile, clearProfile, isSwitching } = useProfile();
 
     const isSuperAdmin = profile?.is_super_admin || profile?.role === 'admin' && profile?.name === 'Super Admin';
-    const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
+    const navItems = isSuperAdmin ? superAdminNavigation : standardNavigation;
 
-    const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
+    const handleAdminClick = () => {
+        router.push("/dashboard/admin/departments");
+    };
 
     useEffect(() => {
         const getUser = async () => {
@@ -86,37 +69,6 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         }
         getUser();
     }, [supabase]);
-
-    if (isSwitching || !profile) {
-        // RETURN SKELETON UI instead of null to prevent "black/gray" flash
-        return (
-            <div className="flex bg-nwu-red h-full w-full flex-col text-white shadow-xl animate-pulse">
-                <div className="flex h-20 items-center px-4 border-b border-nwu-red/50 shrink-0 bg-[#5e0d0e]">
-                    <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 rounded-full bg-white/20" />
-                        <div className="space-y-2">
-                            <div className="h-3 w-24 bg-white/20 rounded" />
-                            <div className="h-2 w-16 bg-white/20 rounded" />
-                        </div>
-                    </div>
-                </div>
-                <div className="flex-1 px-4 py-6 space-y-4">
-                    {[...Array(6)].map((_, i) => (
-                        <div key={i} className="h-10 w-full bg-white/10 rounded-md" />
-                    ))}
-                </div>
-                <div className="p-4 border-t border-nwu-red/50 shrink-0 space-y-4 bg-[#5e0d0e]/50">
-                    <div className="flex items-center p-2">
-                        <div className="h-8 w-8 rounded-full bg-white/20" />
-                        <div className="ml-3 space-y-2">
-                            <div className="h-3 w-20 bg-white/20 rounded" />
-                            <div className="h-2 w-12 bg-white/20 rounded" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <>
@@ -249,6 +201,19 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                             Sign Out
                         </button>
                     </form>
+
+                    {/* Admin Console Link - Only for Regular Admin Role (Super Admin console is unpacked) */}
+                    {profile?.role === "admin" && !isSuperAdmin && (
+                        <div className="pt-2 border-t border-white/10 mt-2">
+                            <button
+                                onClick={handleAdminClick}
+                                className="flex w-full items-center px-4 py-2 text-sm font-bold text-nwu-gold hover:bg-[#5e0d0e] rounded-md transition-colors"
+                            >
+                                <Settings className="mr-3 h-5 w-5" />
+                                Admin Console
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
