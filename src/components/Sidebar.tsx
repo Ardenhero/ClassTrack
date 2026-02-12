@@ -47,6 +47,7 @@ const adminNavigation = [
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
     { name: "Reports", href: "/reports", icon: BarChart3 },
+    { name: "Admin Console", href: "/dashboard/admin/instructors", icon: ShieldCheck }, // Restored
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
@@ -87,7 +88,34 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     }, [supabase]);
 
     if (isSwitching || !profile) {
-        return null; // Prevent flash of wrong content during switch
+        // RETURN SKELETON UI instead of null to prevent "black/gray" flash
+        return (
+            <div className="flex bg-nwu-red h-full w-full flex-col text-white shadow-xl animate-pulse">
+                <div className="flex h-20 items-center px-4 border-b border-nwu-red/50 shrink-0 bg-[#5e0d0e]">
+                    <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 rounded-full bg-white/20" />
+                        <div className="space-y-2">
+                            <div className="h-3 w-24 bg-white/20 rounded" />
+                            <div className="h-2 w-16 bg-white/20 rounded" />
+                        </div>
+                    </div>
+                </div>
+                <div className="flex-1 px-4 py-6 space-y-4">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="h-10 w-full bg-white/10 rounded-md" />
+                    ))}
+                </div>
+                <div className="p-4 border-t border-nwu-red/50 shrink-0 space-y-4 bg-[#5e0d0e]/50">
+                    <div className="flex items-center p-2">
+                        <div className="h-8 w-8 rounded-full bg-white/20" />
+                        <div className="ml-3 space-y-2">
+                            <div className="h-3 w-20 bg-white/20 rounded" />
+                            <div className="h-2 w-12 bg-white/20 rounded" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (

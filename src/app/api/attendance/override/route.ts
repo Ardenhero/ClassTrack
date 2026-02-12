@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` }, { status: 400 });
         }
 
-        // Verify this class belongs to the instructor
+        // Verify this class belongs to the instructor. STRICT CHECK: Must be the owner.
+        // User explicitly removed Admin override permission.
         const { data: classData } = await supabase
             .from("classes")
             .select("id, instructor_id")

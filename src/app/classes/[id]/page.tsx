@@ -27,13 +27,18 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     const cookieStore = cookies();
     const viewerProfileId = cookieStore.get("sc_profile_id")?.value;
     let isInstructor = false;
+
     if (viewerProfileId) {
         const { data: viewerProfile } = await supabase
             .from("instructors")
             .select("role")
             .eq("id", viewerProfileId)
             .single();
-        isInstructor = viewerProfile?.role === "instructor";
+
+        // STRICTLY Instructors only (as per latest user request)
+        if (viewerProfile) {
+            isInstructor = viewerProfile.role === "instructor";
+        }
     }
 
     // Date Logic matching Attendance Page (Manila Timezone Safe)
