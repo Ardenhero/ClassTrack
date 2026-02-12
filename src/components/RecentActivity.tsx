@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { formatDistanceToNow } from "date-fns";
+import { cookies } from "next/headers";
 
 interface AttendanceLog {
     id: string;
@@ -12,6 +13,7 @@ interface AttendanceLog {
 }
 
 export async function RecentActivity() {
+    const cookieStore = cookies(); // Opts into dynamic rendering
     const supabase = createClient();
     const { data } = await supabase
         .from('attendance_logs')
