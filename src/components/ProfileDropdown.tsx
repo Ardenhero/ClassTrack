@@ -12,7 +12,7 @@ interface ProfileDropdownProps {
 
 export function ProfileDropdown({ user }: ProfileDropdownProps) {
     // 1. Hooks first
-    const { profile } = useProfile();
+    const { profile, isSwitching } = useProfile();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -32,11 +32,11 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
 
     // 3. Derived State / Helpers
     // STRICT UI: Show Active Profile Name if available
-    const displayName = profile?.name || user.user_metadata.full_name || user.email || "User";
-    const initials = (displayName[0] || "U").toUpperCase();
+    const displayName = isSwitching ? "Switching..." : (profile?.name || user.user_metadata.full_name || user.email || "User");
+    const initials = isSwitching ? "..." : (displayName[0] || "U").toUpperCase();
 
     // Show Active Profile Role
-    const displayRole = profile?.role === 'admin' ? 'Administrator' : (profile?.role === 'instructor' ? 'Instructor' : (user.user_metadata.role || "Instructor"));
+    const displayRole = isSwitching ? "Please wait" : (profile?.role === 'admin' ? 'Administrator' : (profile?.role === 'instructor' ? 'Instructor' : (user.user_metadata.role || "Instructor")));
 
     const handleSignOut = async () => {
         await signOutAction();
