@@ -154,6 +154,8 @@ export async function middleware(request: NextRequest) {
         "/api/health",
         "/api/metrics",
         "/api/kiosk",
+        "/api/status",
+        "/api/debug/logs",
         "/api/auth/signout"
     ];
 

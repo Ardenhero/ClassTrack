@@ -34,18 +34,8 @@ export function GlobalSync() {
     useEffect(() => {
         const channel = supabase
             .channel('global-db-changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*', // INSERT, UPDATE, DELETE
-                    schema: 'public', // Listen to EVERYTHING in public schema
-                },
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (payload: any) => {
-                    console.log("Change received!", payload);
-                    triggerRefresh();
-                }
-            )
+            // Optimized subscription: listen to all changes in the public schema
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => triggerRefresh())
             .subscribe();
 
         return () => {
