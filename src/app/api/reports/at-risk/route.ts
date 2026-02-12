@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const supabase = createClient();
         const cookieStore = cookies();
@@ -12,27 +12,101 @@ export async function GET() {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        // Get all students with their attendance logs for the current semester
-        const { data: students } = await supabase
-            .from("students")
-            .select("id, name, sin, year_level");
+        const { searchParams } = new URL(request.url);
+        const scope = searchParams.get("scope") || "instructor";
+        const requestedProfileId = searchParams.get("profile_id") || profileId;
 
-        if (!students || students.length === 0) {
-            return NextResponse.json({ students: [], at_risk: [] });
+        // Get the profile to determine role
+        const { data: actorProfile } = await supabase
+            .from("instructors")
+            .select("id, role, is_super_admin, auth_user_id")
+            .eq("id", requestedProfileId)
+            .single();
+
+        if (!actorProfile) {
+            return NextResponse.json({ error: "Profile not found" }, { status: 404 });
         }
 
-        // Get attendance logs for this semester (last 6 months)
+        let studentIds: number[] = [];
+
+        if (scope === "super_admin" && actorProfile.is_super_admin) {
+            // Super Admin: ALL students
+            const { data: allStudents } = await supabase
+                .from("students")
+                .select("id");
+            studentIds = (allStudents || []).map((s: { id: number }) => s.id);
+
+        } else if (scope === "admin" && actorProfile.role === "admin") {
+            // System Admin: students belonging to instructors under the same account
+            // Find all instructor profiles that share this auth_user_id (same account)
+            const { data: accountProfiles } = await supabase
+                .from("instructors")
+                .select("id")
+                .eq("auth_user_id", actorProfile.auth_user_id);
+
+            const profileIds = (accountProfiles || []).map((p: { id: string }) => p.id);
+
+            // Get classes taught by these profiles
+            const { data: classes } = await supabase
+                .from("classes")
+                .select("id")
+                .in("instructor_id", profileIds);
+
+            const classIds = (classes || []).map((c: { id: string }) => c.id);
+
+            if (classIds.length > 0) {
+                const { data: enrollments } = await supabase
+                    .from("enrollments")
+                    .select("student_id")
+                    .in("class_id", classIds);
+                studentIds = Array.from(new Set((enrollments || []).map((e: { student_id: number }) => e.student_id)));
+            }
+
+        } else {
+            // Instructor: only students in their own classes
+            const { data: classes } = await supabase
+                .from("classes")
+                .select("id")
+                .eq("instructor_id", requestedProfileId);
+
+            const classIds = (classes || []).map((c: { id: string }) => c.id);
+
+            if (classIds.length > 0) {
+                const { data: enrollments } = await supabase
+                    .from("enrollments")
+                    .select("student_id")
+                    .in("class_id", classIds);
+                studentIds = Array.from(new Set((enrollments || []).map((e: { student_id: number }) => e.student_id)));
+            }
+        }
+
+        if (studentIds.length === 0) {
+            return NextResponse.json({ at_risk: [], total_students: 0, at_risk_count: 0 });
+        }
+
+        // Get student details
+        const { data: students } = await supabase
+            .from("students")
+            .select("id, name, sin, year_level")
+            .in("id", studentIds);
+
+        if (!students || students.length === 0) {
+            return NextResponse.json({ at_risk: [], total_students: 0 });
+        }
+
+        // Get attendance logs for the scoped students (last 6 months)
         const semesterStart = new Date();
         semesterStart.setMonth(semesterStart.getMonth() - 6);
 
         const { data: logs } = await supabase
             .from("attendance_logs")
             .select("student_id, status, timestamp")
+            .in("student_id", studentIds)
             .gte("timestamp", semesterStart.toISOString())
             .order("timestamp", { ascending: true });
 
         if (!logs) {
-            return NextResponse.json({ students: [], at_risk: [] });
+            return NextResponse.json({ at_risk: [], total_students: students.length });
         }
 
         // Group logs by student

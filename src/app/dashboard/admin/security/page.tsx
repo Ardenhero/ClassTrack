@@ -41,24 +41,40 @@ export default function SecurityPage() {
 
     useEffect(() => {
         async function loadTargets() {
-            // Load instructors for PIN reset (all admins can do this)
-            const { data: instructorData } = await supabase
+            // First get the current user's auth_user_id for scoping
+            const { data: currentProfile } = await supabase
+                .from("instructors")
+                .select("auth_user_id")
+                .eq("id", profile?.id || "")
+                .single();
+
+            const myAuthUserId = currentProfile?.auth_user_id;
+
+            // Load instructors for PIN reset — scoped to same account
+            let instructorQuery = supabase
                 .from("instructors")
                 .select("id, name, role")
                 .neq("id", profile?.id || "")
                 .order("name");
 
+            // Scope: show only instructors under the same account (owner_id = my auth_user_id)
+            if (myAuthUserId && !isSuperAdmin) {
+                instructorQuery = instructorQuery.eq("owner_id", myAuthUserId);
+            }
+
+            const { data: instructorData } = await instructorQuery;
             if (instructorData) setInstructors(instructorData);
 
-            // Load users for password reset (super admin only)
-            if (isSuperAdmin) {
-                const { data: allInstructors } = await supabase
+            // Load users for password reset (super admin only) — scoped to same account
+            if (isSuperAdmin && myAuthUserId) {
+                const { data: accountInstructors } = await supabase
                     .from("instructors")
                     .select("auth_user_id, name")
-                    .not("auth_user_id", "is", null);
+                    .not("auth_user_id", "is", null)
+                    .eq("owner_id", myAuthUserId);
 
-                if (allInstructors) {
-                    setUsers(allInstructors.map((i: { auth_user_id: string | null; name: string }) => ({
+                if (accountInstructors) {
+                    setUsers(accountInstructors.map((i: { auth_user_id: string | null; name: string }) => ({
                         id: i.auth_user_id!,
                         email: "",
                         name: i.name,
@@ -140,7 +156,7 @@ export default function SecurityPage() {
                                 <KeyRound className="h-6 w-6" />
                                 <div>
                                     <h2 className="text-lg font-bold">Password Reset</h2>
-                                    <p className="text-red-200 text-xs">Super Admin • {pwdRemaining !== null ? `${pwdRemaining}/3 remaining` : "3 resets per month"}</p>
+                                    <p className="text-red-200 text-xs">Super Admin • {pwdRemaining !== null ? `${pwdRemaining}/10 remaining` : "10 resets per month"}</p>
                                 </div>
                             </div>
                         </div>
@@ -195,7 +211,7 @@ export default function SecurityPage() {
                             <Lock className="h-6 w-6" />
                             <div>
                                 <h2 className="text-lg font-bold">PIN Reset</h2>
-                                <p className="text-amber-200 text-xs">Profile Lock Recovery • {pinRemaining !== null ? `${pinRemaining}/3 remaining` : "3 resets per month"}</p>
+                                <p className="text-amber-200 text-xs">Profile Lock Recovery • {pinRemaining !== null ? `${pinRemaining}/10 remaining` : "10 resets per month"}</p>
                             </div>
                         </div>
                     </div>

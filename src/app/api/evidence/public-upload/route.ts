@@ -179,11 +179,34 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Student not found" }, { status: 404 });
         }
 
-        // Get classes this student belongs to
-        const { data: classes } = await supabase
-            .from("classes")
-            .select("id, subject_name, section, year_level, instructors(name)")
-            .eq("year_level", student.year_level);
+        // Get classes this student is ENROLLED in (via enrollments table)
+        const { data: enrollments } = await supabase
+            .from("enrollments")
+            .select("class_id, classes(id, subject_name, section, year_level, instructor_id, instructors(id, name))")
+            .eq("student_id", student.id);
+
+        // Build classes list with instructor info
+        const classesWithInstructor = (enrollments || []).map((e: Record<string, unknown>) => {
+            const c = e.classes as Record<string, unknown>;
+            const instructor = c?.instructors as Record<string, unknown>;
+            return {
+                id: c?.id,
+                subject_name: c?.subject_name,
+                section: c?.section,
+                year_level: c?.year_level,
+                instructor_id: instructor?.id || c?.instructor_id,
+                instructor_name: instructor?.name || "Unknown",
+            };
+        });
+
+        // Build distinct instructors list for the dropdown
+        const instructorMap = new Map<string, string>();
+        for (const cls of classesWithInstructor) {
+            if (cls.instructor_id && !instructorMap.has(String(cls.instructor_id))) {
+                instructorMap.set(String(cls.instructor_id), String(cls.instructor_name));
+            }
+        }
+        const instructors = Array.from(instructorMap.entries()).map(([id, name]) => ({ id, name }));
 
         // Get upload count
         const { count } = await supabase
@@ -198,13 +221,8 @@ export async function GET(request: NextRequest) {
                 sin: student.sin,
                 year_level: student.year_level,
             },
-            classes: (classes || []).map((c: Record<string, unknown>) => ({
-                id: c.id,
-                subject_name: c.subject_name,
-                section: c.section,
-                year_level: c.year_level,
-                instructor_name: (c.instructors as Record<string, unknown>)?.name || "Unknown",
-            })),
+            classes: classesWithInstructor,
+            instructors,
             uploads_used: count || 0,
             uploads_remaining: MAX_UPLOADS_PER_STUDENT - (count || 0),
         });

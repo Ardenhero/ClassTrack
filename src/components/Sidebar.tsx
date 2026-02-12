@@ -28,8 +28,8 @@ import {
     KeyRound,
 } from "lucide-react";
 
-// Standard Instructor/Admin Navigation
-const standardNavigation = [
+// Instructor Navigation (full access including Evidence)
+const instructorNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Evidence", href: "/evidence", icon: FileCheck },
@@ -40,12 +40,21 @@ const standardNavigation = [
     { name: "About", href: "/about", icon: Info },
 ];
 
-// Super Admin "Unpacked" Navigation
+// System Admin Navigation (no Dashboard, no Evidence)
+const adminNavigation = [
+    { name: "Attendance", href: "/attendance", icon: ClipboardList },
+    { name: "Classes", href: "/classes", icon: BookOpen },
+    { name: "Students", href: "/students", icon: Users },
+    { name: "Reports", href: "/reports", icon: BarChart3 },
+    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "About", href: "/about", icon: Info },
+];
+
+// Super Admin "Unpacked" Navigation (no Evidence Queue)
 const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
-    { name: "Evidence Queue", href: "/dashboard/admin/evidence", icon: FileCheck },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
@@ -64,7 +73,8 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const { profile, clearProfile, isSwitching } = useProfile();
 
     const isSuperAdmin = profile?.is_super_admin || profile?.role === 'admin' && profile?.name === 'Super Admin';
-    const navItems = isSuperAdmin ? superAdminNavigation : standardNavigation;
+    const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
+    const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
 
     const handleAdminClick = () => {
         router.push("/dashboard/admin/departments");
