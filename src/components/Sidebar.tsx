@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signout } from "@/app/login/actions";
 import { useProfile } from "@/context/ProfileContext";
 import { cn } from "@/utils/cn";
@@ -68,7 +68,6 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const pathname = usePathname();
-    const router = useRouter();
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const [isDirOpen, setIsDirOpen] = useState(false);
     const supabase = createClient();
