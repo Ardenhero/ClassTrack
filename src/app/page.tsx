@@ -185,13 +185,42 @@ export default async function Dashboard({
 
   // --- REGULAR DASHBOARD LOGIC (Original) ---
 
+  // 0. Determine Account Scope (for System Admins)
+  let accountInstructorIds: string[] = [];
+
+  if (isActiveAdmin && profileId) {
+    const { data: adminRecord } = await supabase
+      .from('instructors')
+      .select('auth_user_id')
+      .eq('id', profileId)
+      .single();
+
+    if (adminRecord?.auth_user_id) {
+      const { data: accountInstructors } = await supabase
+        .from('instructors')
+        .select('id')
+        .eq('auth_user_id', adminRecord.auth_user_id);
+      accountInstructorIds = accountInstructors?.map(i => i.id) || [];
+    }
+  }
+
   // 1. Fetch Summary Stats
-  // Students - Count students either created by OR enrolled in instructor's classes
+  // Students
   let studentCount = 0;
+
   if (isActiveAdmin) {
-    // Admin sees all students
-    const { count } = await supabase.from('students').select('*', { count: 'exact', head: true });
-    studentCount = count || 0;
+    if (accountInstructorIds.length > 0) {
+      // 1. Created by account instructors
+      const { data: createdIds } = await supabase.from('students').select('id').in('instructor_id', accountInstructorIds);
+      // 2. Enrolled in account instructors' classes
+      const { data: enrolledIds } = await supabase.from('enrollments').select('student_id, classes!inner(instructor_id)').in('classes.instructor_id', accountInstructorIds);
+
+      const uniqueIds = new Set([
+        ...(createdIds?.map(s => s.id) || []),
+        ...(enrolledIds?.map(e => e.student_id) || [])
+      ]);
+      studentCount = uniqueIds.size;
+    }
   } else if (profileId) {
     // Instructor: Get unique students (created by them OR enrolled in their classes)
     const uniqueStudentIds = new Set<string>();
@@ -215,7 +244,9 @@ export default async function Dashboard({
 
   // Classes
   let classQuery = supabase.from('classes').select('*', { count: 'exact', head: true });
-  if (!isActiveAdmin && profileId) {
+  if (isActiveAdmin && accountInstructorIds.length > 0) {
+    classQuery = classQuery.in('instructor_id', accountInstructorIds);
+  } else if (!isActiveAdmin && profileId) {
     classQuery = classQuery.eq('instructor_id', profileId);
   }
   const { count: classCount } = await classQuery;
@@ -240,7 +271,9 @@ export default async function Dashboard({
     .eq('status', 'Present')
     .gte('timestamp', weekStart);
 
-  if (!isActiveAdmin && profileId) {
+  if (isActiveAdmin && accountInstructorIds.length > 0) {
+    weekLogsQuery = weekLogsQuery.in('classes.instructor_id', accountInstructorIds);
+  } else if (!isActiveAdmin && profileId) {
     weekLogsQuery = weekLogsQuery.eq('classes.instructor_id', profileId);
   }
 
@@ -267,7 +300,9 @@ export default async function Dashboard({
     .eq('status', 'Late')
     .gte('timestamp', todayStartStr);
 
-  if (!isActiveAdmin && profileId) {
+  if (isActiveAdmin && accountInstructorIds.length > 0) {
+    lateQuery = lateQuery.in('classes.instructor_id', accountInstructorIds);
+  } else if (!isActiveAdmin && profileId) {
     lateQuery = lateQuery.eq('classes.instructor_id', profileId);
   }
 
@@ -281,7 +316,9 @@ export default async function Dashboard({
     .limit(5)
     .order('created_at', { ascending: false });
 
-  if (!isActiveAdmin && profileId) {
+  if (isActiveAdmin && accountInstructorIds.length > 0) {
+    recentStudentQuery = recentStudentQuery.in('instructor_id', accountInstructorIds);
+  } else if (!isActiveAdmin && profileId) {
     recentStudentQuery = recentStudentQuery.eq('instructor_id', profileId);
   }
 
@@ -297,7 +334,9 @@ export default async function Dashboard({
     .order('created_at', { ascending: false })
     .limit(50); // Get enough classes to filter
 
-  if (!isActiveAdmin && profileId) {
+  if (isActiveAdmin && accountInstructorIds.length > 0) {
+    classesListQuery = classesListQuery.in('instructor_id', accountInstructorIds);
+  } else if (!isActiveAdmin && profileId) {
     classesListQuery = classesListQuery.eq('instructor_id', profileId);
   }
 

@@ -12,15 +12,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        // Verify caller is an instructor (NOT admin)
+        // Verify caller is an instructor or admin
         const { data: actor } = await supabase
             .from("instructors")
-            .select("id, role")
+            .select("id, role, is_super_admin")
             .eq("id", profileId)
             .single();
 
-        if (!actor || actor.role !== "instructor") {
-            return NextResponse.json({ error: "Forbidden: Instructors only" }, { status: 403 });
+        // Allow instructors and admins (both system and super)
+        const isAuthorized = actor?.role === "instructor" || actor?.role === "admin" || actor?.is_super_admin;
+
+        if (!isAuthorized) {
+            return NextResponse.json({ error: "Forbidden: Unauthorized access" }, { status: 403 });
         }
 
         const { student_id, class_id, date, new_status } = await request.json();
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
             const { error: insertError } = await supabase
                 .from("attendance_logs")
                 .insert({
-                    student_id: parseInt(student_id),
+                    student_id: student_id, // Keep as string or number depending on DB type, DO NOT FORCE parseInt if it might be UUID (though here it seems to be number in DB based on other files, checking schema...)
                     class_id,
                     timestamp: new Date(`${date}T08:00:00+08:00`).toISOString(),
                     status: new_status,

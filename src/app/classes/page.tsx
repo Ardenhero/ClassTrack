@@ -40,7 +40,35 @@ export default async function ClassesPage({
     const isSuperAdmin = await checkIsSuperAdmin();
     const isActiveAdmin = role === 'admin';
 
-    if (!isActiveAdmin && profileId) {
+    // STRICT DATA SCOPING for System Admin
+    if (isActiveAdmin && profileId) {
+        // 1. Get auth_user_id of current admin
+        const { data: adminRecord } = await supabase
+            .from('instructors')
+            .select('auth_user_id')
+            .eq('id', profileId)
+            .single();
+
+        if (adminRecord?.auth_user_id) {
+            // 2. Get all instructors in this account
+            const { data: accountInstructors } = await supabase
+                .from('instructors')
+                .select('id')
+                .eq('auth_user_id', adminRecord.auth_user_id);
+
+            const accountInstructorIds = accountInstructors?.map(i => i.id) || [];
+
+            // 3. Filter classes to only those owned by account instructors
+            if (accountInstructorIds.length > 0) {
+                queryBuilder = queryBuilder.in("instructor_id", accountInstructorIds);
+            } else {
+                // Fallback: If no instructors found (weird), show nothing or just own?
+                // Let's show nothing to be safe or just own
+                queryBuilder = queryBuilder.eq("instructor_id", profileId);
+            }
+        }
+    } else if (!isSuperAdmin && profileId) {
+        // Regular Instructor -> Own classes only
         queryBuilder = queryBuilder.eq("instructor_id", profileId);
     }
 

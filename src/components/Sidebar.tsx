@@ -86,6 +86,10 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
         getUser();
     }, [supabase]);
 
+    if (isSwitching || !profile) {
+        return null; // Prevent flash of wrong content during switch
+    }
+
     return (
         <>
             <div className="flex bg-nwu-red h-full w-full flex-col text-white shadow-xl">
@@ -217,20 +221,6 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                             Sign Out
                         </button>
                     </form>
-
-                    {/* Reset Profile PIN - Only for Regular Admin Role */}
-                    {profile?.role === "admin" && !isSuperAdmin && (
-                        <div className="pt-2 border-t border-white/10 mt-2">
-                            <Link
-                                href="/dashboard/admin/security"
-                                onClick={onLinkClick}
-                                className="flex w-full items-center px-4 py-2 text-sm font-bold text-nwu-gold hover:bg-[#5e0d0e] rounded-md transition-colors"
-                            >
-                                <KeyRound className="mr-3 h-5 w-5" />
-                                Reset Profile PIN
-                            </Link>
-                        </div>
-                    )}
                 </div>
             </div>
 
