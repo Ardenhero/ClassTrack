@@ -22,15 +22,20 @@ import {
     ShieldAlert,
     ChevronDown,
     ChevronRight,
-    Search
+    Search,
+    FileCheck,
+    BarChart3,
+    KeyRound,
 } from "lucide-react";
 
 // Standard Instructor/Admin Navigation
 const standardNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
+    { name: "Evidence", href: "/evidence", icon: FileCheck },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
+    { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
@@ -39,8 +44,11 @@ const standardNavigation = [
 const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
+    { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
+    { name: "Evidence Queue", href: "/dashboard/admin/evidence", icon: FileCheck },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
     // Global Directory is handled separately as a dropdown
+    { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
     { name: "System Info", href: "/about", icon: Info },
 ];
