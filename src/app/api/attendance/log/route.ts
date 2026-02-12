@@ -110,7 +110,7 @@ export async function POST(request: Request) {
             }
 
             if (!classRef) {
-                return NextResponse.json({ error: "Class not found (Fallback)" }, { status: 404 });
+                return NextResponse.json({ error: "Class not found (Fallback)" }, { status: 400 });
             }
 
             // 2. Find the Student (using Name + Instructor)
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
                     .maybeSingle();
 
                 if (!fallbackStudent) {
-                    return NextResponse.json({ error: `Student '${student_name}' not found for this instructor.` }, { status: 404 });
+                    return NextResponse.json({ error: `Student '${student_name}' not found for this instructor.` }, { status: 400 });
                 }
                 student = fallbackStudent;
             }
