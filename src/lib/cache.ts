@@ -34,24 +34,61 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
         const columns = 'id, name, sin, year_level, created_at';
 
         if (isActiveAdmin) {
-            // ADMIN: See all students with direct query
-            let queryBuilder = supabase
-                .from('students')
-                .select(columns)
-                .order('name');
+            if (isSuperAdmin) {
+                // SUPER ADMIN: See ALL students
+                // No filter needed, just select all
+                let queryBuilder = supabase
+                    .from('students')
+                    .select(columns)
+                    .order('name');
+                if (query) queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                const { data, error } = await queryBuilder;
+                if (error) throw error;
+                return (data || []) as StudentData[];
+            } else {
+                // SYSTEM ADMIN: See students from THEIR account only
+                const { data: adminRecord } = await supabase
+                    .from('instructors')
+                    .select('auth_user_id')
+                    .eq('id', profileId)
+                    .single();
 
-            if (query) {
-                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                let accountInstructorIds: string[] = [];
+                if (adminRecord?.auth_user_id) {
+                    const { data: accountInstructors } = await supabase
+                        .from('instructors')
+                        .select('id')
+                        .eq('auth_user_id', adminRecord.auth_user_id);
+                    accountInstructorIds = accountInstructors?.map(i => i.id) || [];
+                }
+
+                if (accountInstructorIds.length === 0) return []; // Should not happen if admin exists
+
+                // Fetch students created by OR enrolled in classes of these instructors
+                // 1. Created by account instructors
+                const { data: createdIds } = await supabase.from('students').select('id').in('instructor_id', accountInstructorIds);
+                // 2. Enrolled in account instructors' classes
+                const { data: enrolledIds } = await supabase.from('enrollments').select('student_id, classes!inner(instructor_id)').in('classes.instructor_id', accountInstructorIds);
+
+                const uniqueIds = Array.from(new Set([
+                    ...(createdIds?.map(s => s.id) || []),
+                    ...(enrolledIds?.map(e => e.student_id) || [])
+                ]));
+
+                if (uniqueIds.length === 0) return [];
+
+                let queryBuilder = supabase
+                    .from('students')
+                    .select(columns)
+                    .in('id', uniqueIds)
+                    .order('name');
+
+                if (query) queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+
+                const { data, error } = await queryBuilder;
+                if (error) throw error;
+                return (data || []) as StudentData[];
             }
-
-            const { data, error } = await queryBuilder;
-
-            if (error) {
-                console.error("[getCachedStudents] Admin query error:", error);
-                throw error;
-            }
-
-            return (data || []) as StudentData[];
         } else {
             // INSTRUCTOR: Use complex query with enrollment-based visibility
             // This replaces the RPC with a direct query approach
