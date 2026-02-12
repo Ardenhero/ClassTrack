@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Upload, Search, Calendar, X, Plus, Loader2, CheckCircle, XCircle, ArrowLeft, FileText, AlertTriangle } from "lucide-react";
+import { Upload, Search, Calendar, X, Plus, Loader2, CheckCircle, XCircle, ArrowLeft, FileText, AlertTriangle, UserCheck } from "lucide-react";
 
 interface StudentInfo {
     id: number;
@@ -11,11 +11,17 @@ interface StudentInfo {
     year_level: string;
 }
 
+interface InstructorInfo {
+    id: string;
+    name: string;
+}
+
 interface ClassInfo {
     id: number;
     subject_name: string;
     section: string;
     year_level: string;
+    instructor_id: string;
     instructor_name: string;
 }
 
@@ -28,9 +34,11 @@ export default function SubmitEvidencePage() {
     const [lookupError, setLookupError] = useState("");
 
     const [student, setStudent] = useState<StudentInfo | null>(null);
-    const [classes, setClasses] = useState<ClassInfo[]>([]);
+    const [allClasses, setAllClasses] = useState<ClassInfo[]>([]);
+    const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
     const [uploadsRemaining, setUploadsRemaining] = useState(5);
 
+    const [selectedInstructor, setSelectedInstructor] = useState("");
     const [selectedClass, setSelectedClass] = useState("");
     const [dates, setDates] = useState<string[]>([]);
     const [currentDate, setCurrentDate] = useState("");
@@ -38,6 +46,11 @@ export default function SubmitEvidencePage() {
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    // Filter classes by selected instructor
+    const filteredClasses = selectedInstructor
+        ? allClasses.filter((c) => String(c.instructor_id) === selectedInstructor)
+        : [];
 
     const handleLookup = async () => {
         if (!sin.trim()) return;
@@ -54,7 +67,8 @@ export default function SubmitEvidencePage() {
             }
 
             setStudent(data.student);
-            setClasses(data.classes || []);
+            setAllClasses(data.classes || []);
+            setInstructors(data.instructors || []);
             setUploadsRemaining(data.uploads_remaining);
 
             if (data.uploads_remaining <= 0) {
@@ -68,6 +82,11 @@ export default function SubmitEvidencePage() {
         } finally {
             setSearching(false);
         }
+    };
+
+    const handleInstructorChange = (instructorId: string) => {
+        setSelectedInstructor(instructorId);
+        setSelectedClass(""); // Reset class when instructor changes
     };
 
     const addDate = () => {
@@ -120,7 +139,9 @@ export default function SubmitEvidencePage() {
         setStep("lookup");
         setSin("");
         setStudent(null);
-        setClasses([]);
+        setAllClasses([]);
+        setInstructors([]);
+        setSelectedInstructor("");
         setSelectedClass("");
         setDates([]);
         setFiles([]);
@@ -219,21 +240,50 @@ export default function SubmitEvidencePage() {
                             </div>
 
                             <div className="p-6 space-y-5">
-                                {/* Class Selection */}
+                                {/* Instructor Selection (FIRST) */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1 flex items-center gap-1">
+                                        <UserCheck className="h-3.5 w-3.5" />
+                                        Select Instructor
+                                    </label>
+                                    <select
+                                        value={selectedInstructor}
+                                        onChange={(e) => handleInstructorChange(e.target.value)}
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-nwu-red focus:border-nwu-red"
+                                    >
+                                        <option value="">Choose your instructor...</option>
+                                        {instructors.map((inst) => (
+                                            <option key={inst.id} value={inst.id}>
+                                                {inst.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {instructors.length === 0 && (
+                                        <p className="text-xs text-amber-600 mt-1">No instructors found. You may not be enrolled in any classes.</p>
+                                    )}
+                                </div>
+
+                                {/* Class Selection (filtered by instructor) */}
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Select Class to Excuse From</label>
                                     <select
                                         value={selectedClass}
                                         onChange={(e) => setSelectedClass(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-nwu-red focus:border-nwu-red"
+                                        disabled={!selectedInstructor}
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-nwu-red focus:border-nwu-red disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <option value="">Choose a class...</option>
-                                        {classes.map((c) => (
+                                        <option value="">
+                                            {selectedInstructor ? "Choose a class..." : "Select an instructor first..."}
+                                        </option>
+                                        {filteredClasses.map((c) => (
                                             <option key={c.id} value={c.id}>
-                                                {c.subject_name} ({c.section}) — {c.instructor_name}
+                                                {c.subject_name} ({c.section})
                                             </option>
                                         ))}
                                     </select>
+                                    {selectedInstructor && filteredClasses.length === 0 && (
+                                        <p className="text-xs text-amber-600 mt-1">No classes found for this instructor.</p>
+                                    )}
                                 </div>
 
                                 {/* Date Selection */}

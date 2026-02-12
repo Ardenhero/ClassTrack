@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-const MONTHLY_LIMIT = 3;
+const MONTHLY_LIMIT = 10;
 
 export async function POST(request: NextRequest) {
     try {

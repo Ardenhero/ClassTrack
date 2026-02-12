@@ -6,6 +6,8 @@ import { AssignStudentDialog } from "../AssignStudentDialog";
 import { removeStudent } from "./actions";
 import { format, parse, differenceInMinutes } from "date-fns";
 import { AttendanceFilter } from "@/app/attendance/AttendanceFilter";
+import { cookies } from "next/headers";
+import StatusOverrideButton from "./StatusOverrideButton";
 
 interface Enrollment {
     id: string;
@@ -20,6 +22,19 @@ interface Enrollment {
 export default async function ClassDetailsPage({ params, searchParams }: { params: { id: string }, searchParams?: { date?: string } }) {
     const supabase = createClient();
     const dateParam = searchParams?.date;
+
+    // Determine if viewer is an instructor (for override buttons)
+    const cookieStore = cookies();
+    const viewerProfileId = cookieStore.get("sc_profile_id")?.value;
+    let isInstructor = false;
+    if (viewerProfileId) {
+        const { data: viewerProfile } = await supabase
+            .from("instructors")
+            .select("role")
+            .eq("id", viewerProfileId)
+            .single();
+        isInstructor = viewerProfile?.role === "instructor";
+    }
 
     // Date Logic matching Attendance Page (Manila Timezone Safe)
     const getManilaDate = () => {
@@ -281,6 +296,16 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                                             <UserMinus className="h-4 w-4" />
                                         </button>
                                     </form>
+
+                                    {/* Manual Override — Instructor Only */}
+                                    {isInstructor && (
+                                        <StatusOverrideButton
+                                            studentId={enrollment.students.id}
+                                            classId={params.id}
+                                            date={dayString}
+                                            currentStatus={statusLabel}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         )
