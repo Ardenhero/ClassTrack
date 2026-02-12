@@ -79,10 +79,6 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
 
     const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
 
-    const handleAdminClick = () => {
-        router.push("/dashboard/admin/departments");
-    };
-
     useEffect(() => {
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
