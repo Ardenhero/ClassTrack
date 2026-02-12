@@ -149,6 +149,7 @@ export async function middleware(request: NextRequest) {
         "/login",
         "/auth",
         "/pending-approval",
+        "/submit-evidence",
         "/api/attendance",
         "/api/sync",
         "/api/health",
@@ -156,7 +157,8 @@ export async function middleware(request: NextRequest) {
         "/api/kiosk",
         "/api/status",
         "/api/debug/logs",
-        "/api/auth/signout"
+        "/api/auth/signout",
+        "/api/evidence/public-upload",
     ];
 
     const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
