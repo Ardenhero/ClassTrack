@@ -244,9 +244,15 @@ export default async function Dashboard({
 
   // Classes
   let classQuery = supabase.from('classes').select('*', { count: 'exact', head: true });
-  if (isActiveAdmin && accountInstructorIds.length > 0) {
-    classQuery = classQuery.in('instructor_id', accountInstructorIds);
-  } else if (!isActiveAdmin && profileId) {
+  if (isActiveAdmin) {
+    if (accountInstructorIds.length > 0) {
+      // STRICT SCOPING: Only count classes from managed instructors
+      classQuery = classQuery.in('instructor_id', accountInstructorIds);
+    } else {
+      // If no managed instructors, count should be 0 (don't show admin's own classes if they erroneously have any)
+      classQuery = classQuery.eq('instructor_id', '00000000-0000-0000-0000-000000000000'); // Valid UUID format but dummy
+    }
+  } else if (profileId) {
     classQuery = classQuery.eq('instructor_id', profileId);
   }
   const { count: classCount } = await classQuery;

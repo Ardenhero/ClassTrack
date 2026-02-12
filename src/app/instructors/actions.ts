@@ -15,6 +15,7 @@ export async function getInstructorList(): Promise<InstructorOption[]> {
         .from("instructors")
         .select("id, name, department_id")
         .eq("is_super_admin", false)
+        .neq("role", "admin") // Filter out System Admins
         .order("name");
 
     if (error) {
