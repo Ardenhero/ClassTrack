@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signout } from "@/app/login/actions";
 import { useProfile } from "@/context/ProfileContext";
 import { cn } from "@/utils/cn";
@@ -32,7 +32,7 @@ import {
 const instructorNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
-    { name: "Evidence", href: "/evidence", icon: FileCheck },
+    { name: "Evidence Queue", href: "/evidence", icon: FileCheck },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
     { name: "Reports", href: "/reports", icon: BarChart3 },
@@ -40,8 +40,9 @@ const instructorNavigation = [
     { name: "About", href: "/about", icon: Info },
 ];
 
-// System Admin Navigation (no Dashboard, no Evidence)
+// System Admin Navigation (with Dashboard, no Evidence)
 const adminNavigation = [
+    { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
@@ -66,7 +67,7 @@ import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     const pathname = usePathname();
-    const router = useRouter();
+
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const [isDirOpen, setIsDirOpen] = useState(false);
     const supabase = createClient();
@@ -74,11 +75,8 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
 
     const isSuperAdmin = profile?.is_super_admin || profile?.role === 'admin' && profile?.name === 'Super Admin';
     const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
-    const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
 
-    const handleAdminClick = () => {
-        router.push("/dashboard/admin/departments");
-    };
+    const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
 
     useEffect(() => {
         const getUser = async () => {
@@ -220,16 +218,17 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                         </button>
                     </form>
 
-                    {/* Admin Console Link - Only for Regular Admin Role (Super Admin console is unpacked) */}
+                    {/* Reset Profile PIN - Only for Regular Admin Role */}
                     {profile?.role === "admin" && !isSuperAdmin && (
                         <div className="pt-2 border-t border-white/10 mt-2">
-                            <button
-                                onClick={handleAdminClick}
+                            <Link
+                                href="/dashboard/admin/security"
+                                onClick={onLinkClick}
                                 className="flex w-full items-center px-4 py-2 text-sm font-bold text-nwu-gold hover:bg-[#5e0d0e] rounded-md transition-colors"
                             >
-                                <Settings className="mr-3 h-5 w-5" />
-                                Admin Console
-                            </button>
+                                <KeyRound className="mr-3 h-5 w-5" />
+                                Reset Profile PIN
+                            </Link>
                         </div>
                     )}
                 </div>

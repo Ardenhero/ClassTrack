@@ -1,9 +1,8 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
 import { AddClassDialog } from "./AddClassDialog";
-import { DeleteClassButton } from "./DeleteClassButton";
-import Link from "next/link";
-import { BookOpen, Users } from "lucide-react";
+import { ClassGrid } from "./ClassGrid";
+import { BookOpen } from "lucide-react";
 import { YearGroup } from "@/components/YearGroup";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Suspense } from "react";
@@ -14,6 +13,7 @@ interface ClassItem {
     description: string;
     year_level?: string;
     enrollments: { count: number }[];
+    count: number;
 }
 
 import { cookies } from "next/headers";
@@ -90,34 +90,7 @@ export default async function ClassesPage({
                 {Object.entries(groupedClasses).map(([level, items]) => (
                     items.length > 0 && (
                         <YearGroup key={level} title={level} count={items.length} itemLabel="classes">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {items.map((c) => (
-                                    <div key={c.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="h-10 w-10 bg-nwu-red/10 rounded-lg flex items-center justify-center">
-                                                <BookOpen className="h-5 w-5 text-nwu-red" />
-                                            </div>
-                                            {!isSuperAdmin && <DeleteClassButton id={c.id} />}
-                                        </div>
-
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{c.name}</h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2 min-h-[40px]">{c.description || "No description provided."}</p>
-
-                                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50 dark:border-gray-700">
-                                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                                <Users className="h-4 w-4 mr-1" />
-                                                {c.enrollments?.[0]?.count || 0} Students
-                                            </div>
-                                            <Link
-                                                href={`/classes/${c.id}`}
-                                                className="text-sm font-medium text-nwu-red hover:underline"
-                                            >
-                                                {isSuperAdmin ? "View" : "Manage"} &rarr;
-                                            </Link>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <ClassGrid classes={items} isSuperAdmin={isSuperAdmin} />
                         </YearGroup>
                     )
                 ))}

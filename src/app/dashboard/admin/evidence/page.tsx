@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import DashboardLayout from "@/components/DashboardLayout";
+// DashboardLayout is provided by parent admin/layout.tsx — do NOT wrap again
 import { FileCheck, Loader2, CheckCircle, XCircle, Clock, Eye, Calendar } from "lucide-react";
 
 interface EvidenceItem {
@@ -75,7 +75,7 @@ export default function EvidenceQueuePage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -178,6 +178,6 @@ export default function EvidenceQueuePage() {
                     </table>
                 </div>
             )}
-        </DashboardLayout>
+        </>
     );
 }

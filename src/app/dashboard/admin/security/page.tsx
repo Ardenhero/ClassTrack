@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import DashboardLayout from "@/components/DashboardLayout";
+// DashboardLayout is provided by parent admin/layout.tsx — do NOT wrap again
 import { KeyRound, ShieldCheck, Lock, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 
 interface UserTarget {
@@ -138,7 +138,7 @@ export default function SecurityPage() {
     };
 
     return (
-        <DashboardLayout>
+        <>
             <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <ShieldCheck className="h-7 w-7 text-nwu-red" />
@@ -259,6 +259,6 @@ export default function SecurityPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </>
     );
 }
