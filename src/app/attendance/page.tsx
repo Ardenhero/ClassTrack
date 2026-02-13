@@ -116,7 +116,7 @@ export default async function AttendancePage({
         let iconName = "CheckCircle";
 
         let isInvalidSession = false;
-        if (cls?.start_time) {
+        if (cls?.start_time && statusLabel !== 'Excused') {
             const classStartString = `${dayString}T${cls.start_time}`;
             const classStart = new Date(`${classStartString}+08:00`);
             const validSessionStart = new Date(classStart.getTime() - 20 * 60000);

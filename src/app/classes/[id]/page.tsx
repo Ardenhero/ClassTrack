@@ -116,7 +116,8 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
         // STRICT SESSION WINDOW LOGIC
         let isInvalidSession = false;
-        if (classData.start_time) {
+        // Skip check if explicitly Excused
+        if (classData.start_time && session.status !== 'Excused') {
             const classStartString = `${dayString}T${classData.start_time}`;
             const classStart = new Date(`${classStartString}+08:00`); // Manila Time
             const validSessionStart = new Date(classStart.getTime() - 20 * 60000); // 20 mins before
@@ -154,6 +155,9 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
         } else if (dbStatus === 'Late') {
             badgeColor = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
             icon = Clock;
+        } else if (dbStatus === 'Excused') {
+            badgeColor = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+            icon = CheckCircle;
         } else if (dbStatus === 'Absent') {
             badgeColor = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
             icon = AlertCircle;
