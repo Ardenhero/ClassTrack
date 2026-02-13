@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
                 createdDocs.push(doc);
 
                 // Link dates to THIS evidence document
-                if (dateList.length > 0) {
-                    const dateLinks = dateList.map(d => ({
+                if (dates.length > 0) {
+                    const dateLinks = dates.map(d => ({
                         evidence_id: doc.id,
                         absence_date: d
                     }));
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
             success: true,
             student_name: student.name,
             documents_uploaded: results.length,
-            dates_linked: dateList.length, // Use dateList here
+            dates_linked: dates.length, // Use dates here
             remaining_uploads: MAX_UPLOADS_PER_STUDENT - currentCount - results.length,
         });
     } catch (err) {
