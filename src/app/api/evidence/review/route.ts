@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
-        // Verify caller is admin
         // Verify caller is an instructor (admin or regular)
         const { data: actor } = await supabase
             .from("instructors")
@@ -95,38 +94,49 @@ export async function POST(request: NextRequest) {
 
                     // For each linked date, find and update matching attendance logs
                     for (const link of dateLinks) {
-                        // Create 24h range for the date in UTC/PST
-                        // Note: The date string is likely YYYY-MM-DD. 
-                        // We need to cover the entire day in the stored timestamp.
-                        // Assuming timestamps are stored with timezone or UTC.
-                        const dayStart = `${link.absence_date}T00:00:00`;
-                        const dayEnd = `${link.absence_date}T23:59:59`;
+                        try {
+                            const dateParts = link.absence_date.split('-');
+                            if (dateParts.length !== 3) {
+                                console.error(`Invalid date format: ${link.absence_date}`);
+                                continue;
+                            }
+                            const year = parseInt(dateParts[0]);
+                            const month = parseInt(dateParts[1]) - 1;
+                            const day = parseInt(dateParts[2]);
 
-                        // Get class_id from evidence to filter specific class
-                        const targetClassId = evidence.class_id;
+                            // UTC range for PH time (+8)
+                            const startUTC = new Date(Date.UTC(year, month, day, 0, 0, 0));
+                            startUTC.setUTCHours(startUTC.getUTCHours() - 8);
 
-                        let query = adminClient
-                            .from("attendance_logs")
-                            .update({ status: "Excused" })
-                            .eq("student_id", evidence.student_id)
-                            .gte("timestamp", dayStart)
-                            .lte("timestamp", dayEnd);
-                        // Removing strict "Absent" check to allow excusing "Late" or other statuses if needed, 
-                        // or keep it if strictly for absent. User said "Change from Absent to Excused". 
-                        // Safest to keep it to avoid overwriting "Present".
-                        // .in("status", ["Absent", "absent"]); 
+                            const endUTC = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+                            endUTC.setUTCHours(endUTC.getUTCHours() - 8);
 
-                        // Re-adding status check but making it case-insensitive/broader if needed
-                        query = query.in("status", ["Absent", "absent", "Late", "late", "Cut Class", "cut class"]);
+                            const startISO = startUTC.toISOString();
+                            const endISO = endUTC.toISOString();
 
-                        // If evidence is linked to a specific class, only excuse that class
-                        if (targetClassId) {
-                            query = query.eq("class_id", targetClassId);
-                        }
+                            console.log(`Updating attendance: Student ${evidence.student_id}, Class ${evidence.class_id || 'All'}, Date ${link.absence_date}, Range ${startISO} - ${endISO}`);
 
-                        const { error: attError } = await query;
-                        if (attError) {
-                            console.error(`Failed to update attendance for ${link.absence_date}:`, attError);
+                            let query = adminClient
+                                .from("attendance_logs")
+                                .update({ status: "Excused" })
+                                .eq("student_id", evidence.student_id)
+                                .gte("timestamp", startISO)
+                                .lte("timestamp", endISO)
+                                .in("status", ["Absent", "absent", "Late", "late", "Cut Class", "cut class"]);
+
+                            if (evidence.class_id) {
+                                query = query.eq("class_id", evidence.class_id);
+                            }
+
+                            const { error: attError, count } = await query.select("id", { count: 'exact' });
+
+                            if (attError) {
+                                console.error(`Update failed for ${link.absence_date}:`, attError);
+                            } else {
+                                console.log(`Updated ${count} records for ${link.absence_date}`);
+                            }
+                        } catch (e) {
+                            console.error(`Error processing ${link.absence_date}:`, e);
                         }
                     }
                 }
