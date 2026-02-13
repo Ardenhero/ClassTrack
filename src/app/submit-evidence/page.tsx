@@ -270,26 +270,55 @@ export default function SubmitEvidencePage() {
                                     )}
                                 </div>
 
-                                {/* Class Selection (filtered by instructor) */}
+                                {/* Class Selection (filtered by instructor) - MULTI SELECT */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Select Class to Excuse From</label>
-                                    <select
-                                        value={selectedClass}
-                                        onChange={(e) => setSelectedClass(e.target.value)}
-                                        disabled={!selectedInstructor}
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-nwu-red focus:border-nwu-red disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <option value="">
-                                            {selectedInstructor ? "Choose a class..." : "Select an instructor first..."}
-                                        </option>
-                                        {filteredClasses.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.subject_name} ({c.section})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {selectedInstructor && filteredClasses.length === 0 && (
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Select Class(es) to Excuse From</label>
+
+                                    {!selectedInstructor ? (
+                                        <div className="text-sm text-gray-400 italic p-3 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                                            Select an instructor above to see their classes
+                                        </div>
+                                    ) : filteredClasses.length === 0 ? (
                                         <p className="text-xs text-amber-600 mt-1">No classes found for this instructor.</p>
+                                    ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto p-1">
+                                            {filteredClasses.map((c) => (
+                                                <label
+                                                    key={c.id}
+                                                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedClass.includes(String(c.id))
+                                                            ? "bg-red-50 border-nwu-red shadow-sm"
+                                                            : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        value={c.id}
+                                                        checked={selectedClass.includes(String(c.id))}
+                                                        onChange={(e) => {
+                                                            const id = String(c.id);
+                                                            const current = selectedClass ? selectedClass.split(',') : [];
+                                                            let newSelection;
+                                                            if (e.target.checked) {
+                                                                newSelection = [...current, id];
+                                                            } else {
+                                                                newSelection = current.filter(cid => cid !== id);
+                                                            }
+                                                            setSelectedClass(newSelection.join(','));
+                                                        }}
+                                                        className="mt-1 h-4 w-4 text-nwu-red border-gray-300 rounded focus:ring-nwu-red"
+                                                    />
+                                                    <div>
+                                                        <div className="font-medium text-sm text-gray-900">{c.subject_name}</div>
+                                                        <div className="text-xs text-gray-500">{c.section} • {c.year_level}</div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {selectedInstructor && (selectedClass.split(',').filter(Boolean).length > 0) && (
+                                        <p className="text-xs text-gray-500 mt-2 text-right">
+                                            {selectedClass.split(',').filter(Boolean).length} class(es) selected
+                                        </p>
                                     )}
                                 </div>
 
