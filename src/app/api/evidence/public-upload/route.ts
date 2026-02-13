@@ -180,54 +180,64 @@ export async function GET(request: NextRequest) {
         }
 
         // Get classes this student is ENROLLED in (via enrollments table)
-        const { data: enrollments } = await supabase
+        // Explicitly join classes and instructors
+        const { data: enrollments, error: enrollmentError } = await supabase
             .from("enrollments")
-            .select("class_id, classes(id, subject_name, section, year_level, instructor_id, instructors(id, name))")
+            .select(`
+                class_id,
+                classes (
+                    id,
+                    subject_name,
+                    section,
+                    year_level,
+                    instructor_id,
+                    instructors (
+                        id,
+                        name
+                    )
+                )
+            `)
             .eq("student_id", student.id);
 
-        let classesWithInstructor: { id: unknown; subject_name: unknown; section: unknown; year_level: unknown; instructor_id: unknown; instructor_name: string }[] = [];
+        if (enrollmentError) {
+            console.error("Enrollment fetch error:", enrollmentError);
+        }
+
+        let classesWithInstructor: any[] = [];
 
         if (enrollments && enrollments.length > 0) {
             // Build classes list from enrollment data
-            classesWithInstructor = enrollments.map((e: Record<string, unknown>) => {
-                const c = e.classes as Record<string, unknown>;
-                const instructor = c?.instructors as Record<string, unknown>;
-                return {
-                    id: c?.id,
-                    subject_name: c?.subject_name,
-                    section: c?.section,
-                    year_level: c?.year_level,
-                    instructor_id: instructor?.id || c?.instructor_id,
-                    instructor_name: (instructor?.name as string) || "Unknown",
-                };
-            });
-        } else {
-            // Fallback: fetch classes matching student year_level
-            const { data: fallbackClasses } = await supabase
-                .from("classes")
-                .select("id, subject_name, section, year_level, instructor_id, instructors(id, name)")
-                .eq("year_level", student.year_level);
+            classesWithInstructor = enrollments.map((e: any) => {
+                const c = e.classes;
+                // Safe access to nested instructor data
+                const instructor = c?.instructors;
 
-            classesWithInstructor = (fallbackClasses || []).map((c: Record<string, unknown>) => {
-                const instructor = c?.instructors as Record<string, unknown>;
                 return {
                     id: c?.id,
                     subject_name: c?.subject_name,
                     section: c?.section,
                     year_level: c?.year_level,
+                    // Prefer the instructor object's ID if available, otherwise fallback to foreign key
                     instructor_id: instructor?.id || c?.instructor_id,
-                    instructor_name: (instructor?.name as string) || "Unknown",
+                    instructor_name: instructor?.name || "Unknown Instructor",
+                    // Keep raw data for debugging if needed
+                    raw_instructor: instructor
                 };
-            });
+            }).filter(c => c.id); // Valid class check
         }
+
+        // REMOVED FALLBACK: Strict filtering as requested. 
+        // If no enrollments, student sees no classes.
 
         // Build distinct instructors list for the dropdown
         const instructorMap = new Map<string, string>();
-        for (const cls of classesWithInstructor) {
-            if (cls.instructor_id && !instructorMap.has(String(cls.instructor_id))) {
-                instructorMap.set(String(cls.instructor_id), String(cls.instructor_name));
+        classesWithInstructor.forEach(cls => {
+            if (cls.instructor_id && cls.instructor_name !== "Unknown Instructor") {
+                if (!instructorMap.has(String(cls.instructor_id))) {
+                    instructorMap.set(String(cls.instructor_id), String(cls.instructor_name));
+                }
             }
-        }
+        });
         const instructors = Array.from(instructorMap.entries()).map(([id, name]) => ({ id, name }));
 
         // Get upload count
