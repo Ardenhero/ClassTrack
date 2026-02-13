@@ -69,18 +69,23 @@ export default function SecurityPage() {
             // Load users for password reset (super admin only)
             if (isSuperAdmin) {
                 // GLOBAL SCOPE: Fetch ALL Admin users from all accounts
-                const { data: globalAdmins } = await supabase
+                // NOTE: 'email' is not in instructors table. select auth_user_id instead.
+                const { data: globalAdmins, error } = await supabase
                     .from("instructors")
-                    .select("auth_user_id, name, email") // Added email for clarity
+                    .select("id, auth_user_id, name")
                     .not("auth_user_id", "is", null)
-                    .eq("role", "admin")
+                    .eq("role", "admin") // Filter out regular instructors
                     .order("name");
 
+                if (error) {
+                    console.error("Error fetching global admins:", error);
+                }
+
                 if (globalAdmins) {
-                    setUsers(globalAdmins.map((i: { auth_user_id: string | null; name: string; email: string | null }) => ({
+                    setUsers(globalAdmins.map((i: any) => ({
                         id: i.auth_user_id!,
-                        email: i.email || "",
-                        name: `${i.name} (${i.email || 'No Email'})`, // Show email in dropdown for better ID
+                        email: "", // specific email not available in this view, use ID or Name
+                        name: `${i.name} (Admin)`,
                     })));
                 }
             } else if (myAuthUserId) {
