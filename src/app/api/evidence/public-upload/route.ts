@@ -115,42 +115,63 @@ export async function POST(request: NextRequest) {
                 .from("evidence-uploads")
                 .getPublicUrl(filePath);
 
-            // Create evidence document
-            const { data: doc, error: docError } = await supabase
-                .from("evidence_documents")
-                .insert({
-                    student_id: student.id,
-                    class_id: classId, // Save the class ID to link to instructor
-                    file_url: urlData.publicUrl,
-                    file_name: file.name,
-                    file_type: file.type,
-                    description: description || `Excuse letter for class ${classId}`,
-                    status: "pending",
-                })
-                .select("id")
-                .single();
+            // Create evidence document(s)
+            const classIds = String(classId).split(','); // Handle multiple classes if passed as CSV
+            const createdDocs = [];
 
-            if (docError || !doc) {
-                console.error("Evidence insert error:", docError);
-                return NextResponse.json({ error: "Failed to save evidence record" }, { status: 500 });
+            for (const cid of classIds) {
+                const trimmedCid = cid.trim();
+                if (!trimmedCid) continue;
+
+                const { data: doc, error: docError } = await supabase
+                    .from("evidence_documents")
+                    .insert({
+                        student_id: student.id,
+                        class_id: trimmedCid, // Save the class ID to link to instructor
+                        file_url: urlData.publicUrl,
+                        file_name: file.name,
+                        file_type: file.type,
+                        description: description || `Excuse letter for class ${trimmedCid}`,
+                        status: "pending",
+                    })
+                    .select("id")
+                    .single();
+
+                if (docError) {
+                    console.error("Evidence creation error:", docError);
+                    return NextResponse.json({ error: "Failed to save evidence record" }, { status: 500 });
+                }
+
+                createdDocs.push(doc);
+
+                // Link dates to THIS evidence document
+                if (dateList.length > 0) {
+                    const dateLinks = dateList.map(d => ({
+                        evidence_id: doc.id,
+                        absence_date: d
+                    }));
+
+                    const { error: linkError } = await supabase
+                        .from("evidence_date_links")
+                        .insert(dateLinks);
+
+                    if (linkError) {
+                        console.error("Date link error:", linkError);
+                        // Continue even if linking dates fails, distinct from evidence creation
+                    }
+                }
             }
 
-            // Create date links
-            const dateLinks = dates.map((d) => ({
-                evidence_id: doc.id,
-                absence_date: d,
-            }));
-
-            await supabase.from("evidence_date_links").insert(dateLinks);
-
-            results.push({ id: doc.id, file_name: file.name });
+            // The original `results.push` was for a single doc. Now we have multiple.
+            // We'll push all created docs for this file into results.
+            createdDocs.forEach(doc => results.push({ id: doc.id, file_name: file.name }));
         }
 
         return NextResponse.json({
             success: true,
             student_name: student.name,
             documents_uploaded: results.length,
-            dates_linked: dates.length,
+            dates_linked: dateList.length, // Use dateList here
             remaining_uploads: MAX_UPLOADS_PER_STUDENT - currentCount - results.length,
         });
     } catch (err) {
