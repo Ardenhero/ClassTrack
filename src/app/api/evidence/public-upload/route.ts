@@ -203,27 +203,48 @@ export async function GET(request: NextRequest) {
             console.error("Enrollment fetch error:", enrollmentError);
         }
 
-        let classesWithInstructor: any[] = [];
+        // Define expected return type for the join
+        interface EnrollmentResult {
+            class_id: number;
+            classes: {
+                id: number;
+                subject_name: string;
+                section: string;
+                year_level: string;
+                instructor_id: string | null;
+                instructors: { id: string; name: string } | null;
+            } | null;
+        }
+
+        let classesWithInstructor: {
+            id: number;
+            subject_name: string;
+            section: string;
+            year_level: string;
+            instructor_id: string;
+            instructor_name: string
+        }[] = [];
 
         if (enrollments && enrollments.length > 0) {
+            // Cast to formatted type safely
+            const safeEnrollments = enrollments as unknown as EnrollmentResult[];
+
             // Build classes list from enrollment data
-            classesWithInstructor = enrollments.map((e: any) => {
+            classesWithInstructor = safeEnrollments.map((e) => {
                 const c = e.classes;
-                // Safe access to nested instructor data
-                const instructor = c?.instructors;
+                if (!c) return null;
+
+                const instructor = c.instructors;
 
                 return {
-                    id: c?.id,
-                    subject_name: c?.subject_name,
-                    section: c?.section,
-                    year_level: c?.year_level,
-                    // Prefer the instructor object's ID if available, otherwise fallback to foreign key
-                    instructor_id: instructor?.id || c?.instructor_id,
-                    instructor_name: instructor?.name || "Unknown Instructor",
-                    // Keep raw data for debugging if needed
-                    raw_instructor: instructor
+                    id: c.id,
+                    subject_name: c.subject_name,
+                    section: c.section,
+                    year_level: c.year_level,
+                    instructor_id: instructor?.id || c.instructor_id || "",
+                    instructor_name: instructor?.name || "Unknown Instructor"
                 };
-            }).filter(c => c.id); // Valid class check
+            }).filter((item): item is NonNullable<typeof item> => item !== null && !!item.id);
         }
 
         // REMOVED FALLBACK: Strict filtering as requested. 
