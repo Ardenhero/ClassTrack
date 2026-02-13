@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const supabase = createClient();
 
     try {
-        const { searchParams } = new URL(request.url);
+        // const { searchParams } = new URL(request.url);
         // The RPC returns unenrolled students directly
         const { data: students, error } = await supabase.rpc('get_unenrolled_students');
 
