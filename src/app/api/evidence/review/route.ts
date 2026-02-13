@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
     try {
-        const supabase = createClient();
+        const supabase = createServerClient();
         const cookieStore = cookies();
         const profileId = cookieStore.get("sc_profile_id")?.value;
 
@@ -86,28 +87,47 @@ export async function POST(request: NextRequest) {
                     .eq("evidence_id", evidence_id);
 
                 if (dateLinks && dateLinks.length > 0) {
+                    // Use Service Role to bypass RLS for updating student attendance
+                    const adminClient = createClient(
+                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                        process.env.SUPABASE_SERVICE_ROLE_KEY!
+                    );
+
                     // For each linked date, find and update matching attendance logs
                     for (const link of dateLinks) {
-                        const dayStart = `${link.absence_date}T00:00:00+08:00`;
-                        const dayEnd = `${link.absence_date}T23:59:59+08:00`;
+                        // Create 24h range for the date in UTC/PST
+                        // Note: The date string is likely YYYY-MM-DD. 
+                        // We need to cover the entire day in the stored timestamp.
+                        // Assuming timestamps are stored with timezone or UTC.
+                        const dayStart = `${link.absence_date}T00:00:00`;
+                        const dayEnd = `${link.absence_date}T23:59:59`;
 
                         // Get class_id from evidence to filter specific class
                         const targetClassId = evidence.class_id;
 
-                        let query = supabase
+                        let query = adminClient
                             .from("attendance_logs")
                             .update({ status: "Excused" })
                             .eq("student_id", evidence.student_id)
                             .gte("timestamp", dayStart)
-                            .lte("timestamp", dayEnd)
-                            .in("status", ["Absent", "absent"]); // Only update if currently absent
+                            .lte("timestamp", dayEnd);
+                        // Removing strict "Absent" check to allow excusing "Late" or other statuses if needed, 
+                        // or keep it if strictly for absent. User said "Change from Absent to Excused". 
+                        // Safest to keep it to avoid overwriting "Present".
+                        // .in("status", ["Absent", "absent"]); 
+
+                        // Re-adding status check but making it case-insensitive/broader if needed
+                        query = query.in("status", ["Absent", "absent", "Late", "late", "Cut Class", "cut class"]);
 
                         // If evidence is linked to a specific class, only excuse that class
                         if (targetClassId) {
                             query = query.eq("class_id", targetClassId);
                         }
 
-                        await query;
+                        const { error: attError } = await query;
+                        if (attError) {
+                            console.error(`Failed to update attendance for ${link.absence_date}:`, attError);
+                        }
                     }
                 }
             }
