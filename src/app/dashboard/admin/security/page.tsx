@@ -66,7 +66,25 @@ export default function SecurityPage() {
             if (instructorData) setInstructors(instructorData);
 
             // Load users for password reset (super admin only) — scoped to same account
-            if (isSuperAdmin && myAuthUserId) {
+            // Load users for password reset (super admin only)
+            if (isSuperAdmin) {
+                // GLOBAL SCOPE: Fetch ALL Admin users from all accounts
+                const { data: globalAdmins } = await supabase
+                    .from("instructors")
+                    .select("auth_user_id, name, email") // Added email for clarity
+                    .not("auth_user_id", "is", null)
+                    .eq("role", "admin")
+                    .order("name");
+
+                if (globalAdmins) {
+                    setUsers(globalAdmins.map((i: any) => ({
+                        id: i.auth_user_id!,
+                        email: i.email || "",
+                        name: `${i.name} (${i.email || 'No Email'})`, // Show email in dropdown for better ID
+                    })));
+                }
+            } else if (myAuthUserId) {
+                // SCOPED: Default behavior (though usually only Super Admin sees this card)
                 const { data: accountInstructors } = await supabase
                     .from("instructors")
                     .select("auth_user_id, name")
