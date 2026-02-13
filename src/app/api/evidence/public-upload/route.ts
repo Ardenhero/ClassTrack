@@ -193,7 +193,8 @@ export async function GET(request: NextRequest) {
                     instructor_id,
                     instructors (
                         id,
-                        name
+                        name,
+                        role
                     )
                 )
             `)
@@ -212,7 +213,7 @@ export async function GET(request: NextRequest) {
                 // section: string; // REMOVED: not in DB
                 year_level: string;
                 instructor_id: string | null;
-                instructors: { id: string; name: string } | null;
+                instructors: { id: string; name: string, role: string } | null;
             } | null;
         }
 
@@ -222,7 +223,8 @@ export async function GET(request: NextRequest) {
             section: string;      // Frontend expects this
             year_level: string;
             instructor_id: string;
-            instructor_name: string
+            instructor_name: string;
+            instructor_role: string;
         }[] = [];
 
         if (enrollments && enrollments.length > 0) {
@@ -242,18 +244,22 @@ export async function GET(request: NextRequest) {
                     section: "",          // Default to empty as column missing
                     year_level: c.year_level,
                     instructor_id: instructor?.id || c.instructor_id || "",
-                    instructor_name: instructor?.name || "Unknown Instructor"
+                    instructor_name: instructor?.name || "Unknown Instructor",
+                    instructor_role: instructor?.role || ""
                 };
             }).filter((item): item is NonNullable<typeof item> => item !== null && !!item.id);
         }
 
-        // REMOVED FALLBACK: Strict filtering as requested. 
+        // REMOVED FALLBACK: Strict filtering as requested.
         // If no enrollments, student sees no classes.
 
         // Build distinct instructors list for the dropdown
         const instructorMap = new Map<string, string>();
         classesWithInstructor.forEach(cls => {
+            // Filter: Must have ID, Name, AND NOT BE AN ADMIN
             if (cls.instructor_id && cls.instructor_name !== "Unknown Instructor") {
+                if (cls.instructor_role === 'admin') return; // Skip System Admins
+
                 if (!instructorMap.has(String(cls.instructor_id))) {
                     instructorMap.set(String(cls.instructor_id), String(cls.instructor_name));
                 }
