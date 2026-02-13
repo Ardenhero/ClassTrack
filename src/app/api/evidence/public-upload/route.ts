@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
                 .from("evidence_documents")
                 .insert({
                     student_id: student.id,
+                    class_id: classId, // Save the class ID to link to instructor
                     file_url: urlData.publicUrl,
                     file_name: file.name,
                     file_type: file.type,
