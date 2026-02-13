@@ -191,23 +191,18 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     // Calculate Summary Stats
     let presentCount = 0;
     let lateCount = 0;
+    let excusedCount = 0;
     let absentCount = 0;
 
     enrollments?.forEach(e => {
         const { statusLabel } = getStatusVisuals(e.students.id);
         if (statusLabel === 'Present') presentCount++;
         else if (statusLabel === 'Late') lateCount++;
+        else if (statusLabel === 'Excused') excusedCount++;
         else if (statusLabel === 'Invalid (Too Early)') {
-            // Do nothing (don't count as present/absent/late) or maybe count as Absent depending on policy?
-            // Request says: "An 'Invalid' log should not trigger any attendance status".
-            // So we treat it essentially as if they haven't arrived regarding "Present/Late" counts.
-            // But usually, if they are not Present/Late, they are Absent?
-            // OR do we show a separate "Invalid" count?
-            // For now, let's NOT count them as Present/Late. They will fall into "Absent" bucket if we just use `else absentCount++`.
-            // However, logic below was `else absentCount++`.
-            // Modified to be explicit.
+            // Do nothing
         }
-        else absentCount++; // Includes 'Absent', 'Cut Class', 'Ghosting', and 'Invalid (Too Early)'
+        else absentCount++; // Includes 'Absent', 'Cut Class', 'Ghosting'
     });
 
     return (
@@ -237,7 +232,7 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-3 gap-4 mt-6">
+                <div className="grid grid-cols-4 gap-4 mt-6">
                     <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-lg border border-green-100 dark:border-green-900/30">
                         <div className="text-sm text-green-600 dark:text-green-400 font-medium">Present</div>
                         <div className="text-2xl font-bold text-green-700 dark:text-green-300">{presentCount}</div>
@@ -245,6 +240,10 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                     <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-lg border border-orange-100 dark:border-orange-900/30">
                         <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Late</div>
                         <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{lateCount}</div>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                        <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Excused</div>
+                        <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{excusedCount}</div>
                     </div>
                     <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/30">
                         <div className="text-sm text-red-600 dark:text-red-400 font-medium">Absent</div>
