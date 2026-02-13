@@ -77,7 +77,7 @@ export default function SecurityPage() {
                     .order("name");
 
                 if (globalAdmins) {
-                    setUsers(globalAdmins.map((i: any) => ({
+                    setUsers(globalAdmins.map((i: { auth_user_id: string | null; name: string; email: string | null }) => ({
                         id: i.auth_user_id!,
                         email: i.email || "",
                         name: `${i.name} (${i.email || 'No Email'})`, // Show email in dropdown for better ID
