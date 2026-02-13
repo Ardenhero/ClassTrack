@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
                     );
 
                     // For each linked date, find and update matching attendance logs
+                    // For each linked date, find and update matching attendance logs
                     for (const link of dateLinks) {
                         try {
                             const dateParts = link.absence_date.split('-');
@@ -105,36 +106,92 @@ export async function POST(request: NextRequest) {
                             const day = parseInt(dateParts[2]);
 
                             // UTC range for PH time (+8)
+                            // Start of day: 00:00:00 PH = Previous day 16:00:00 UTC
                             const startUTC = new Date(Date.UTC(year, month, day, 0, 0, 0));
                             startUTC.setUTCHours(startUTC.getUTCHours() - 8);
 
+                            // End of day: 23:59:59 PH = Current day 15:59:59 UTC
                             const endUTC = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
                             endUTC.setUTCHours(endUTC.getUTCHours() - 8);
 
                             const startISO = startUTC.toISOString();
                             const endISO = endUTC.toISOString();
 
-                            console.log(`Updating attendance: Student ${evidence.student_id}, Class ${evidence.class_id || 'All'}, Date ${link.absence_date}, Range ${startISO} - ${endISO}`);
+                            console.log(`Processing attendance: Student ${evidence.student_id}, Class ${evidence.class_id || 'All'}, Date ${link.absence_date}, Range ${startISO} - ${endISO}`);
 
+                            // 1. Try to find existing record
                             let query = adminClient
                                 .from("attendance_logs")
-                                .update({ status: "Excused" })
+                                .select("id, status")
                                 .eq("student_id", evidence.student_id)
                                 .gte("timestamp", startISO)
-                                .lte("timestamp", endISO)
-                                .in("status", ["Absent", "absent", "Late", "late", "Cut Class", "cut class"]);
+                                .lte("timestamp", endISO);
 
                             if (evidence.class_id) {
                                 query = query.eq("class_id", evidence.class_id);
                             }
 
-                            const { data: updatedData, error: attError } = await query.select();
+                            const { data: existingLogs, error: fetchError } = await query;
 
-                            if (attError) {
-                                console.error(`Update failed for ${link.absence_date}:`, attError);
-                            } else {
-                                console.log(`Updated ${updatedData?.length || 0} records for ${link.absence_date}`);
+                            if (fetchError) {
+                                console.error(`Failed to fetch attendance for ${link.absence_date}:`, fetchError);
+                                continue;
                             }
+
+                            if (existingLogs && existingLogs.length > 0) {
+                                // UPDATE existing records
+                                console.log(`Found ${existingLogs.length} existing records. Updating to Excused.`);
+
+                                let updateQuery = adminClient
+                                    .from("attendance_logs")
+                                    .update({ status: "Excused" })
+                                    .eq("student_id", evidence.student_id)
+                                    .gte("timestamp", startISO)
+                                    .lte("timestamp", endISO)
+                                    // Update even if present, late, absent etc.
+                                    .in("status", ["Absent", "absent", "Late", "late", "Cut Class", "cut class", "Present", "present"]);
+
+                                if (evidence.class_id) {
+                                    updateQuery = updateQuery.eq("class_id", evidence.class_id);
+                                }
+
+                                const { error: updateError } = await updateQuery;
+                                if (updateError) {
+                                    console.error(`Update failed for ${link.absence_date}:`, updateError);
+                                }
+                            } else {
+                                // INSERT new record
+                                console.log(`No existing records found for ${link.absence_date}. Inserting new 'Excused' record.`);
+
+                                // Need user_id for the insert (it's nullable but good to have)
+                                // Fetch student user_id
+                                const { data: studentData } = await adminClient
+                                    .from("students")
+                                    .select("user_id")
+                                    .eq("id", evidence.student_id)
+                                    .single();
+
+                                // Construct timestamp: Noon PH time = 04:00:00 UTC
+                                // This ensures it falls safely in the middle of the day
+                                const insertTimestamp = new Date(Date.UTC(year, month, day, 4, 0, 0)).toISOString();
+
+                                const { error: insertError } = await adminClient
+                                    .from("attendance_logs")
+                                    .insert({
+                                        student_id: evidence.student_id,
+                                        class_id: evidence.class_id, // If null, this might fail if class_id is NOT NULL. But public upload sets it.
+                                        user_id: studentData?.user_id || null,
+                                        timestamp: insertTimestamp,
+                                        status: "Excused"
+                                    });
+
+                                if (insertError) {
+                                    console.error(`Insert failed for ${link.absence_date}:`, insertError);
+                                } else {
+                                    console.log(`Successfully inserted 'Excused' record for ${link.absence_date}`);
+                                }
+                            }
+
                         } catch (e) {
                             console.error(`Error processing ${link.absence_date}:`, e);
                         }
