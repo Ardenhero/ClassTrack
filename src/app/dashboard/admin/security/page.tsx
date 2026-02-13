@@ -82,7 +82,7 @@ export default function SecurityPage() {
                 }
 
                 if (globalAdmins) {
-                    setUsers(globalAdmins.map((i: any) => ({
+                    setUsers(globalAdmins.map((i: { id: string; auth_user_id: string | null; name: string }) => ({
                         id: i.auth_user_id!,
                         email: "", // specific email not available in this view, use ID or Name
                         name: `${i.name} (Admin)`,
