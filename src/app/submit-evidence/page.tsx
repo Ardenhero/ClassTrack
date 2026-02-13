@@ -107,14 +107,21 @@ export default function SubmitEvidencePage() {
     };
 
     const handleSubmit = async () => {
-        if (!student || !selectedClass || dates.length === 0 || files.length === 0) return;
+        // Allow submission if dates array has items OR if there is a pending currentDate
+        const effectiveDates = [...dates];
+        if (currentDate && !effectiveDates.includes(currentDate)) {
+            effectiveDates.push(currentDate);
+        }
+
+        if (!student || !selectedClass || effectiveDates.length === 0 || files.length === 0) return;
+
         setUploading(true);
         setUploadMessage(null);
 
         const formData = new FormData();
         formData.append("sin", student.sin);
         formData.append("class_id", selectedClass);
-        formData.append("dates", JSON.stringify(dates));
+        formData.append("dates", JSON.stringify(effectiveDates));
         if (description) formData.append("description", description);
         files.forEach((f, i) => formData.append(`file${i}`, f));
 
@@ -372,7 +379,7 @@ export default function SubmitEvidencePage() {
                                     </button>
                                     <button
                                         onClick={handleSubmit}
-                                        disabled={!selectedClass || dates.length === 0 || files.length === 0 || uploading}
+                                        disabled={!selectedClass || (dates.length === 0 && !currentDate) || files.length === 0 || uploading}
                                         className="flex-1 py-2.5 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm"
                                     >
                                         {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
