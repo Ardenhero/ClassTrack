@@ -13,20 +13,44 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify caller is admin
+        // Verify caller is an instructor (admin or regular)
         const { data: actor } = await supabase
             .from("instructors")
             .select("id, role")
             .eq("id", profileId)
             .single();
 
-        if (!actor || actor.role !== "admin") {
-            return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
+        if (!actor) {
+            return NextResponse.json({ error: "Forbidden: Not an instructor" }, { status: 403 });
         }
 
         const { evidence_id, action } = await request.json();
 
         if (!evidence_id || !["approve", "reject"].includes(action)) {
             return NextResponse.json({ error: "Missing evidence_id or invalid action" }, { status: 400 });
+        }
+
+        // Check ownership/permissions
+        // Admins can review ANY evidence. Instructors can only review evidence for THEIR classes.
+        if (actor.role !== "admin") {
+            // Fetch evidence to check class ownership
+            const { data: evidenceToCheck } = await supabase
+                .from("evidence_documents")
+                .select("class_id, classes(instructor_id)")
+                .eq("id", evidence_id)
+                .single();
+
+            // Expected type for join
+            interface EvidenceWithClass {
+                class_id: string;
+                classes: { instructor_id: string } | null;
+            }
+
+            const evidence = evidenceToCheck as unknown as EvidenceWithClass;
+
+            if (!evidence || !evidence.classes || evidence.classes.instructor_id !== actor.id) {
+                return NextResponse.json({ error: "Forbidden: You can only review evidence for your own classes" }, { status: 403 });
+            }
         }
 
         const newStatus = action === "approve" ? "approved" : "rejected";
