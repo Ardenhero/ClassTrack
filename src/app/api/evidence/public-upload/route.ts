@@ -181,14 +181,14 @@ export async function GET(request: NextRequest) {
 
         // Get classes this student is ENROLLED in (via enrollments table)
         // Explicitly join classes and instructors
+        // NOTE: classes table uses 'name' not 'subject_name', and lacks 'section'
         const { data: enrollments, error: enrollmentError } = await supabase
             .from("enrollments")
             .select(`
                 class_id,
                 classes (
                     id,
-                    subject_name,
-                    section,
+                    name,
                     year_level,
                     instructor_id,
                     instructors (
@@ -203,13 +203,13 @@ export async function GET(request: NextRequest) {
             console.error("Enrollment fetch error:", enrollmentError);
         }
 
-        // Define expected return type for the join
-        interface EnrollmentResult {
+        // define expected return type matches DB schema first
+        interface EnrollmentDbResult {
             class_id: number;
             classes: {
                 id: number;
-                subject_name: string;
-                section: string;
+                name: string; // valid column
+                // section: string; // REMOVED: not in DB
                 year_level: string;
                 instructor_id: string | null;
                 instructors: { id: string; name: string } | null;
@@ -218,8 +218,8 @@ export async function GET(request: NextRequest) {
 
         let classesWithInstructor: {
             id: number;
-            subject_name: string;
-            section: string;
+            subject_name: string; // Frontend expects this
+            section: string;      // Frontend expects this
             year_level: string;
             instructor_id: string;
             instructor_name: string
@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
 
         if (enrollments && enrollments.length > 0) {
             // Cast to formatted type safely
-            const safeEnrollments = enrollments as unknown as EnrollmentResult[];
+            const safeEnrollments = enrollments as unknown as EnrollmentDbResult[];
 
             // Build classes list from enrollment data
             classesWithInstructor = safeEnrollments.map((e) => {
@@ -238,8 +238,8 @@ export async function GET(request: NextRequest) {
 
                 return {
                     id: c.id,
-                    subject_name: c.subject_name,
-                    section: c.section,
+                    subject_name: c.name, // Map 'name' to 'subject_name'
+                    section: "",          // Default to empty as column missing
                     year_level: c.year_level,
                     instructor_id: instructor?.id || c.instructor_id || "",
                     instructor_name: instructor?.name || "Unknown Instructor"
