@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
             // Get the evidence document to find student_id
             const { data: evidence } = await supabase
                 .from("evidence_documents")
-                .select("student_id")
+                .select("student_id, class_id")
                 .eq("id", evidence_id)
                 .single();
 
@@ -67,13 +67,23 @@ export async function POST(request: NextRequest) {
                         const dayStart = `${link.absence_date}T00:00:00+08:00`;
                         const dayEnd = `${link.absence_date}T23:59:59+08:00`;
 
-                        await supabase
+                        // Get class_id from evidence to filter specific class
+                        const targetClassId = evidence.class_id;
+
+                        let query = supabase
                             .from("attendance_logs")
                             .update({ status: "Excused" })
                             .eq("student_id", evidence.student_id)
                             .gte("timestamp", dayStart)
                             .lte("timestamp", dayEnd)
-                            .in("status", ["Absent", "absent"]);
+                            .in("status", ["Absent", "absent"]); // Only update if currently absent
+
+                        // If evidence is linked to a specific class, only excuse that class
+                        if (targetClassId) {
+                            query = query.eq("class_id", targetClassId);
+                        }
+
+                        await query;
                     }
                 }
             }
