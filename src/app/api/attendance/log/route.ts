@@ -3,13 +3,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const LogSchema = z.object({
-    student_name: z.string(),
-    class: z.string(),
-    year_level: z.union([z.string(), z.number()]),
+    student_name: z.string().optional(),
+    class: z.string().optional(),
+    year_level: z.union([z.string(), z.number()]).optional(),
     attendance_type: z.string(),
     timestamp: z.string(),
     class_id: z.string().optional(),
     instructor_id: z.string().optional(),
+    // Biometric fields
+    fingerprint_slot_id: z.number().int().optional(),
+    device_id: z.string().optional(),
+    entry_method: z.enum(['biometric', 'manual_override', 'rfid']).optional(),
 });
 
 // Use Service Role Key to bypass RLS and Auth requirements for this trusted endpoint
@@ -34,7 +38,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Invalid Request", details: result.error }, { status: 400 });
         }
 
-        const { student_name, class: className, instructor_id, attendance_type } = result.data;
+        const { student_name, class: className, instructor_id, attendance_type, fingerprint_slot_id, device_id } = result.data;
+        const entryMethod = result.data.entry_method || (fingerprint_slot_id ? 'biometric' : 'manual_override');
 
         // Force Server Time to ensure accuracy and fix Timezone issues
         // (Device might be sending local time as UTC, causing "Tomorrow" bug)
@@ -53,13 +58,152 @@ export async function POST(request: Request) {
         const classIdInput = sanitizeUuid(result.data.class_id);
         const instructorIdInput = sanitizeUuid(instructor_id);
 
+        // BIOMETRIC PATH: If fingerprint_slot_id is provided, look up student by slot
+        if (fingerprint_slot_id && device_id) {
+            console.log(`[API] Biometric Attendance: Slot ${fingerprint_slot_id} on ${device_id} [${rpcStatusInput}]`);
+
+            const { data: slotData } = await supabase
+                .from('fingerprint_slots')
+                .select('student_id, students(id, name, year_level)')
+                .eq('device_id', device_id)
+                .eq('slot_index', fingerprint_slot_id)
+                .maybeSingle();
+
+            if (!slotData || !slotData.student_id) {
+                return NextResponse.json({ error: `No student enrolled at slot ${fingerprint_slot_id}` }, { status: 404 });
+            }
+
+            const studentInfo = Array.isArray(slotData.students) ? slotData.students[0] : slotData.students;
+            if (!studentInfo) {
+                return NextResponse.json({ error: 'Student record not found' }, { status: 404 });
+            }
+
+            // Use the class_id from request body
+            if (!classIdInput) {
+                return NextResponse.json({ error: 'class_id is required for biometric attendance' }, { status: 400 });
+            }
+
+            // Verify student is enrolled in this class
+            const { data: enrollment } = await supabase
+                .from('enrollments')
+                .select('id')
+                .eq('student_id', slotData.student_id)
+                .eq('class_id', classIdInput)
+                .maybeSingle();
+
+            if (!enrollment) {
+                return NextResponse.json({
+                    error: `Student '${studentInfo.name}' is not enrolled in this class`,
+                    student_name: studentInfo.name
+                }, { status: 403 });
+            }
+
+            // Duplicate prevention: check if already scanned today for this class
+            const todayStart = new Date().toISOString().split('T')[0];
+            const { data: existingLog } = await supabase
+                .from('attendance_logs')
+                .select('id')
+                .eq('student_id', slotData.student_id)
+                .eq('class_id', classIdInput)
+                .gte('timestamp', todayStart)
+                .maybeSingle();
+
+            if (existingLog && attendance_type === 'Time In') {
+                return NextResponse.json({
+                    error: `${studentInfo.name} already scanned today`,
+                    student_name: studentInfo.name,
+                    duplicate: true
+                }, { status: 409 });
+            }
+
+            // Get class info for grading logic
+            const { data: classRef } = await supabase
+                .from('classes')
+                .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
+                .eq('id', classIdInput)
+                .single();
+
+            if (!classRef) {
+                return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+            }
+
+            const getMinutes = (timeStr: string | null | undefined) => {
+                if (!timeStr) return 0;
+                const parts = timeStr.split(':').map(Number);
+                if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return 0;
+                return parts[0] * 60 + parts[1];
+            };
+            const nowManila = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour12: false });
+            const currentMinutes = getMinutes(nowManila);
+
+            if (attendance_type === 'Time Out' || rpcStatusInput === 'TIME_OUT') {
+                // Handle Time Out for biometric
+                const { data: openSession } = await supabase.from('attendance_logs')
+                    .select('id, status, timestamp')
+                    .eq('student_id', slotData.student_id)
+                    .eq('class_id', classIdInput)
+                    .is('time_out', null)
+                    .gte('timestamp', todayStart)
+                    .order('timestamp', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (!openSession) {
+                    return NextResponse.json({ error: 'Must Time In first', student_name: studentInfo.name }, { status: 400 });
+                }
+
+                let calculatedStatus = openSession.status;
+                if (openSession.status !== 'Absent' && classRef.end_time) {
+                    const endMinutes = getMinutes(classRef.end_time);
+                    if ((endMinutes - currentMinutes) > 15) calculatedStatus = 'Absent';
+                    else if ((currentMinutes - endMinutes) > 60) calculatedStatus = 'Absent';
+                }
+
+                await supabase.from('attendance_logs')
+                    .update({ time_out: timestamp, status: calculatedStatus, entry_method: entryMethod })
+                    .eq('id', openSession.id);
+
+                return NextResponse.json({ success: true, student_name: studentInfo.name, status: calculatedStatus, action: 'time_out' });
+            } else {
+                // Handle Time In for biometric
+                let calculatedStatus = 'Present';
+                if (classRef.start_time) {
+                    const startMinutes = getMinutes(classRef.start_time);
+                    const delta = currentMinutes - startMinutes;
+                    if (delta > 30) calculatedStatus = 'Absent';
+                    else if (delta > 15) calculatedStatus = 'Late';
+                }
+
+                const instructorData = classRef.instructors;
+                type InstructorRef = { owner_id: string };
+                let targetOwnerId: string;
+                if (Array.isArray(instructorData)) {
+                    targetOwnerId = (instructorData as InstructorRef[])[0]?.owner_id || classRef.instructor_id;
+                } else {
+                    targetOwnerId = (instructorData as InstructorRef | null)?.owner_id || classRef.instructor_id;
+                }
+
+                await supabase.from('attendance_logs').insert({
+                    student_id: slotData.student_id,
+                    class_id: classIdInput,
+                    user_id: targetOwnerId,
+                    status: calculatedStatus,
+                    timestamp: timestamp,
+                    entry_method: entryMethod,
+                });
+
+                return NextResponse.json({ success: true, student_name: studentInfo.name, status: calculatedStatus, action: 'time_in' });
+            }
+        }
+
+        // LEGACY PATH: Name-based attendance (manual/device)
         console.log(`[API] Log Attendance: ${student_name} -> ${className} (${classIdInput || 'No ID'}) [${rpcStatusInput}]`);
 
         // Call the RPC function (Original working method)
         const { data: rpcData, error: rpcError } = await supabase.rpc('log_attendance', {
             email_input: email,
-            student_name_input: student_name,
-            class_name_input: className,
+            student_name_input: student_name || '',
+            class_name_input: className || '',
             status_input: rpcStatusInput,
             timestamp_input: timestamp,
             instructor_id_input: instructorIdInput,
@@ -242,10 +386,10 @@ export async function POST(request: Request) {
                 const { error: insertError } = await supabase.from('attendance_logs').insert({
                     student_id: student.id,
                     class_id: classRef.id,
-                    user_id: targetOwnerId, // Use the resolved Owner ID
+                    user_id: targetOwnerId,
                     status: calculatedStatus,
                     timestamp: timestamp,
-                    // time_out is null
+                    entry_method: entryMethod,
                 });
                 if (insertError) {
                     console.error("[API] Attendance Insert Error:", insertError);
