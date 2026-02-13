@@ -89,7 +89,7 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     const studentIds = enrollments?.map(e => e.students.id) || [];
     const { data: logs } = await supabase
         .from("attendance_logs")
-        .select("student_id, timestamp, time_out, status, entry_method")
+        .select("student_id, timestamp, time_out, status") // Select status
         .in("student_id", studentIds)
         .eq("class_id", params.id)
         .gte("timestamp", targetStart)
@@ -99,7 +99,6 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     // Helper to calculate status visuals
     const getStatusVisuals = (studentId: string) => {
         const studentLogs = logs?.filter(l => l.student_id === studentId) || [];
-        const entryMethod = studentLogs.length > 0 ? (studentLogs[studentLogs.length - 1].entry_method || 'biometric') : null;
 
         if (studentLogs.length === 0) {
             return {
@@ -107,8 +106,7 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                 badgeColor: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
                 icon: AlertCircle,
                 timeIn: '-',
-                timeOut: '-',
-                entryMethod: null as string | null,
+                timeOut: '-'
             };
         }
 
@@ -137,11 +135,10 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
         if (isInvalidSession) {
             return {
                 statusLabel: 'Invalid (Too Early)',
-                badgeColor: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500',
-                icon: AlertCircle,
+                badgeColor: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500', // Gray for invalid
+                icon: AlertCircle, // Use a generic alert or maybe a specific "Not Started" icon if available
                 timeIn: timeIn,
-                timeOut: timeOut,
-                entryMethod,
+                timeOut: timeOut // Show timeOut even if invalid
             };
         }
 
@@ -265,7 +262,7 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                     {enrollments?.map((enrollment) => {
-                        const { statusLabel, badgeColor, icon: Icon, timeIn, timeOut, entryMethod } = getStatusVisuals(enrollment.students.id);
+                        const { statusLabel, badgeColor, icon: Icon, timeIn, timeOut } = getStatusVisuals(enrollment.students.id);
                         return (
                             <div key={enrollment.id} className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors gap-4">
                                 <div className="flex items-center min-w-0">
@@ -298,12 +295,6 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                                         <Icon className="h-3 w-3 mr-1.5" />
                                         {statusLabel}
                                     </div>
-
-                                    {entryMethod && (
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${entryMethod === 'biometric' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'}`} title={entryMethod === 'biometric' ? 'Biometric Scan' : 'Manual Override'}>
-                                            {entryMethod === 'biometric' ? '🔒' : '✋'}
-                                        </span>
-                                    )}
 
                                     <form action={async () => {
                                         "use server";

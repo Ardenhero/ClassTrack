@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
             // Update existing log
             const { error: updateError } = await supabase
                 .from("attendance_logs")
-                .update({ status: new_status, entry_method: 'manual_override' })
+                .update({ status: new_status })
                 .eq("id", existingLog.id);
 
             if (updateError) {
@@ -80,11 +80,10 @@ export async function POST(request: NextRequest) {
             const { error: insertError } = await supabase
                 .from("attendance_logs")
                 .insert({
-                    student_id: student_id,
+                    student_id: student_id, // Keep as string or number depending on DB type, DO NOT FORCE parseInt if it might be UUID (though here it seems to be number in DB based on other files, checking schema...)
                     class_id,
                     timestamp: new Date(`${date}T08:00:00+08:00`).toISOString(),
                     status: new_status,
-                    entry_method: 'manual_override',
                 });
 
             if (insertError) {
