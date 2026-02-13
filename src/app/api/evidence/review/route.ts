@@ -128,12 +128,12 @@ export async function POST(request: NextRequest) {
                                 query = query.eq("class_id", evidence.class_id);
                             }
 
-                            const { error: attError, count } = await query.select("id", { count: 'exact' });
+                            const { data: updatedData, error: attError } = await query.select();
 
                             if (attError) {
                                 console.error(`Update failed for ${link.absence_date}:`, attError);
                             } else {
-                                console.log(`Updated ${count} records for ${link.absence_date}`);
+                                console.log(`Updated ${updatedData?.length || 0} records for ${link.absence_date}`);
                             }
                         } catch (e) {
                             console.error(`Error processing ${link.absence_date}:`, e);
