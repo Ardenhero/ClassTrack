@@ -69,6 +69,7 @@ export default async function AttendancePage({
       status,
       timestamp,
       time_out,
+      entry_method,
       classes!inner (
         name,
         instructor_id,
