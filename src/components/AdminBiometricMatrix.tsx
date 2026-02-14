@@ -17,6 +17,7 @@ export function AdminBiometricMatrix() {
     const { profile } = useProfile();
     const [slots, setSlots] = useState<SlotData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
 
     const loadMatrix = async () => {
         setLoading(true);
@@ -81,14 +82,14 @@ export function AdminBiometricMatrix() {
     }, [profile]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full">
             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                 <div>
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <Fingerprint className="h-5 w-5 text-nwu-red" />
-                        Sensor Memory Map (Slots 1-127)
+                        Sensor Memory Map
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span>
                     </p>
                 </div>
@@ -97,43 +98,78 @@ export function AdminBiometricMatrix() {
                     className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                 >
                     <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-                    Refresh
                 </button>
             </div>
 
             {loading ? (
-                <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" /></div>
+                <div className="flex-1 flex items-center justify-center min-h-[200px]"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
             ) : (
-                <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 max-h-[400px] overflow-y-auto pr-2">
-                    {slots.map((slot) => (
-                        <div
-                            key={slot.slot_id}
-                            className={`
-                                relative p-1.5 rounded border text-center transition-all hover:scale-105 cursor-default
-                                ${slot.status === 'occupied'
-                                    ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
-                                    : slot.status === 'orphan'
-                                        ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-500/50'
-                                        : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600'
-                                }
-                            `}
-                        >
-                            <span className="text-[10px] font-bold block">#{slot.slot_id}</span>
+                <>
+                    <div className="grid grid-cols-8 gap-1.5 max-h-[300px] overflow-y-auto pr-1 mb-4">
+                        {slots.map((slot) => (
+                            <button
+                                key={slot.slot_id}
+                                onClick={() => setSelectedSlot(slot)}
+                                className={`
+                                    relative p-1 rounded border text-center transition-all hover:scale-110 focus:ring-2 focus:ring-offset-1 focus:outline-none
+                                    ${selectedSlot?.slot_id === slot.slot_id ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}
+                                    ${slot.status === 'occupied'
+                                        ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+                                        : slot.status === 'orphan'
+                                            ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-500/50'
+                                            : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }
+                                `}
+                                title={slot.status === 'occupied' ? slot.student_name : `Slot ${slot.slot_id}: ${slot.status}`}
+                            >
+                                <span className="text-[9px] font-bold block">#{slot.slot_id}</span>
+                                {slot.status === 'orphan' && (
+                                    <div className="absolute -top-1 -right-1">
+                                        <AlertTriangle className="h-2 w-2 text-red-600 fill-red-100" />
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
 
-                            {slot.status === 'occupied' && (
-                                <div className="text-[9px] leading-tight font-medium truncate w-full" title={slot.student_name}>
-                                    {slot.student_name?.split(' ')[0]}
+                    {/* Selected Slot Details */}
+                    <div className="mt-auto border-t border-gray-100 dark:border-gray-700 pt-4">
+                        {selectedSlot ? (
+                            <div className="text-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        Slot #{selectedSlot.slot_id}
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider ${selectedSlot.status === 'occupied' ? 'bg-green-100 text-green-800' :
+                                            selectedSlot.status === 'orphan' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                            }`}>
+                                            {selectedSlot.status}
+                                        </span>
+                                    </span>
                                 </div>
-                            )}
 
-                            {slot.status === 'orphan' && (
-                                <div className="absolute -top-1 -right-1">
-                                    <AlertTriangle className="h-2 w-2 text-red-600 fill-red-100" />
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                                {selectedSlot.status === 'occupied' ? (
+                                    <div className="space-y-1">
+                                        <p className="text-gray-600 dark:text-gray-300 truncate">
+                                            <span className="font-medium text-gray-500 text-xs uppercase block">Student</span>
+                                            {selectedSlot.student_name}
+                                        </p>
+                                        <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
+                                    </div>
+                                ) : selectedSlot.status === 'orphan' ? (
+                                    <p className="text-red-600 text-xs">
+                                        Fingerprint exists on device but no student is linked.
+                                    </p>
+                                ) : (
+                                    <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 text-xs text-center py-2 italic">
+                                Select a slot to view details
+                            </p>
+                        )}
+                    </div>
+                </>
             )}
 
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 flex gap-2">
