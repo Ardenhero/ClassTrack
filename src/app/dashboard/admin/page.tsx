@@ -4,19 +4,15 @@ import { useProfile } from "@/context/ProfileContext";
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
 import { Users, BookOpen, ShieldCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import DashboardLayout from "@/components/DashboardLayout";
 
 export default function AdminDashboardPage() {
     const { profile } = useProfile();
 
     return (
-        <DashboardLayout>
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    System Admin Console
-                </h1>
+        <div className="animate-in fade-in duration-500">
+            <div className="mb-6">
                 <p className="text-gray-500 dark:text-gray-400">
-                    Welcome back, {profile?.name || 'Admin'}
+                    Welcome back, <span className="font-semibold text-gray-900 dark:text-white">{profile?.name || 'Admin'}</span>
                 </p>
             </div>
 
@@ -62,6 +58,6 @@ export default function AdminDashboardPage() {
                     <AdminBiometricMatrix />
                 </div>
             </div>
-        </DashboardLayout>
+        </div>
     );
 }
