@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
                         <p className="text-sm text-gray-500 dark:text-gray-400">View and manage instructor accounts and their classes.</p>
                     </Link>
 
-                    <Link href="/dashboard/admin/classes" className="group bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:border-nwu-red/50 transition-colors">
+                    <Link href="/classes" className="group bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:border-nwu-red/50 transition-colors">
                         <div className="flex justify-between items-start">
                             <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4 text-purple-600 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
                                 <BookOpen className="h-6 w-6" />
