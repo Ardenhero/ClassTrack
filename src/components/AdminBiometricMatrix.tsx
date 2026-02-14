@@ -20,7 +20,7 @@ export function AdminBiometricMatrix() {
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
     const [unlinking, setUnlinking] = useState(false);
 
-    const loadMatrix = async () => {
+    const loadMatrix = useCallback(async () => {
         setLoading(true);
         const supabase = createClient();
 
