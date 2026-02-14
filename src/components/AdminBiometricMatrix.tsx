@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import { Fingerprint, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
-import { PostgrestError } from "@supabase/supabase-js";
+import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface SlotData {
     slot_id: number;
@@ -69,18 +69,12 @@ export function AdminBiometricMatrix() {
             }
             setSlots(matrix);
 
-            // Update selected slot if it exists (to reflect changes in status)
-            if (selectedSlot) {
-                const updatedSlot = matrix.find(s => s.slot_id === selectedSlot.slot_id);
-                if (updatedSlot) setSelectedSlot(updatedSlot);
-            }
-
         } catch (err) {
             console.error("Failed to load matrix:", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const unlinkSlot = async (slot: SlotData) => {
         if (!slot.student_id || !confirm(`Are you sure you want to unlink ${slot.student_name}? This will remove their fingerprint association from the database.`)) return;
@@ -111,6 +105,15 @@ export function AdminBiometricMatrix() {
     };
 
     useEffect(() => {
+        if (selectedSlot) {
+            const updatedSlot = slots.find(s => s.slot_id === selectedSlot.slot_id);
+            if (updatedSlot && (updatedSlot.status !== selectedSlot.status || updatedSlot.student_id !== selectedSlot.student_id)) {
+                setSelectedSlot(updatedSlot);
+            }
+        }
+    }, [slots, selectedSlot]);
+
+    useEffect(() => {
         if (profile?.role === "admin" || profile?.is_super_admin) {
             loadMatrix();
 
@@ -121,7 +124,7 @@ export function AdminBiometricMatrix() {
                 .on(
                     'postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'students' },
-                    (payload: any) => {
+                    (payload: RealtimePostgresChangesPayload<any>) => {
                         console.log("Realtime: Student update/unlink detected", payload);
                         loadMatrix();
                     }
@@ -140,7 +143,7 @@ export function AdminBiometricMatrix() {
                 supabase.removeChannel(channel);
             };
         }
-    }, [profile]);
+    }, [profile, loadMatrix]);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full">
