@@ -12,6 +12,7 @@ interface StudentData {
     sin: string | null;
     year_level: string | null;
     created_at?: string;
+    fingerprint_slot_id?: number | null;
 }
 
 export const getCachedStudents = async (query?: string): Promise<StudentData[]> => {
@@ -30,8 +31,8 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
         const isSuperAdmin = await checkIsSuperAdmin();
         const isActiveAdmin = role === 'admin' || isSuperAdmin;
 
-        // CRITICAL: Only select the columns we need - NO fingerprint_id
-        const columns = 'id, name, sin, year_level, created_at';
+        // CRITICAL: Only select the columns we need - including fingerprint_slot_id for badges
+        const columns = 'id, name, sin, year_level, created_at, fingerprint_slot_id';
 
         if (isActiveAdmin) {
             if (isSuperAdmin) {
@@ -140,7 +141,8 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                         name: student.name,
                         sin: student.sin,
                         year_level: student.year_level,
-                        created_at: student.created_at
+                        created_at: student.created_at,
+                        fingerprint_slot_id: student.fingerprint_slot_id
                     });
                 });
 
@@ -153,7 +155,8 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                             name: item.name,
                             sin: item.sin,
                             year_level: item.year_level,
-                            created_at: item.created_at
+                            created_at: item.created_at,
+                            fingerprint_slot_id: item.fingerprint_slot_id
                         });
                     }
                 });
