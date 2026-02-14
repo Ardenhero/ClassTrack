@@ -124,7 +124,7 @@ export function AdminBiometricMatrix() {
                 .on(
                     'postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'students' },
-                    (payload: RealtimePostgresChangesPayload<any>) => {
+                    (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
                         console.log("Realtime: Student update/unlink detected", payload);
                         loadMatrix();
                     }
