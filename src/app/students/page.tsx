@@ -9,12 +9,13 @@ import { checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
 
-// PURIFIED INTERFACE: Absolutely NO fingerprint_id
+// PURIFIED INTERFACE: Allowing fingerprint_slot_id for status display
 interface Student {
     id: string;
     name: string;
     sin?: string;
     year_level: string;
+    fingerprint_slot_id?: number | null;
 }
 
 export default async function StudentsPage({
@@ -30,13 +31,13 @@ export default async function StudentsPage({
     try {
         const rawStudents = await getCachedStudents(query);
 
-        // SANITIZATION: Map to clean Student interface - NO fingerprint_id passthrough
+        // SANITIZATION: Map to clean Student interface
         students = (rawStudents || []).map((s) => ({
             id: s.id,
             name: s.name || "",
             sin: s.sin || undefined,
             year_level: s.year_level || "",
-            // CRITICAL: Do NOT add fingerprint_id here - it's completely removed
+            fingerprint_slot_id: s.fingerprint_slot_id // Pass through for UI status
         }));
     } catch (err: unknown) {
         console.error("Failed to load students:", err);

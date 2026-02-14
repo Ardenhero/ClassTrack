@@ -62,20 +62,15 @@ export async function POST(request: Request) {
         if (fingerprint_slot_id && device_id) {
             console.log(`[API] Biometric Attendance: Slot ${fingerprint_slot_id} on ${device_id} [${rpcStatusInput}]`);
 
-            const { data: slotData } = await supabase
-                .from('fingerprint_slots')
-                .select('student_id, students(id, name, year_level)')
-                .eq('device_id', device_id)
-                .eq('slot_index', fingerprint_slot_id)
+            // DIRECT LOOKUP on students table (Matches Identity Tool Logic)
+            const { data: studentInfo } = await supabase
+                .from('students')
+                .select('id, name, year_level, instructor_id')
+                .eq('fingerprint_slot_id', fingerprint_slot_id)
                 .maybeSingle();
 
-            if (!slotData || !slotData.student_id) {
-                return NextResponse.json({ error: `No student enrolled at slot ${fingerprint_slot_id}` }, { status: 404 });
-            }
-
-            const studentInfo = Array.isArray(slotData.students) ? slotData.students[0] : slotData.students;
             if (!studentInfo) {
-                return NextResponse.json({ error: 'Student record not found' }, { status: 404 });
+                return NextResponse.json({ error: `No student enrolled at slot ${fingerprint_slot_id}` }, { status: 404 });
             }
 
             // Use the class_id from request body
@@ -87,7 +82,7 @@ export async function POST(request: Request) {
             const { data: enrollment } = await supabase
                 .from('enrollments')
                 .select('id')
-                .eq('student_id', slotData.student_id)
+                .eq('student_id', studentInfo.id)
                 .eq('class_id', classIdInput)
                 .maybeSingle();
 
@@ -103,7 +98,7 @@ export async function POST(request: Request) {
             const { data: existingLog } = await supabase
                 .from('attendance_logs')
                 .select('id')
-                .eq('student_id', slotData.student_id)
+                .eq('student_id', studentInfo.id)
                 .eq('class_id', classIdInput)
                 .gte('timestamp', todayStart)
                 .maybeSingle();
@@ -140,7 +135,7 @@ export async function POST(request: Request) {
                 // Handle Time Out for biometric
                 const { data: openSession } = await supabase.from('attendance_logs')
                     .select('id, status, timestamp')
-                    .eq('student_id', slotData.student_id)
+                    .eq('student_id', studentInfo.id)
                     .eq('class_id', classIdInput)
                     .is('time_out', null)
                     .gte('timestamp', todayStart)
@@ -184,7 +179,7 @@ export async function POST(request: Request) {
                 }
 
                 await supabase.from('attendance_logs').insert({
-                    student_id: slotData.student_id,
+                    student_id: studentInfo.id,
                     class_id: classIdInput,
                     user_id: targetOwnerId,
                     status: calculatedStatus,
