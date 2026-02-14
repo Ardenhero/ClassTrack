@@ -120,17 +120,9 @@ export function AdminBiometricMatrix() {
                 .channel('biometric-matrix-updates')
                 .on(
                     'postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'students', filter: 'fingerprint_slot_id=neq.null' },
-                    () => {
-                        console.log("Realtime: Student fingerprint update detected");
-                        loadMatrix();
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'students', filter: 'fingerprint_slot_id=is.null' }, // Catch unlinks too
-                    () => {
-                        console.log("Realtime: Student unlink detected");
+                    { event: 'UPDATE', schema: 'public', table: 'students' },
+                    (payload: any) => {
+                        console.log("Realtime: Student update/unlink detected", payload);
                         loadMatrix();
                     }
                 )
@@ -209,7 +201,7 @@ export function AdminBiometricMatrix() {
                                     <span className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                         Slot #{selectedSlot.slot_id}
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider ${selectedSlot.status === 'occupied' ? 'bg-green-100 text-green-800' :
-                                                selectedSlot.status === 'orphan' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                            selectedSlot.status === 'orphan' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             {selectedSlot.status}
                                         </span>
