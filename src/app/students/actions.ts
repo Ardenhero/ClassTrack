@@ -259,6 +259,19 @@ export async function deleteStudent(id: string) {
     return { success: true };
 }
 
+export async function clearBiometricData(id: string) {
+    const supabase = createClient();
+    // Nullify slot_id and device_id
+    const { error } = await supabase
+        .from("students")
+        .update({ fingerprint_slot_id: null, device_id: null })
+        .eq("id", id);
+
+    if (error) return { error: error.message };
+    revalidatePath("/students");
+    return { success: true };
+}
+
 // ─── Bulk Import ────────────────────────────────────────────────────────────
 
 interface StudentRow {
