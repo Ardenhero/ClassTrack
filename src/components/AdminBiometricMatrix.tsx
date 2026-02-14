@@ -18,6 +18,7 @@ export function AdminBiometricMatrix() {
     const [slots, setSlots] = useState<SlotData[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
+    const [unlinking, setUnlinking] = useState(false);
 
     const loadMatrix = async () => {
         setLoading(true);
@@ -68,6 +69,12 @@ export function AdminBiometricMatrix() {
             }
             setSlots(matrix);
 
+            // Update selected slot if it exists (to reflect changes in status)
+            if (selectedSlot) {
+                const updatedSlot = matrix.find(s => s.slot_id === selectedSlot.slot_id);
+                if (updatedSlot) setSelectedSlot(updatedSlot);
+            }
+
         } catch (err) {
             console.error("Failed to load matrix:", err);
         } finally {
@@ -75,9 +82,71 @@ export function AdminBiometricMatrix() {
         }
     };
 
+    const unlinkSlot = async (slot: SlotData) => {
+        if (!slot.student_id || !confirm(`Are you sure you want to unlink ${slot.student_name}? This will remove their fingerprint association from the database.`)) return;
+
+        setUnlinking(true);
+        const supabase = createClient();
+
+        try {
+            const { error } = await supabase
+                .from("students")
+                .update({ fingerprint_slot_id: null })
+                .eq("id", slot.student_id);
+
+            if (error) throw error;
+
+            // Optimistic update will be handled by realtime subscription, but we can also reload
+            // loadMatrix(); // Let realtime handle it? Or explicit reload to be safe.
+            // Explicit reload is safer for now until realtime checks out
+            await loadMatrix();
+            setSelectedSlot(null); // Deselect after unlink
+
+        } catch (err) {
+            console.error("Failed to unlink slot:", err);
+            alert("Failed to unlink fingerprint. Please try again.");
+        } finally {
+            setUnlinking(false);
+        }
+    };
+
     useEffect(() => {
         if (profile?.role === "admin" || profile?.is_super_admin) {
             loadMatrix();
+
+            // Real-time Subscription
+            const supabase = createClient();
+            const channel = supabase
+                .channel('biometric-matrix-updates')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'students', filter: 'fingerprint_slot_id=neq.null' },
+                    () => {
+                        console.log("Realtime: Student fingerprint update detected");
+                        loadMatrix();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'students', filter: 'fingerprint_slot_id=is.null' }, // Catch unlinks too
+                    () => {
+                        console.log("Realtime: Student unlink detected");
+                        loadMatrix();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: "event_type=eq.ORPHAN_SCAN" },
+                    () => {
+                        console.log("Realtime: Orphan scan detected");
+                        loadMatrix();
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
     }, [profile]);
 
@@ -101,7 +170,7 @@ export function AdminBiometricMatrix() {
                 </button>
             </div>
 
-            {loading ? (
+            {loading && slots.length === 0 ? (
                 <div className="flex-1 flex items-center justify-center min-h-[200px]"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
             ) : (
                 <>
@@ -140,11 +209,21 @@ export function AdminBiometricMatrix() {
                                     <span className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                         Slot #{selectedSlot.slot_id}
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider ${selectedSlot.status === 'occupied' ? 'bg-green-100 text-green-800' :
-                                            selectedSlot.status === 'orphan' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                                selectedSlot.status === 'orphan' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             {selectedSlot.status}
                                         </span>
                                     </span>
+
+                                    {selectedSlot.status === 'occupied' && (
+                                        <button
+                                            onClick={() => unlinkSlot(selectedSlot)}
+                                            disabled={unlinking}
+                                            className="text-xs text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
+                                        >
+                                            {unlinking ? 'Unlinking...' : 'Unlink Fingerprint'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 {selectedSlot.status === 'occupied' ? (
