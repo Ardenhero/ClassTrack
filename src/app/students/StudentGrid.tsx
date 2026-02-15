@@ -42,6 +42,7 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
                     schema: 'public',
                     table: 'students'
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (payload: any) => {
                     console.log('Realtime Change received!', payload);
                     // Refresh the server component data to ensure consistency
