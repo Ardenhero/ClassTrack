@@ -20,6 +20,10 @@ export function AdminBiometricMatrix() {
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
     const [unlinking, setUnlinking] = useState(false);
 
+    // Debugging / Status State
+    const [realtimeStatus, setRealtimeStatus] = useState<string>("DISCONNECTED");
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
     const loadMatrix = useCallback(async () => {
         setLoading(true);
         const supabase = createClient();
@@ -68,6 +72,7 @@ export function AdminBiometricMatrix() {
                 }
             }
             setSlots(matrix);
+            setLastUpdated(new Date());
 
         } catch (err) {
             console.error("Failed to load matrix:", err);
@@ -117,7 +122,6 @@ export function AdminBiometricMatrix() {
         if (profile?.role === "admin" || profile?.is_super_admin) {
             loadMatrix();
 
-            // Real-time Subscription
             const supabase = createClient();
             const channel = supabase
                 .channel('realtime-matrix') // Renamed for clarity
@@ -138,7 +142,10 @@ export function AdminBiometricMatrix() {
                         loadMatrix();
                     }
                 )
-                .subscribe();
+                .subscribe((status) => {
+                    console.log("Realtime Status:", status);
+                    setRealtimeStatus(status);
+                });
 
             return () => {
                 supabase.removeChannel(channel);
@@ -153,9 +160,18 @@ export function AdminBiometricMatrix() {
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <Fingerprint className="h-5 w-5 text-nwu-red" />
                         Sensor Memory Map
+                        <div
+                            className={`h-2.5 w-2.5 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}
+                            title={`Realtime: ${realtimeStatus}`}
+                        />
                     </h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                        <span><span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span></span>
+                        {lastUpdated && (
+                            <span className="text-[10px] text-gray-400 border-l border-gray-300 pl-2 ml-1">
+                                Updated: {lastUpdated.toLocaleTimeString()}
+                            </span>
+                        )}
                     </p>
                 </div>
                 <button
@@ -223,6 +239,14 @@ export function AdminBiometricMatrix() {
                                 </div>
 
                                 {selectedSlot.status === 'occupied' ? (
+                                    <div className="space-y-1">
+                                        <p className="text-gray-600 dark:text-gray-300 truncate">
+                                            <span className="font-medium text-gray-500 text-xs uppercase block">Student</span>
+                                            {selectedSlot.student_name}
+                                        </p>
+                                        <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
+                                    </div>
+                                ) : selectedSlot.status === 'occupied' ? (
                                     <div className="space-y-1">
                                         <p className="text-gray-600 dark:text-gray-300 truncate">
                                             <span className="font-medium text-gray-500 text-xs uppercase block">Student</span>
