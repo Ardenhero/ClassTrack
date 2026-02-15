@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import { Fingerprint, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
-import { PostgrestError } from "@supabase/supabase-js";
-import { useRouter } from "next/navigation";
+import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface SlotData {
     slot_id: number;
@@ -15,17 +14,11 @@ interface SlotData {
 }
 
 export function AdminBiometricMatrix() {
-    const router = useRouter();
     const { profile } = useProfile();
     const [slots, setSlots] = useState<SlotData[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
     const [unlinking, setUnlinking] = useState(false);
-
-    // Debugging / Status State
-    const [realtimeStatus, setRealtimeStatus] = useState<string>("DISCONNECTED");
-    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-    const [lastEventType, setLastEventType] = useState<string>("-");
 
     const loadMatrix = useCallback(async () => {
         setLoading(true);
@@ -75,7 +68,6 @@ export function AdminBiometricMatrix() {
                 }
             }
             setSlots(matrix);
-            setLastUpdated(new Date());
 
         } catch (err) {
             console.error("Failed to load matrix:", err);
@@ -125,32 +117,27 @@ export function AdminBiometricMatrix() {
         if (profile?.role === "admin" || profile?.is_super_admin) {
             loadMatrix();
 
+            // Real-time Subscription
             const supabase = createClient();
             const channel = supabase
-                .channel('realtime-matrix') // Renamed for clarity
+                .channel('biometric-matrix-updates')
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'students' }, // Listen to ALL changes
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (payload: any) => {
-                        console.log("Realtime Matrix: Student change detected", payload);
-                        setLastEventType(payload.eventType || "UNKNOWN");
-                        loadMatrix(); // Reload matrix to reflect new state
-                        router.refresh();
+                    { event: 'UPDATE', schema: 'public', table: 'students' },
+                    (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+                        console.log("Realtime: Student update/unlink detected", payload);
+                        loadMatrix();
                     }
                 )
                 .on(
                     'postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: "event_type=eq.ORPHAN_SCAN" },
                     () => {
-                        console.log("Realtime Matrix: Orphan scan detected");
+                        console.log("Realtime: Orphan scan detected");
                         loadMatrix();
                     }
                 )
-                .subscribe((status: string) => {
-                    console.log("Realtime Status:", status);
-                    setRealtimeStatus(status);
-                });
+                .subscribe();
 
             return () => {
                 supabase.removeChannel(channel);
@@ -165,20 +152,9 @@ export function AdminBiometricMatrix() {
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <Fingerprint className="h-5 w-5 text-nwu-red" />
                         Sensor Memory Map
-                        <div
-                            className={`h-2.5 w-2.5 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}
-                            title={`Realtime: ${realtimeStatus}`}
-                        />
-                        <span className="text-[9px] font-mono text-gray-400 border border-gray-200 rounded px-1 ml-1">{realtimeStatus}</span>
                     </h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-                        <span><span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span></span>
-                        {lastUpdated && (
-                            <span className="text-[10px] text-gray-400 border-l border-gray-300 pl-2 ml-1 flex items-center gap-1">
-                                <span>Updated: {lastUpdated.toLocaleTimeString()}</span>
-                                {lastEventType !== "-" && <span className="font-bold text-blue-500">[{lastEventType}]</span>}
-                            </span>
-                        )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span>
                     </p>
                 </div>
                 <button
