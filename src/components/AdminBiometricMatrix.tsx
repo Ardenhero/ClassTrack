@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import { Fingerprint, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
 import { PostgrestError } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 
 interface SlotData {
     slot_id: number;
