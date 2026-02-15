@@ -246,14 +246,6 @@ export function AdminBiometricMatrix() {
                                         </p>
                                         <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
                                     </div>
-                                ) : selectedSlot.status === 'occupied' ? (
-                                    <div className="space-y-1">
-                                        <p className="text-gray-600 dark:text-gray-300 truncate">
-                                            <span className="font-medium text-gray-500 text-xs uppercase block">Student</span>
-                                            {selectedSlot.student_name}
-                                        </p>
-                                        <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
-                                    </div>
                                 ) : selectedSlot.status === 'orphan' ? (
                                     <p className="text-red-600 text-xs">
                                         Fingerprint exists on device but no student is linked.
