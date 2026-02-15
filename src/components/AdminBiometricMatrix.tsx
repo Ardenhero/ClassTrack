@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import { Fingerprint, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
-import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { PostgrestError } from "@supabase/supabase-js";
 
 interface SlotData {
     slot_id: number;
