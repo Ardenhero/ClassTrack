@@ -133,7 +133,9 @@ export function AdminBiometricMatrix() {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (payload: any) => {
                         console.log("Realtime Matrix: Student change detected", payload);
+                        setLastEventType(payload.eventType || "UNKNOWN");
                         loadMatrix(); // Reload matrix to reflect new state
+                        router.refresh();
                     }
                 )
                 .on(
