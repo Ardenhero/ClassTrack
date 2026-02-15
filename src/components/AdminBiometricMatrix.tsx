@@ -142,7 +142,7 @@ export function AdminBiometricMatrix() {
                         loadMatrix();
                     }
                 )
-                .subscribe((status) => {
+                .subscribe((status: string) => {
                     console.log("Realtime Status:", status);
                     setRealtimeStatus(status);
                 });
