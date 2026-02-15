@@ -63,7 +63,7 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
                     }
                 }
             )
-            .subscribe((status) => {
+            .subscribe((status: string) => {
                 console.log("Realtime subscription status:", status);
             });
 
@@ -195,8 +195,8 @@ function StudentCardItem({
     return (
         <div
             className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow group relative ${isSelected
-                    ? "border-nwu-red ring-2 ring-nwu-red/30"
-                    : "border-gray-100 dark:border-gray-700"
+                ? "border-nwu-red ring-2 ring-nwu-red/30"
+                : "border-gray-100 dark:border-gray-700"
                 }`}
         >
             <div className="flex justify-between items-start mb-4">
