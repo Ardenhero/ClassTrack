@@ -124,7 +124,8 @@ export function AdminBiometricMatrix() {
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'students' }, // Listen to ALL changes
-                    (payload) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (payload: any) => {
                         console.log("Realtime Matrix: Student change detected", payload);
                         loadMatrix(); // Reload matrix to reflect new state
                     }
