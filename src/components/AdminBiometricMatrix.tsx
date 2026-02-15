@@ -24,6 +24,7 @@ export function AdminBiometricMatrix() {
     // Debugging / Status State
     const [realtimeStatus, setRealtimeStatus] = useState<string>("DISCONNECTED");
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [lastEventType, setLastEventType] = useState<string>("-");
 
     const loadMatrix = useCallback(async () => {
         setLoading(true);
