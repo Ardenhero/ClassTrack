@@ -165,12 +165,14 @@ export function AdminBiometricMatrix() {
                             className={`h-2.5 w-2.5 rounded-full ${realtimeStatus === 'SUBSCRIBED' ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}
                             title={`Realtime: ${realtimeStatus}`}
                         />
+                        <span className="text-[9px] font-mono text-gray-400 border border-gray-200 rounded px-1 ml-1">{realtimeStatus}</span>
                     </h2>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
                         <span><span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span></span>
                         {lastUpdated && (
-                            <span className="text-[10px] text-gray-400 border-l border-gray-300 pl-2 ml-1">
-                                Updated: {lastUpdated.toLocaleTimeString()}
+                            <span className="text-[10px] text-gray-400 border-l border-gray-300 pl-2 ml-1 flex items-center gap-1">
+                                <span>Updated: {lastUpdated.toLocaleTimeString()}</span>
+                                {lastEventType !== "-" && <span className="font-bold text-blue-500">[{lastEventType}]</span>}
                             </span>
                         )}
                     </p>
