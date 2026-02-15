@@ -15,6 +15,7 @@ interface SlotData {
 }
 
 export function AdminBiometricMatrix() {
+    const router = useRouter();
     const { profile } = useProfile();
     const [slots, setSlots] = useState<SlotData[]>([]);
     const [loading, setLoading] = useState(true);
