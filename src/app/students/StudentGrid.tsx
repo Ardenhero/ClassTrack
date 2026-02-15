@@ -42,7 +42,7 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
                     schema: 'public',
                     table: 'students'
                 },
-                (payload) => {
+                (payload: any) => {
                     console.log('Realtime Change received!', payload);
                     // Refresh the server component data to ensure consistency
                     router.refresh();
