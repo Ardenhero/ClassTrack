@@ -121,7 +121,7 @@ export async function POST(request: Request) {
 
             if (existingLog && attendance_type === 'Time In') {
                 return NextResponse.json({
-                    error: `${studentInfo.name} already scanned today`,
+                    error: `Already Scanned`, // Shortened from "already scanned today"
                     student_name: studentInfo.name,
                     duplicate: true
                 }, { status: 409 });

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 import { MoreHorizontal, Pencil, Trash2, Check, X as XIcon } from "lucide-react";
 import { updateStudent, deleteStudent } from "./actions";
 import { MultiDeleteBar } from "@/components/MultiDeleteBar";
@@ -19,6 +21,39 @@ interface StudentGridProps {
 
 export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    // Use local state for students to allow realtime updates
+    const [localStudents, setLocalStudents] = useState<Student[]>(students);
+    const router = useRouter();
+    const supabase = createClient();
+
+    // Sync local state when props change (initial load or server revalidation)
+    useEffect(() => {
+        setLocalStudents(students);
+    }, [students]);
+
+    useEffect(() => {
+        console.log("Setting up realtime subscription for students table...");
+        const channel = supabase
+            .channel('realtime-students')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen for INSERT, UPDATE, DELETE
+                    schema: 'public',
+                    table: 'students'
+                },
+                (payload) => {
+                    console.log('Realtime Change received!', payload);
+                    // Refresh the server component data to ensure consistency
+                    router.refresh();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [supabase, router]);
 
     const toggleSelect = (id: string) => {
         setSelected(prev => {
@@ -39,7 +74,7 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
     return (
         <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {students.map((student) => (
+                {localStudents.map((student) => (
                     <StudentCardItem
                         key={student.id}
                         student={student}
