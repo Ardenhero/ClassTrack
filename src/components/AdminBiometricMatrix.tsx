@@ -120,20 +120,20 @@ export function AdminBiometricMatrix() {
             // Real-time Subscription
             const supabase = createClient();
             const channel = supabase
-                .channel('biometric-matrix-updates')
+                .channel('realtime-matrix') // Renamed for clarity
                 .on(
                     'postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'students' },
-                    (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-                        console.log("Realtime: Student update/unlink detected", payload);
-                        loadMatrix();
+                    { event: '*', schema: 'public', table: 'students' }, // Listen to ALL changes
+                    (payload) => {
+                        console.log("Realtime Matrix: Student change detected", payload);
+                        loadMatrix(); // Reload matrix to reflect new state
                     }
                 )
                 .on(
                     'postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: "event_type=eq.ORPHAN_SCAN" },
                     () => {
-                        console.log("Realtime: Orphan scan detected");
+                        console.log("Realtime Matrix: Orphan scan detected");
                         loadMatrix();
                     }
                 )
