@@ -40,6 +40,8 @@ export function AdminBiometricMatrix() {
                 .from("biometric_audit_logs")
                 .select("fingerprint_slot_id")
                 .eq("event_type", "ORPHAN_SCAN")
+                // Filter by the instructor ID stored in metadata
+                .contains("metadata", { instructor_id: profile?.id })
                 .order("timestamp", { ascending: false })
                 .limit(50);
 
@@ -134,10 +136,14 @@ export function AdminBiometricMatrix() {
                 )
                 .on(
                     'postgres_changes',
-                    { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: "event_type=eq.ORPHAN_SCAN" },
-                    () => {
-                        console.log("Realtime: Orphan scan detected");
-                        loadMatrix();
+                    { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: `event_type=eq.ORPHAN_SCAN` },
+                    (payload: RealtimePostgresChangesPayload<{ metadata: { instructor_id?: string } }>) => {
+                        console.log("Realtime: Orphan scan detected", payload);
+                        // Only reload if the orphan scan belongs to THIS instructor
+                        const newRecord = payload.new as { metadata?: { instructor_id?: string } };
+                        if (newRecord?.metadata?.instructor_id === profile?.id) {
+                            loadMatrix();
+                        }
                     }
                 )
                 .subscribe();

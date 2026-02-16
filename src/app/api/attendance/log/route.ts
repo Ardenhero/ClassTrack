@@ -56,7 +56,36 @@ export async function POST(request: Request) {
         };
 
         const classIdInput = sanitizeUuid(result.data.class_id);
-        const instructorIdInput = sanitizeUuid(instructor_id);
+        let instructorIdInput = sanitizeUuid(instructor_id);
+
+        // RESOLVE INSTRUCTOR ID FROM EMAIL IF MISSING (Crucial for proper audit logging)
+        if (!instructorIdInput && email) {
+            const { data: instructor } = await supabase
+                .from('instructors')
+                .select('id')
+                .eq('user_id', (await supabase.from('auth_users_view').select('id').eq('email', email).maybeSingle())?.data?.id) // Ideal path if view exists
+                .maybeSingle();
+
+            if (instructor) {
+                instructorIdInput = instructor.id;
+            } else {
+                // Fallback: If auth_users_view not available, try to find instructor by matching email to user?
+                // Actually, we can't easily get user_id from email without admin API.
+                // BUT we can search instructors table if we stored email? We don't.
+                // Wait, we have the user's email. We can try to get the user ID via listUsers if we had admin.
+                // But we only have Service Role.
+                const { data: userData } = await supabase.auth.admin.listUsers();
+                const user = userData.users.find(u => u.email === email);
+                if (user) {
+                    const { data: inst } = await supabase
+                        .from('instructors')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
+                    if (inst) instructorIdInput = inst.id;
+                }
+            }
+        }
 
         // BIOMETRIC PATH: If fingerprint_slot_id is provided, look up student by slot
         if (fingerprint_slot_id && device_id) {
@@ -78,7 +107,7 @@ export async function POST(request: Request) {
                     device_id,
                     event_type: 'ORPHAN_SCAN',
                     details: 'Valid fingerprint detected but no matching student record found.',
-                    metadata: { rpc_status: rpcStatusInput }
+                    metadata: { rpc_status: rpcStatusInput, instructor_id: instructorIdInput }
                 });
 
                 // Return precise error for ESP32/Frontend (Phase 2 ESP32 will use "no_link")

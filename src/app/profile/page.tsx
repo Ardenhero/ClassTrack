@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import { User, Lock, Loader2, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
@@ -17,6 +18,7 @@ export default function ProfilePage() {
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
     const { refreshProfile } = useProfile();
+    const router = useRouter();
     const supabase = createClient();
 
     useEffect(() => {
@@ -184,6 +186,7 @@ export default function ProfilePage() {
 
             // Refresh context updates the sidebar immediately. Await it to ensure UI sync.
             await refreshProfile();
+            router.refresh(); // Update server components
 
             (e.target as HTMLFormElement).reset();
         }

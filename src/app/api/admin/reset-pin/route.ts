@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
+export const dynamic = 'force-dynamic';
+
 const MONTHLY_LIMIT = 10;
 
 export async function POST(request: NextRequest) {
