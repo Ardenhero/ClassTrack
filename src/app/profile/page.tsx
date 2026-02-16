@@ -16,7 +16,7 @@ export default function ProfilePage() {
     const [instructorId, setInstructorId] = useState<string | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
-    const { profile, refreshProfile } = useProfile();
+    const { refreshProfile } = useProfile();
     const supabase = createClient();
 
     useEffect(() => {
