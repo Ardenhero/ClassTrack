@@ -78,7 +78,7 @@ export function AdminBiometricMatrix() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [profile]);
 
     const unlinkSlot = async (slot: SlotData) => {
         if (!slot.student_id || !confirm(`Are you sure you want to unlink ${slot.student_name}? This will remove their fingerprint association from the database.`)) return;
@@ -241,7 +241,7 @@ export function AdminBiometricMatrix() {
                                     </p>
                                 ) : selectedSlot.status === 'restricted' ? (
                                     <p className="text-gray-500 text-xs italic">
-                                        This slot is occupied by another instructor's student.
+                                        This slot is occupied by another instructor&apos;s student.
                                     </p>
                                 ) : (
                                     <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>
