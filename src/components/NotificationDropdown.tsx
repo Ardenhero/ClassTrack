@@ -20,9 +20,15 @@ interface NotificationDropdownProps {
     notifications?: NotificationItem[];
 }
 
-export function NotificationDropdown({ notifications = [] }: NotificationDropdownProps) {
+export function NotificationDropdown({ notifications: initialNotifications = [] }: NotificationDropdownProps) {
+    const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Sync props to state if they change (e.g. revalidation from other sources)
+    useEffect(() => {
+        setNotifications(initialNotifications);
+    }, [initialNotifications]);
 
     // Close on click outside
     useEffect(() => {
@@ -36,11 +42,15 @@ export function NotificationDropdown({ notifications = [] }: NotificationDropdow
     }, []);
 
     const handleMarkAllRead = async () => {
+        // Optimistic update
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         await markAllAsRead();
     };
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
+        // Optimistic update
+        setNotifications(prev => prev.filter(n => n.id !== id));
         await deleteNotification(id);
     };
 

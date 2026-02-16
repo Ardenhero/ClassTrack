@@ -30,6 +30,7 @@ export function AdminBiometricMatrix() {
             const { data: students, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
+                .eq("instructor_id", profile?.id)
                 .not("fingerprint_slot_id", "is", null) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
@@ -50,14 +51,12 @@ export function AdminBiometricMatrix() {
                 const student = students?.find(s => s.fingerprint_slot_id === i);
 
                 if (student) {
-                    const isOwned = profile?.is_super_admin || profile?.role === 'admin' || student.instructor_id === profile?.id;
-
                     matrix.push({
                         slot_id: i,
                         student_id: student.id,
-                        student_name: isOwned ? student.name : "Restricted",
+                        student_name: student.name,
                         instructor_id: student.instructor_id,
-                        status: isOwned ? "occupied" : "restricted"
+                        status: "occupied"
                     });
                 } else if (orphanSet.has(i)) {
                     matrix.push({
