@@ -162,6 +162,21 @@ export default function ProfilePage() {
         if (error) {
             setMessage(`Error: ${error.message}`);
         } else {
+            // ALSO update the instructors table if we have an ID
+            if (instructorId && newName) {
+                const { error: dbError } = await supabase
+                    .from("instructors")
+                    .update({ name: newName })
+                    .eq("id", instructorId);
+
+                if (dbError) {
+                    console.error("Failed to sync name to DB:", dbError);
+                    setMessage(`Auth updated, but DB failed: ${dbError.message}`);
+                    setLoading(false);
+                    return;
+                }
+            }
+
             setMessage("Profile updated successfully!");
             if (newName) setFullName(newName);
             (e.target as HTMLFormElement).reset();

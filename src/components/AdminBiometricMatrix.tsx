@@ -10,7 +10,8 @@ interface SlotData {
     slot_id: number;
     student_id?: string;
     student_name?: string;
-    status: "occupied" | "empty" | "orphan";
+    instructor_id?: string; // Added for isolation check
+    status: "occupied" | "empty" | "orphan" | "restricted";
 }
 
 export function AdminBiometricMatrix() {
@@ -28,8 +29,8 @@ export function AdminBiometricMatrix() {
             // 1. Get all students with fingerprint_slot_id
             const { data: students, error } = await supabase
                 .from("students")
-                .select("id, name, fingerprint_slot_id")
-                .not("fingerprint_slot_id", "is", null) as { data: { id: string; name: string; fingerprint_slot_id: number }[] | null; error: PostgrestError | null };
+                .select("id, name, fingerprint_slot_id, instructor_id")
+                .not("fingerprint_slot_id", "is", null) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
@@ -49,11 +50,14 @@ export function AdminBiometricMatrix() {
                 const student = students?.find(s => s.fingerprint_slot_id === i);
 
                 if (student) {
+                    const isOwned = profile?.is_super_admin || student.instructor_id === profile?.id;
+
                     matrix.push({
                         slot_id: i,
                         student_id: student.id,
-                        student_name: student.name,
-                        status: "occupied"
+                        student_name: isOwned ? student.name : "Restricted",
+                        instructor_id: student.instructor_id,
+                        status: isOwned ? "occupied" : "restricted"
                     });
                 } else if (orphanSet.has(i)) {
                     matrix.push({
@@ -181,7 +185,9 @@ export function AdminBiometricMatrix() {
                                         ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
                                         : slot.status === 'orphan'
                                             ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-500/50'
-                                            : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : slot.status === 'restricted'
+                                                ? 'bg-gray-200 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed'
+                                                : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }
                                 `}
                                 title={slot.status === 'occupied' ? slot.student_name : `Slot ${slot.slot_id}: ${slot.status}`}
@@ -232,6 +238,10 @@ export function AdminBiometricMatrix() {
                                 ) : selectedSlot.status === 'orphan' ? (
                                     <p className="text-red-600 text-xs">
                                         Fingerprint exists on device but no student is linked.
+                                    </p>
+                                ) : selectedSlot.status === 'restricted' ? (
+                                    <p className="text-gray-500 text-xs italic">
+                                        This slot is occupied by another instructor's student.
                                     </p>
                                 ) : (
                                     <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>

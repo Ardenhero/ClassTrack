@@ -137,10 +137,11 @@ export default async function Dashboard({
       .order('created_at', { ascending: false })
       .limit(10);
 
-    // 4. Notifications (Super Admin sees all system alerts)
+    // 4. Notifications (Super Admin sees all system alerts, attempts to filter out routine class noise)
     const { data: systemNotifs } = await supabase
       .from('notifications')
       .select('*')
+      .not('title', 'in', '("Class Started","Upcoming Class","Class Ended")') // Exclude class updates
       .order('created_at', { ascending: false })
       .limit(5);
 
