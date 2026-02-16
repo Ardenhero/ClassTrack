@@ -48,7 +48,7 @@ const adminNavigation = [
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
     { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Admin Console", href: "/dashboard/admin/instructors", icon: ShieldCheck },
+    { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
@@ -243,17 +243,19 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                         </div>
                     </Link>
 
-                    <button
-                        onClick={() => clearProfile()}
-                        className={cn(
-                            "flex w-full items-center px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors mb-1",
-                            isCollapsed && "justify-center px-2"
-                        )}
-                        title={isCollapsed ? "Switch Profile" : undefined}
-                    >
-                        <User className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
-                        {!isCollapsed && "Switch Profile"}
-                    </button>
+                    {!isSuperAdmin && (
+                        <button
+                            onClick={() => clearProfile()}
+                            className={cn(
+                                "flex w-full items-center px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors mb-1",
+                                isCollapsed && "justify-center px-2"
+                            )}
+                            title={isCollapsed ? "Switch Profile" : undefined}
+                        >
+                            <User className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                            {!isCollapsed && "Switch Profile"}
+                        </button>
+                    )}
 
                     <form action={signout}>
                         <button

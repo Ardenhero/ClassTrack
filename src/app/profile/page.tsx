@@ -3,6 +3,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useProfile } from "@/context/ProfileContext";
 import { User, Lock, Loader2, ShieldCheck } from "lucide-react";
 
 export default function ProfilePage() {
@@ -15,6 +16,7 @@ export default function ProfilePage() {
     const [instructorId, setInstructorId] = useState<string | null>(null);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
+    const { profile, refreshProfile } = useProfile();
     const supabase = createClient();
 
     useEffect(() => {
@@ -179,8 +181,11 @@ export default function ProfilePage() {
 
             setMessage("Profile updated successfully!");
             if (newName) setFullName(newName);
+
+            // Refresh context updates the sidebar immediately. Await it to ensure UI sync.
+            await refreshProfile();
+
             (e.target as HTMLFormElement).reset();
-            window.location.reload();
         }
         setLoading(false);
     };
