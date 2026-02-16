@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
         const { data, error } = await supabase
             .from('students')
-            .select('id, name, student_no')
+            .select('id, name')
             .eq('fingerprint_slot_id', slotIdInt) // Query as INT
             .maybeSingle(); // Use maybeSingle to avoid errors on duplicates
 
