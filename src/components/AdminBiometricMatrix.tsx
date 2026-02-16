@@ -26,39 +26,56 @@ export function AdminBiometricMatrix() {
         const supabase = createClient();
 
         try {
-            // 1. Get all students with fingerprint_slot_id
-            const { data: students, error } = await supabase
+            // 1. Resolve Account Scope if Admin
+            let currentAccountScope = [profile?.id || ""];
+            if (profile?.role === 'admin' && profile?.id) {
+                const { data: adminRecord } = await supabase
+                    .from('instructors')
+                    .select('auth_user_id')
+                    .eq('id', profile.id)
+                    .single();
+
+                if (adminRecord?.auth_user_id) {
+                    const { data: accountInstructors } = await supabase
+                        .from('instructors')
+                        .select('id')
+                        .eq('auth_user_id', adminRecord.auth_user_id);
+                    currentAccountScope = accountInstructors?.map((inst: { id: string }) => inst.id) || [profile.id];
+                }
+            }
+
+            // 2. Get ALL students with fingerprint_slot_id (to avoid collisions)
+            const { data: allOccupiedStudents, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
-                .eq("instructor_id", profile?.id)
                 .not("fingerprint_slot_id", "is", null) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
-            // 2. Get recent orphan scans from audit logs
+            // 3. Get recent orphan scans from audit logs (filtered by my identity)
             const { data: orphans } = await supabase
                 .from("biometric_audit_logs")
                 .select("fingerprint_slot_id")
                 .eq("event_type", "ORPHAN_SCAN")
-                // Filter by the instructor ID stored in metadata
                 .contains("metadata", { instructor_id: profile?.id })
                 .order("timestamp", { ascending: false })
                 .limit(50);
 
-            // 3. Build the 1-127 Matrix
+            // 4. Build the 1-127 Matrix
             const matrix: SlotData[] = [];
             const orphanSet = new Set(orphans?.map((l: { fingerprint_slot_id: number }) => l.fingerprint_slot_id));
 
             for (let i = 1; i <= 127; i++) {
-                const student = students?.find(s => s.fingerprint_slot_id === i);
+                const student = allOccupiedStudents?.find(s => s.fingerprint_slot_id === i);
 
                 if (student) {
+                    const isMine = currentAccountScope.includes(student.instructor_id);
                     matrix.push({
                         slot_id: i,
-                        student_id: student.id,
-                        student_name: student.name,
+                        student_id: isMine ? student.id : undefined,
+                        student_name: isMine ? student.name : "Restricted",
                         instructor_id: student.instructor_id,
-                        status: "occupied"
+                        status: isMine ? "occupied" : "restricted"
                     });
                 } else if (orphanSet.has(i)) {
                     matrix.push({
