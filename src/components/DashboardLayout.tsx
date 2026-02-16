@@ -1,7 +1,7 @@
 "use client";
 
 import { Sidebar } from "@/components/Sidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, Fingerprint, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -11,9 +11,22 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true); // Default to true or checking localstorage in effect
 
-    // Persist collapse state (optional enhancement for later)
+    useEffect(() => {
+        const stored = localStorage.getItem("sidebar_collapsed");
+        if (stored) {
+            setIsCollapsed(stored === "true");
+        } else {
+            setIsCollapsed(false);
+        }
+    }, []);
+
+    const toggleCollapse = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem("sidebar_collapsed", String(newState));
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row">
@@ -43,7 +56,7 @@ export default function DashboardLayout({
                 <Sidebar
                     onLinkClick={() => setIsMobileMenuOpen(false)}
                     isCollapsed={isCollapsed}
-                    toggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                    toggleCollapse={toggleCollapse}
                 />
             </div>
 

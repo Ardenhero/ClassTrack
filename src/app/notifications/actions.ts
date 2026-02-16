@@ -17,3 +17,18 @@ export async function markAllAsRead() {
 
     revalidatePath("/");
 }
+
+export async function deleteNotification(id: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+    revalidatePath("/");
+}

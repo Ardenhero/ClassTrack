@@ -17,6 +17,7 @@ interface ProfileContextType {
     profile: Profile | null;
     selectProfile: (profile: Profile) => void;
     clearProfile: () => void;
+    refreshProfile: () => Promise<void>;
     loading: boolean;
     isSwitching: boolean;
 }
@@ -119,6 +120,34 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         initializeProfile();
     }, [supabase]);
 
+
+
+    const refreshProfile = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Fetch latest instructor data
+        const { data, error } = await supabase
+            .from('instructors')
+            .select('id, name, department_id, role, pin_enabled, is_super_admin')
+            .eq('id', profile?.id || user.id) // Use existing ID or Auth ID
+            .maybeSingle();
+
+        if (!error && data) {
+            const isAdmin = data.role === 'admin';
+            const updatedProfile: Profile = {
+                id: data.id,
+                name: isAdmin ? "System Admin" : data.name,
+                role: (data.role as "admin" | "instructor") || "instructor",
+                department_id: data.department_id,
+                has_pin: data.pin_enabled,
+                is_super_admin: data.is_super_admin || false
+            };
+            setProfile(updatedProfile);
+            localStorage.setItem("sc_profile", JSON.stringify(updatedProfile));
+        }
+    };
+
     const selectProfile = (newProfile: Profile) => {
         setProfile(newProfile);
         localStorage.setItem("sc_profile", JSON.stringify(newProfile));
@@ -141,7 +170,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ProfileContext.Provider value={{ profile, selectProfile, clearProfile, loading, isSwitching }}>
+        <ProfileContext.Provider value={{ profile, selectProfile, clearProfile, refreshProfile, loading, isSwitching }}>
             {children}
         </ProfileContext.Provider>
     );

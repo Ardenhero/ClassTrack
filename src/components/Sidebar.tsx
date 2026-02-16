@@ -147,14 +147,17 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                         href={item.href}
                                         onClick={onLinkClick}
                                         className={cn(
-                                            "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200",
+                                            "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 overflow-hidden whitespace-nowrap",
                                             pathname === item.href
                                                 ? "bg-white text-nwu-red shadow-md font-bold"
                                                 : "text-white/80 hover:bg-[#5e0d0e] hover:text-white"
                                         )}
+                                        title={isCollapsed ? item.name : undefined}
                                     >
-                                        <item.icon className="mr-3 h-5 w-5" />
-                                        {item.name}
+                                        <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                                        <span className={cn("transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
+                                            {item.name}
+                                        </span>
                                     </Link>
 
                                     {/* Global Directory Dropdown */}
