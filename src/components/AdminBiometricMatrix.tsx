@@ -50,7 +50,7 @@ export function AdminBiometricMatrix() {
                 const student = students?.find(s => s.fingerprint_slot_id === i);
 
                 if (student) {
-                    const isOwned = profile?.is_super_admin || student.instructor_id === profile?.id;
+                    const isOwned = profile?.is_super_admin || profile?.role === 'admin' || student.instructor_id === profile?.id;
 
                     matrix.push({
                         slot_id: i,

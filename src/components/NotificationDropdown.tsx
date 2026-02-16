@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Info, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Bell, Info, AlertTriangle, CheckCircle, Clock, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { markAllAsRead } from "@/app/notifications/actions";
+import { markAllAsRead, deleteNotification } from "@/app/notifications/actions";
 
 export type NotificationType = "info" | "warning" | "success" | "neutral" | "error";
 
@@ -37,6 +37,11 @@ export function NotificationDropdown({ notifications = [] }: NotificationDropdow
 
     const handleMarkAllRead = async () => {
         await markAllAsRead();
+    };
+
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        await deleteNotification(id);
     };
 
     const getIcon = (type: NotificationType) => {
@@ -90,7 +95,7 @@ export function NotificationDropdown({ notifications = [] }: NotificationDropdow
                             notifications.map((notif) => {
                                 const Icon = getIcon(notif.type);
                                 return (
-                                    <div key={notif.id} className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer flex items-start space-x-4 border-b border-gray-50 dark:border-gray-800/50 last:border-none ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                                    <div key={notif.id} className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer flex items-start space-x-4 border-b border-gray-50 dark:border-gray-800/50 last:border-none group ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
                                         <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getColor(notif.type)}`}>
                                             <Icon className="h-5 w-5" />
                                         </div>
@@ -103,6 +108,13 @@ export function NotificationDropdown({ notifications = [] }: NotificationDropdow
                                             </div>
                                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{notif.message}</p>
                                         </div>
+                                        <button
+                                            onClick={(e) => handleDelete(e, notif.id)}
+                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
                                     </div>
                                 );
                             })
