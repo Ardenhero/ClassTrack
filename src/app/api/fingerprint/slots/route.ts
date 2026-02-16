@@ -13,19 +13,16 @@ export async function GET() {
     try {
         const { data: students, error } = await supabase
             .from("students")
-            .select("fingerprint_slot_id, name")
+            .select("fingerprint_slot_id")
             .not("fingerprint_slot_id", "is", null);
 
         if (error) throw error;
 
-        // Extract IDs and names, verify valid IDs
+        // Extract IDs and filter out any potential nulls/zeros just in case
         const slots = students
-            .filter(s => s.fingerprint_slot_id && s.fingerprint_slot_id > 0)
-            .map(s => ({
-                id: s.fingerprint_slot_id,
-                name: s.name
-            }))
-            .sort((a, b) => a.id - b.id);
+            .map(s => s.fingerprint_slot_id)
+            .filter(id => id && id > 0)
+            .sort((a, b) => a - b);
 
         return NextResponse.json({
             success: true,

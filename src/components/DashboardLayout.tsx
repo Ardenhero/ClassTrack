@@ -11,6 +11,9 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Persist collapse state (optional enhancement for later)
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row">
@@ -27,16 +30,21 @@ export default function DashboardLayout({
 
             {/* Sidebar (Desktop + Mobile Drawer) */}
             <div className={cn(
-                "fixed inset-y-0 left-0 z-40 w-64 bg-udemy-indigo transition-transform duration-300 ease-in-out md:static md:translate-x-0 transform",
+                "fixed inset-y-0 left-0 z-40 bg-udemy-indigo transition-all duration-300 ease-in-out md:static md:translate-x-0 transform",
+                isCollapsed ? "w-20" : "w-64",
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 {/* Mobile Close Button */}
-                <div className="absolute top-4 right-4 md:hidden">
+                <div className="absolute top-4 right-4 md:hidden z-50">
                     <button onClick={() => setIsMobileMenuOpen(false)} className="text-white hover:text-gray-300">
                         <X className="h-6 w-6" />
                     </button>
                 </div>
-                <Sidebar onLinkClick={() => setIsMobileMenuOpen(false)} />
+                <Sidebar
+                    onLinkClick={() => setIsMobileMenuOpen(false)}
+                    isCollapsed={isCollapsed}
+                    toggleCollapse={() => setIsCollapsed(!isCollapsed)}
+                />
             </div>
 
             {/* Mobile Overlay */}

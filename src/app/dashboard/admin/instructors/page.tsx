@@ -64,6 +64,15 @@ export default async function InstructorsPage() {
 
         if (error) {
             console.error("Error adding instructor:", error);
+        } else {
+            // Log System Notification
+            await supabase.from("notifications").insert({
+                user_id: user?.id ?? "",
+                title: "System: Account Created",
+                message: `Instructor account for ${name} was created by Admin.`,
+                type: "success",
+                read: false
+            });
         }
         revalidatePath("/dashboard/admin/instructors");
     }

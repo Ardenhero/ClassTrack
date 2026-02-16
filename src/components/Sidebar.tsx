@@ -25,7 +25,8 @@ import {
     Search,
     FileCheck,
     BarChart3,
-    KeyRound
+    KeyRound,
+    ChevronLeft
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -66,7 +67,13 @@ const superAdminNavigation = [
 
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
-export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
+interface SidebarProps {
+    onLinkClick?: () => void;
+    isCollapsed?: boolean;
+    toggleCollapse?: () => void;
+}
+
+export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: SidebarProps) {
     const pathname = usePathname();
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const [isDirOpen, setIsDirOpen] = useState(false);
@@ -92,20 +99,41 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
     return (
         <>
             <div className="flex bg-nwu-red h-full w-full flex-col text-white shadow-xl">
-                <div className="flex h-20 items-center px-4 border-b border-nwu-red/50 shrink-0 bg-[#5e0d0e]">
-                    <div className="flex items-center space-x-3">
+                <div className="flex h-20 items-center justify-between px-4 border-b border-nwu-red/50 shrink-0 bg-[#5e0d0e] transition-all overflow-hidden relative">
+                    <div className={cn("flex items-center space-x-3 transition-all duration-200 overflow-hidden whitespace-nowrap", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
                         <Image
                             src="/branding/nwu_seal.png"
                             alt="NWU Seal"
                             width={40}
                             height={40}
-                            className="h-10 w-10 object-contain rounded-full border border-white/20 bg-white"
+                            className="h-10 w-10 object-contain rounded-full border border-white/20 bg-white flex-shrink-0"
                         />
-                        <div>
+                        <div className="overflow-hidden">
                             <span className="block text-sm font-bold font-serif tracking-wider">NORTHWESTERN</span>
                             <span className="block text-xs text-nwu-gold font-medium tracking-widest">UNIVERSITY</span>
                         </div>
                     </div>
+
+                    {/* Mini Logo (Centered when collapsed) */}
+                    <div className={cn(
+                        "absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-200",
+                        isCollapsed ? "opacity-100 scale-100" : "opacity-0 scale-75 pointer-events-none"
+                    )}>
+                        <Image
+                            src="/branding/nwu_seal.png"
+                            alt="NWU Seal"
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 object-contain rounded-full border border-white/20 bg-white"
+                        />
+                    </div>
+
+                    <button
+                        onClick={toggleCollapse}
+                        className="p-1 rounded-md hover:bg-white/10 text-white/50 hover:text-white transition-colors z-10"
+                    >
+                        {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+                    </button>
                 </div>
 
                 <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -132,14 +160,21 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                                     {/* Global Directory Dropdown */}
                                     <div className="space-y-1">
                                         <button
-                                            onClick={() => setIsDirOpen(!isDirOpen)}
-                                            className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-white/80 hover:bg-[#5e0d0e] hover:text-white rounded-md transition-all group"
+                                            onClick={() => {
+                                                if (isCollapsed && toggleCollapse) toggleCollapse(); // Expand if clicking group while collapsed
+                                                setIsDirOpen(!isDirOpen);
+                                            }}
+                                            className={cn(
+                                                "flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-white/80 hover:bg-[#5e0d0e] hover:text-white rounded-md transition-all group relative",
+                                                isCollapsed && "justify-center px-2"
+                                            )}
+                                            title={isCollapsed ? "Global Directory" : undefined}
                                         >
                                             <div className="flex items-center">
-                                                <Search className="mr-3 h-5 w-5" />
-                                                <span>Global Directory</span>
+                                                <Search className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                                                {!isCollapsed && <span>Global Directory</span>}
                                             </div>
-                                            {isDirOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                            {!isCollapsed && (isDirOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
                                         </button>
                                         {isDirOpen && (
                                             <div className="pl-12 space-y-1 animate-in slide-in-from-top-2 duration-200">
@@ -177,14 +212,16 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                                 href={item.href}
                                 onClick={onLinkClick}
                                 className={cn(
-                                    "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200",
+                                    "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 relative group",
                                     isActive
                                         ? "bg-white text-nwu-red shadow-md font-bold"
-                                        : "text-white/80 hover:bg-[#5e0d0e] hover:text-white"
+                                        : "text-white/80 hover:bg-[#5e0d0e] hover:text-white",
+                                    isCollapsed && "justify-center px-2"
                                 )}
+                                title={isCollapsed ? item.name : undefined}
                             >
-                                <item.icon className="mr-3 h-5 w-5" />
-                                {item.name}
+                                <item.icon className={cn("h-5 w-5 flex-shrink-0", isCollapsed ? "mr-0" : "mr-3")} />
+                                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
                             </Link>
                         );
                     })}
@@ -195,29 +232,37 @@ export function Sidebar({ onLinkClick }: { onLinkClick?: () => void }) {
                         <div className="h-8 w-8 rounded-full bg-nwu-gold flex items-center justify-center text-xs text-nwu-red font-bold">
                             {isSwitching ? "..." : (profile?.name?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />)}
                         </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-white group-hover:text-nwu-gold transition-colors">
+                        <div className="ml-3 transition-opacity duration-200" style={{ opacity: isCollapsed ? 0 : 1, width: isCollapsed ? 0 : 'auto', overflow: 'hidden' }}>
+                            <p className="text-sm font-medium text-white group-hover:text-nwu-gold transition-colors whitespace-nowrap">
                                 {isSwitching ? "Switching..." : (profile?.name || user?.user_metadata?.full_name || "User")}
                             </p>
-                            <p className="text-xs text-gray-400">View Profile</p>
+                            <p className="text-xs text-gray-400 whitespace-nowrap">View Profile</p>
                         </div>
                     </Link>
 
                     <button
                         onClick={() => clearProfile()}
-                        className="flex w-full items-center px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors mb-1"
+                        className={cn(
+                            "flex w-full items-center px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-colors mb-1",
+                            isCollapsed && "justify-center px-2"
+                        )}
+                        title={isCollapsed ? "Switch Profile" : undefined}
                     >
-                        <User className="mr-3 h-5 w-5" />
-                        Switch Profile
+                        <User className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                        {!isCollapsed && "Switch Profile"}
                     </button>
 
                     <form action={signout}>
                         <button
                             type="submit"
-                            className="flex w-full items-center px-4 py-2 text-sm font-medium text-gray-400 hover:bg-red-900/30 hover:text-red-400 rounded-md transition-colors"
+                            className={cn(
+                                "flex w-full items-center px-4 py-2 text-sm font-medium text-gray-400 hover:bg-red-900/30 hover:text-red-400 rounded-md transition-colors",
+                                isCollapsed && "justify-center px-2"
+                            )}
+                            title={isCollapsed ? "Sign Out" : undefined}
                         >
-                            <LogOut className="mr-3 h-5 w-5" />
-                            Sign Out
+                            <LogOut className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                            {!isCollapsed && "Sign Out"}
                         </button>
                     </form>
 
