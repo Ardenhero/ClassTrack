@@ -51,14 +51,29 @@ export async function deleteNotification(id: string) {
         return;
     }
 
-    // Use service role to bypass RLS, but verify ownership via user_id
+    // Use service role to bypass RLS
     const admin = getServiceClient();
 
-    const { error } = await admin
+    // Check if user is Super Admin (they can see and delete any notification)
+    const { data: instructor } = await admin
+        .from("instructors")
+        .select("is_super_admin")
+        .eq("auth_user_id", user.id)
+        .eq("is_super_admin", true)
+        .limit(1)
+        .maybeSingle();
+
+    let query = admin
         .from("notifications")
         .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("id", id);
+
+    // Non-super-admins can only delete their own
+    if (!instructor) {
+        query = query.eq("user_id", user.id);
+    }
+
+    const { error } = await query;
 
     if (error) {
         console.error("[Notifications] deleteNotification error:", error);
