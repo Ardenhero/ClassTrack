@@ -96,6 +96,7 @@ const GROUP_CONFIG = {
     },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function IoTSwitches({ profileId }: IoTSwitchesProps) {
     const [data, setData] = useState<RoomControlsResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -107,18 +108,13 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
 
     // Fetch room controls for the current session
     const fetchRoomControls = useCallback(async () => {
-        if (!profileId) {
-            setError("No profile selected");
-            setLoading(false);
-            return;
-        }
 
         try {
-            // First try to get active sessions
+            // First try to get active sessions (server resolves identity from auth)
             let sessionData = { authorized: false, sessions: [], primary: null };
             try {
                 const sessionRes = await fetch(
-                    `/api/iot/active-session?instructor_id=${profileId}`
+                    `/api/iot/active-session`
                 );
                 sessionData = await sessionRes.json();
             } catch {
@@ -126,7 +122,7 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
             }
 
             if (!sessionData.authorized) {
-                // Fallback: show all devices directly (no room scoping)
+                // Fallback: show all devices (auto-scoped by department on server)
                 const fallbackRes = await fetch(`/api/iot/control`);
                 const fallbackData = await fallbackRes.json();
                 if (fallbackData.devices) {
@@ -165,9 +161,9 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
 
             setSelectedSession(targetSession);
 
-            // Fetch room controls
+            // Fetch room controls (server resolves identity from auth)
             const controlsRes = await fetch(
-                `/api/iot/room-controls?instructor_id=${profileId}&room_id=${targetSession.room_id}`
+                `/api/iot/room-controls?room_id=${targetSession.room_id}`
             );
             const controlsData = await controlsRes.json();
 
@@ -186,7 +182,7 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
         } finally {
             setLoading(false);
         }
-    }, [profileId, selectedSession]);
+    }, [selectedSession]);
 
     useEffect(() => {
         fetchRoomControls();
@@ -199,7 +195,7 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
         groupType: "LIGHTS" | "FANS" | "ACS",
         action: "ON" | "OFF"
     ) => {
-        if (!data || !profileId) return;
+        if (!data) return;
 
         const keyMap: Record<string, string> = {
             LIGHTS: "LIGHT_GROUP",
@@ -214,12 +210,11 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
             let success = false;
 
             if (selectedSession && data.room_id) {
-                // Session-scoped: use group-control endpoint
+                // Session-scoped: use group-control endpoint (identity resolved server-side)
                 const res = await fetch("/api/iot/group-control", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        instructor_id: profileId,
                         room_id: data.room_id,
                         group_type: groupType,
                         action,
@@ -278,7 +273,7 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
 
     // Resume auto mode
     const handleResumeAuto = async () => {
-        if (!data || !selectedSession || !profileId) return;
+        if (!data || !selectedSession) return;
 
         setControlling("resume");
         try {
@@ -286,7 +281,6 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    instructor_id: profileId,
                     room_id: data.room_id,
                     class_id: selectedSession.class_id,
                 }),

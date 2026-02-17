@@ -1,29 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { controlDevice as tuyaControlDevice } from "@/lib/tuya";
+import { controlDevice } from "@/lib/tuya";
+import { resolveWebIdentity, verifyDeviceToken, authenticateDevice } from "@/lib/resolve-identity";
+import { verifySessionForRoom } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-interface GroupControlBody {
-    instructor_id: string;
-    room_id: string;
-    group_type: "LIGHTS" | "FANS" | "ACS";
-    action: "ON" | "OFF";
-    source?: string;
-}
-
-const GROUP_ROLE_MAP: Record<string, string> = {
-    LIGHTS: "LIGHT",
-    FANS: "FAN",
-    ACS: "AC",
-};
-
 /**
  * POST /api/iot/group-control
+ * Controls a group of devices (lights, fans, ACs) in a specific room.
  *
- * Controls all endpoints of a group type (LIGHTS/FANS/ACS) in a room.
- * Enforces schedule + department authorization.
- * Updates session_state on manual actions.
+ * Authorization:
+ * 1. Authenticate Source (Web Session or Device Token)
+ * 2. Resolve Actor (Instructor ID)
+ * 3. Authorize Action (Schedule Check for Room + Department Check)
  */
 export async function POST(request: Request) {
     const supabase = createClient(
@@ -32,205 +22,228 @@ export async function POST(request: Request) {
     );
 
     try {
-        const body: GroupControlBody = await request.json();
-        const { instructor_id, room_id, group_type, action, source } = body;
+        const body = await request.json();
+        let { room_id, group_type, action, source, token } = body;
+        let { instructor_id } = body;
 
-        // Validation
-        if (!instructor_id || !room_id || !group_type || !action) {
+        // Headers check for token
+        const headerToken = request.headers.get("x-device-token");
+        const deviceToken = headerToken || token;
+
+        if (!group_type || !action) {
             return NextResponse.json(
-                {
-                    error: "Missing required fields",
-                    required: ["instructor_id", "room_id", "group_type", "action"],
-                },
+                { error: "Missing required fields: group_type, action" },
                 { status: 400 }
             );
         }
 
-        if (!["LIGHTS", "FANS", "ACS"].includes(group_type)) {
-            return NextResponse.json(
-                { error: "Invalid group_type. Must be LIGHTS, FANS, or ACS" },
-                { status: 400 }
-            );
-        }
+        // ========================================
+        // 1. AUTHENTICATE SOURCE
+        // ========================================
+        let isDeviceAuth = false;
+        let isWebAuth = false;
+        let authDevice: { id: string; room_id: string; department_id: string } | undefined;
+        let authWebIdentity: { instructor_id: string; department_id: string } | null = null;
+        let logDeptId: string | null = null;
 
-        if (!["ON", "OFF"].includes(action)) {
-            return NextResponse.json(
-                { error: "Invalid action. Must be ON or OFF" },
-                { status: 400 }
-            );
-        }
+        // Check Device Token
+        const authResult = await authenticateDevice(deviceToken, null);
+        if (authResult) {
+            isDeviceAuth = true;
+            authDevice = authResult.device;
 
-        // Step 1: Verify authorization via active-session
-        const baseUrl =
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-        const sessionRes = await fetch(
-            `${baseUrl}/api/iot/active-session?instructor_id=${instructor_id}`,
-            { cache: "no-store" }
-        );
-        const sessionData = await sessionRes.json();
-
-        if (!sessionData.authorized) {
-            return NextResponse.json(
-                { error: "Not authorized — no active session", reason: sessionData.reason },
-                { status: 403 }
-            );
-        }
-
-        // Verify the room_id is in authorized sessions
-        const authorizedRoomIds = sessionData.sessions.map(
-            (s: { room_id: string }) => s.room_id
-        );
-        if (!authorizedRoomIds.includes(room_id)) {
-            return NextResponse.json(
-                { error: "Not authorized for this room" },
-                { status: 403 }
-            );
-        }
-
-        // Step 2: Verify department isolation
-        const { data: room } = await supabase
-            .from("rooms")
-            .select("id, department_id")
-            .eq("id", room_id)
-            .single();
-
-        const { data: instructor } = await supabase
-            .from("instructors")
-            .select("department_id")
-            .eq("id", instructor_id)
-            .single();
-
-        if (!room || !instructor || room.department_id !== instructor.department_id) {
-            return NextResponse.json(
-                { error: "Cross-department access denied" },
-                { status: 403 }
-            );
-        }
-
-        // Step 3: Fetch all endpoints matching role in this room
-        const role = GROUP_ROLE_MAP[group_type];
-        const { data: endpoints, error: epError } = await supabase
-            .from("device_endpoints")
-            .select("id, device_id, dp_code, label")
-            .eq("room_id", room_id)
-            .eq("role", role);
-
-        if (epError) throw epError;
-
-        if (!endpoints || endpoints.length === 0) {
-            return NextResponse.json(
-                { error: `No ${group_type} endpoints found in this room` },
-                { status: 404 }
-            );
-        }
-
-        // Step 4: Send Tuya commands for each endpoint
-        const value = action === "ON";
-        const results: Array<{
-            endpoint_id: string;
-            device_id: string;
-            dp_code: string;
-            success: boolean;
-            error?: string;
-        }> = [];
-
-        // De-duplicate by actual device_id (base ID without _ch2 suffix)
-        // Each endpoint may reference a logical device_id but the Tuya API
-        // needs the physical device_id
-        for (const ep of endpoints) {
-            // Extract the real Tuya device ID (remove _ch2, _ch3 suffixes)
-            const physicalDeviceId = ep.device_id.replace(/_ch\d+$/, "");
-
-            try {
-                const tuyaResult = await tuyaControlDevice(
-                    physicalDeviceId,
-                    ep.dp_code,
-                    value
+            // Enforce Specific Token Binding
+            if (authResult.type === 'specific' && authDevice) {
+                // Infer room_id if missing
+                if (!room_id) {
+                    room_id = authDevice.room_id;
+                } else if (authDevice.room_id !== room_id) {
+                    return NextResponse.json(
+                        { error: "Unauthorized: Token does not match target room" },
+                        { status: 403 }
+                    );
+                }
+            } else {
+                // Global Token requires explicit room_id
+                if (!room_id) {
+                    return NextResponse.json(
+                        { error: "Missing room_id (required for global token)" },
+                        { status: 400 }
+                    );
+                }
+            }
+        } else {
+            // Check Web Session
+            // Web Auth requires explicit room_id
+            if (!room_id) {
+                return NextResponse.json(
+                    { error: "Missing room_id" },
+                    { status: 400 }
                 );
-
-                // Update iot_devices state
-                await supabase
-                    .from("iot_devices")
-                    .update({
-                        current_state: value,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq("id", ep.device_id);
-
-                // Log the command
-                await supabase.from("iot_device_logs").insert({
-                    device_id: ep.device_id,
-                    code: ep.dp_code,
-                    value,
-                    source: source || "web",
-                    triggered_by: instructor_id,
-                    class_id: sessionData.primary?.class_id || null,
-                });
-
-                results.push({
-                    endpoint_id: ep.id,
-                    device_id: ep.device_id,
-                    dp_code: ep.dp_code,
-                    success: tuyaResult?.success !== false,
-                });
-            } catch (err) {
-                results.push({
-                    endpoint_id: ep.id,
-                    device_id: ep.device_id,
-                    dp_code: ep.dp_code,
-                    success: false,
-                    error: String(err),
-                });
+            }
+            authWebIdentity = await resolveWebIdentity();
+            if (authWebIdentity) {
+                isWebAuth = true;
             }
         }
 
-        // Step 5: Update session_state for manual override tracking
-        const todayStr = new Date(
-            new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
-        )
-            .toISOString()
-            .slice(0, 10);
-        const activeClassId = sessionData.primary?.class_id;
-
-        if (source !== "auto_on" && action === "OFF") {
-            // Manual OFF → set manual_override
-            await supabase.from("session_state").upsert(
-                {
-                    department_id: room.department_id,
-                    room_id,
-                    class_id: activeClassId,
-                    session_date: todayStr,
-                    manual_override: true,
-                    last_changed_by: source || "web",
-                    updated_at: new Date().toISOString(),
-                },
-                { onConflict: "room_id,session_date,class_id" }
-            );
-        } else if (source === "auto_on") {
-            // Auto-on trigger → mark auto_on_done
-            await supabase.from("session_state").upsert(
-                {
-                    department_id: room.department_id,
-                    room_id,
-                    class_id: activeClassId,
-                    session_date: todayStr,
-                    auto_on_done: true,
-                    last_changed_by: "auto_on",
-                    updated_at: new Date().toISOString(),
-                },
-                { onConflict: "room_id,session_date,class_id" }
+        if (!isDeviceAuth && !isWebAuth) {
+            return NextResponse.json(
+                { error: "Unauthorized: Missing valid session or device token" },
+                { status: 401 }
             );
         }
 
-        const allSuccess = results.every((r) => r.success);
+        // ========================================
+        // 2. AUTHORIZE ACTION
+        // ========================================
+
+        // Verify Room Exists
+        const { data: room } = await supabase
+            .from("rooms")
+            .select("id, department_id, name")
+            .eq("id", room_id)
+            .single();
+
+        if (!room) {
+            return NextResponse.json({ error: "Room not found" }, { status: 404 });
+        }
+
+        if (isDeviceAuth) {
+            // A. DEVICE AUTHORIZATION
+            // 1. Department Check (if specific device known)
+            if (authDevice && authDevice.department_id !== room.department_id) {
+                return NextResponse.json({ error: "Cross-department access denied" }, { status: 403 });
+            }
+
+            // 2. Schedule Check (Is the room active?)
+            // We check if the room has ANY active session.
+            const { isRoomActive } = await import("@/lib/session");
+            const isActiveCallback = await isRoomActive(room_id);
+            if (!isActiveCallback) {
+                return NextResponse.json(
+                    { error: "Room is not active (no scheduled class)" },
+                    { status: 403 }
+                );
+            }
+
+            // Setup logging context
+            logDeptId = authDevice?.department_id || room.department_id; // Best effort
+            instructor_id = instructor_id || null; // Optional from device
+
+        } else if (isWebAuth && authWebIdentity) {
+            // B. WEB AUTHORIZATION
+            // 1. Department Check
+            if (authWebIdentity.department_id !== room.department_id) {
+                return NextResponse.json({ error: "Cross-department access denied" }, { status: 403 });
+            }
+
+            // 2. Schedule Check
+            const isAuthorized = await verifySessionForRoom(authWebIdentity.instructor_id, room_id);
+            if (!isAuthorized) {
+                return NextResponse.json(
+                    { error: "Not authorized to control this room at this time" },
+                    { status: 403 }
+                );
+            }
+
+            // Setup logging context
+            logDeptId = authWebIdentity.department_id;
+            instructor_id = authWebIdentity.instructor_id;
+        } else {
+            return NextResponse.json({ error: "Authorization error" }, { status: 401 });
+        }
+
+        // ========================================
+        // 3. EXECUTE
+        // ========================================
+
+        // Map group type to roles
+        let roles: string[] = [];
+        if (group_type === "LIGHTS") roles = ["LIGHT"];
+        else if (group_type === "FANS") roles = ["FAN"];
+        else if (group_type === "ACS") roles = ["AC"];
+        else {
+            return NextResponse.json(
+                { error: "Invalid group_type" },
+                { status: 400 }
+            );
+        }
+
+        if (action !== "ON" && action !== "OFF") {
+            return NextResponse.json(
+                { error: "Invalid action. Must be 'ON' or 'OFF'." },
+                { status: 400 }
+            );
+        }
+        const targetState = action === "ON";
+
+        // Fetch devices (endpoints)
+        const { data: endpoints } = await supabase
+            .from("device_endpoints")
+            .select("device_id, dp_code, role")
+            .eq("room_id", room_id)
+            .in("role", roles);
+
+        if (!endpoints || endpoints.length === 0) {
+            return NextResponse.json(
+                { message: "No devices found for this group" },
+                { status: 200 }
+            );
+        }
+
+        // Control each device
+        const results = await Promise.allSettled(
+            endpoints.map(async (ep) => {
+                const realId = ep.device_id.replace(/_ch\d+$/, "");
+                const code = ep.dp_code;
+
+                if (!code) {
+                    console.warn(`[GroupControl] Endpoint missing dp_code: ${ep.device_id}`);
+                    return { device_id: ep.device_id, success: false, error: "Missing dp_code" };
+                }
+
+                const res = await controlDevice(realId, code, targetState);
+                return { device_id: ep.device_id, success: res.success };
+            })
+        );
+
+        // Update DB for all successful controls
+        const successfulIds = results
+            .filter(
+                (r): r is PromiseFulfilledResult<{ device_id: string; success: boolean }> =>
+                    r.status === "fulfilled" && r.value.success
+            )
+            .map((r) => r.value.device_id);
+
+        if (successfulIds.length > 0) {
+            await supabase
+                .from("iot_devices")
+                .update({
+                    current_state: targetState,
+                    updated_at: new Date().toISOString(),
+                })
+                .in("id", successfulIds);
+
+            // Log actions
+            const logs = successfulIds.map(id => ({
+                device_id: id,
+                code: action,
+                value: targetState,
+                source: source || (isDeviceAuth ? "esp32" : "web"),
+                triggered_by: instructor_id,
+                department_id: logDeptId,
+                room_id: room_id,
+            }));
+
+            await supabase.from("iot_device_logs").insert(logs);
+        }
 
         return NextResponse.json({
-            success: allSuccess,
-            group_type,
-            action,
-            room_id,
-            endpoints_controlled: results.length,
-            results,
+            success: true,
+            results: results.map((r) =>
+                r.status === "fulfilled" ? r.value : { error: "failed" }
+            ),
         });
     } catch (err) {
         console.error("[IoT Group Control] Error:", err);

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { resolveWebIdentity } from "@/lib/resolve-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,11 @@ interface DeviceEndpoint {
 }
 
 /**
- * GET /api/iot/room-controls?instructor_id=...&room_id=...
+ * GET /api/iot/room-controls?room_id=...
  *
  * Returns device endpoints for the authorized room, grouped by role.
- * Enforces schedule-based authorization.
+ * Identity resolved server-side from auth session (web) or instructor_id query param (ESP32).
+ * Enforces schedule-based + department authorization.
  */
 export async function GET(request: Request) {
     const supabase = createClient(
@@ -28,17 +30,24 @@ export async function GET(request: Request) {
 
     try {
         const { searchParams } = new URL(request.url);
-        const instructorId = searchParams.get("instructor_id");
+        let instructorId = searchParams.get("instructor_id");
         const roomId = searchParams.get("room_id");
 
+        // Resolve identity server-side if not provided (web path)
+        let resolvedDepartmentId: string | null = null;
         if (!instructorId) {
-            return NextResponse.json(
-                { error: "Missing instructor_id" },
-                { status: 400 }
-            );
+            const identity = await resolveWebIdentity();
+            if (!identity) {
+                return NextResponse.json(
+                    { error: "Authentication required" },
+                    { status: 401 }
+                );
+            }
+            instructorId = identity.instructor_id;
+            resolvedDepartmentId = identity.department_id;
         }
 
-        // Step 1: Verify instructor is authorized for this room
+        // Step 1: Verify instructor is authorized for this room (pass through to active-session)
         const sessionRes = await fetch(
             `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/iot/active-session?instructor_id=${instructorId}`,
             { cache: "no-store" }
@@ -89,13 +98,17 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Room not found" }, { status: 404 });
         }
 
-        const { data: instructor } = await supabase
-            .from("instructors")
-            .select("department_id")
-            .eq("id", instructorId)
-            .single();
+        // Use server-resolved department_id if available, otherwise look it up
+        if (!resolvedDepartmentId) {
+            const { data: instructor } = await supabase
+                .from("instructors")
+                .select("department_id")
+                .eq("id", instructorId)
+                .single();
+            resolvedDepartmentId = instructor?.department_id || null;
+        }
 
-        if (!instructor || instructor.department_id !== room.department_id) {
+        if (resolvedDepartmentId && resolvedDepartmentId !== room.department_id) {
             return NextResponse.json(
                 { error: "Cross-department access denied" },
                 { status: 403 }
