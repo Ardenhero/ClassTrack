@@ -144,10 +144,14 @@ export async function GET() {
             }
 
             if (instructor) {
+                console.log("[IoT Debug] Instructor matched:", instructor.id, "Dept:", instructor.department_id);
                 departmentId = instructor.department_id;
                 isSuperAdmin = isSuperAdmin || instructor.is_super_admin;
+            } else {
+                console.log("[IoT Debug] No instructor profile found for user:", user.email);
             }
         } else if (!isLegacyAdmin) {
+            console.log("[IoT Debug] Unauthorized (No User + Not Legacy Admin)");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -155,18 +159,24 @@ export async function GET() {
         let query = adminClient.from('iot_devices').select('*').order('name');
 
         if (!isSuperAdmin) {
+            console.log("[IoT Debug] Filtering by Dept:", departmentId);
             if (departmentId) {
                 query = query.eq('department_id', departmentId);
             } else {
-                // User has no department -> Show devices that ALSO have no department
-                // This allows "Global" devices to be seen by unassigned users,
-                // or at least prevents an empty screen if everything is unassigned.
+                console.log("[IoT Debug] No Dept - showing unassigned only");
                 query = query.is('department_id', null);
             }
+        } else {
+            console.log("[IoT Debug] Super Admin - showing all");
         }
 
         const { data: devices, error } = await query;
-        if (error) throw error;
+        if (error) {
+            console.error("[IoT Debug] Query Error:", error);
+            throw error;
+        }
+
+        console.log("[IoT Debug] Devices Found:", devices?.length);
 
         // Optionally refresh from Tuya (Optimistic/Basic status)
         const enriched = await Promise.all(
@@ -176,7 +186,15 @@ export async function GET() {
             })
         );
 
-        return NextResponse.json({ devices: enriched });
+        return NextResponse.json({
+            devices: enriched,
+            debug: {
+                userEmail: user?.email,
+                departmentId,
+                isSuperAdmin,
+                deviceCount: devices?.length || 0
+            }
+        });
 
     } catch (err) {
         console.error("[IoT Control GET] Error:", err);
