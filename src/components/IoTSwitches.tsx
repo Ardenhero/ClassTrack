@@ -34,15 +34,16 @@ export function IoTSwitches() {
     const [toggling, setToggling] = useState<string | null>(null);
 
     const loadDevices = useCallback(async () => {
-        const supabase = createClient();
-        const { data, error } = await supabase
-            .from("iot_devices")
-            .select("*")
-            .neq("type", "gateway")
-            .order("name");
-
-        if (!error && data) {
-            setDevices(data as IoTDevice[]);
+        try {
+            const res = await fetch('/api/iot/control');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.devices) {
+                    setDevices(data.devices);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load devices", err);
         }
         setLoading(false);
     }, []);
