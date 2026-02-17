@@ -95,7 +95,7 @@ export async function checkAuth() {
         .maybeSingle();
 
     if (!profile) return null;
-    if (profile.role !== 'admin') return null;
+    if (profile.role !== 'admin' && !profile.is_super_admin) return null;
 
     return { user, profile };
 }

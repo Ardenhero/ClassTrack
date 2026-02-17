@@ -12,6 +12,7 @@ export async function resolveWebIdentity(): Promise<{
     instructor_id: string;
     department_id: string;
     auth_user_id: string;
+    is_super_admin: boolean;
 } | null> {
     try {
         const supabase = await createClient();
@@ -29,7 +30,7 @@ export async function resolveWebIdentity(): Promise<{
 
         const { data: instructor } = await adminClient
             .from("instructors")
-            .select("id, department_id")
+            .select("id, department_id, is_super_admin")
             .eq("auth_user_id", user.id)
             .single();
 
@@ -39,6 +40,7 @@ export async function resolveWebIdentity(): Promise<{
             instructor_id: instructor.id,
             department_id: instructor.department_id,
             auth_user_id: user.id,
+            is_super_admin: instructor.is_super_admin,
         };
     } catch {
         return null;
