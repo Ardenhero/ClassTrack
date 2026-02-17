@@ -44,11 +44,13 @@ export function AdminBiometricMatrix() {
                 }
             }
 
-            // 2. Get ALL students with fingerprint_slot_id (to avoid collisions)
+            // 2. Get students ONLY within my scope (Account Isolation)
+            // This ensures we never see "Restricted" slots from other accounts.
             const { data: allOccupiedStudents, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
-                .not("fingerprint_slot_id", "is", null) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
+                .not("fingerprint_slot_id", "is", null)
+                .in("instructor_id", currentAccountScope) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
