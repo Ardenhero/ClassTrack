@@ -151,8 +151,10 @@ export async function GET() {
             if (departmentId) {
                 query = query.eq('department_id', departmentId);
             } else {
-                // User has no department -> Show NOTHING (isolation)
-                return NextResponse.json({ devices: [] });
+                // User has no department -> Show devices that ALSO have no department
+                // This allows "Global" devices to be seen by unassigned users,
+                // or at least prevents an empty screen if everything is unassigned.
+                query = query.is('department_id', null);
             }
         }
 
