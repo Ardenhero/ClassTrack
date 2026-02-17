@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { controlDevice } from "@/lib/tuya";
-import { resolveWebIdentity, verifyDeviceToken, authenticateDevice } from "@/lib/resolve-identity";
+import { resolveWebIdentity, authenticateDevice } from "@/lib/resolve-identity";
 import { verifySessionForRoom } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,8 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        let { room_id, group_type, action, source, token } = body;
+        let { room_id } = body;
+        const { group_type, action, source, token } = body;
         let { instructor_id } = body;
 
         // Headers check for token
