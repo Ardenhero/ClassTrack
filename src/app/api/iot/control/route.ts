@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { controlDevice, getDeviceStatus } from "@/lib/tuya";
+import { controlDevice } from "@/lib/tuya";
 
 export const dynamic = 'force-dynamic';
 
