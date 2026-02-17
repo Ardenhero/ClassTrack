@@ -122,16 +122,27 @@ export async function GET() {
 
         if (user) {
             // Use service role just to look up the user's Department/Role securely
-            // (We can't trust the anon client to read 'instructors' if RLS hides it)
             const adminClient = createClient(
                 process.env.NEXT_PUBLIC_SUPABASE_URL!,
                 process.env.SUPABASE_SERVICE_ROLE_KEY!
             );
-            const { data: instructor } = await adminClient
+
+            // Try lookup by auth_user_id first
+            let { data: instructor } = await adminClient
                 .from('instructors')
-                .select('department_id, is_super_admin')
+                .select('id, department_id, is_super_admin')
                 .eq('auth_user_id', user.id)
                 .maybeSingle();
+
+            // Fallback to email lookup if auth_user_id isn't linked yet
+            if (!instructor && user.email) {
+                const { data: byEmail } = await adminClient
+                    .from('instructors')
+                    .select('id, department_id, is_super_admin')
+                    .eq('email', user.email)
+                    .maybeSingle();
+                instructor = byEmail;
+            }
 
             if (instructor) {
                 departmentId = instructor.department_id;
