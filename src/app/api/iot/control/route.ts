@@ -127,21 +127,21 @@ export async function GET() {
 
         if (user) {
             // Try lookup by auth_user_id first
-            let { data: instructor } = await adminClient
+            const { data: instructors } = await adminClient
                 .from('instructors')
                 .select('id, department_id, is_super_admin')
-                .eq('auth_user_id', user.id)
-                .maybeSingle();
+                .eq('auth_user_id', user.id);
 
-            // Fallback to email lookup if auth_user_id isn't linked yet
-            if (!instructor && user.email) {
-                const { data: byEmail } = await adminClient
-                    .from('instructors')
-                    .select('id, department_id, is_super_admin')
-                    .eq('email', user.email)
-                    .maybeSingle();
-                instructor = byEmail;
+            let instructor = null;
+
+            if (instructors && instructors.length > 0) {
+                // Prioritize the profile that has a department assigned
+                instructor = instructors.find(i => i.department_id) || instructors[0];
             }
+
+            // Fallback to email lookup if auth_user_id isn't linked yet NO - REMOVING THIS AS IT IS BROKEN (No email col)
+            // The user already has auth_user_id linked, so this is fine. 
+            // If we really needed it, we'd need to join tables, but keeping it simple for now.
 
             if (instructor) {
                 console.log("[IoT Debug] Instructor matched:", instructor.id, "Dept:", instructor.department_id);
