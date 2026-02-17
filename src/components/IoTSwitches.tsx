@@ -201,33 +201,58 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
     ) => {
         if (!data || !profileId) return;
 
+        const keyMap: Record<string, string> = {
+            LIGHTS: "LIGHT_GROUP",
+            FANS: "FAN_GROUP",
+            ACS: "AC_GROUP",
+        };
+        const key = keyMap[groupType] as keyof typeof data.groups;
+        const endpoints = data.groups[key];
+
         setControlling(groupType);
         try {
-            const res = await fetch("/api/iot/group-control", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    instructor_id: profileId,
-                    room_id: data.room_id,
-                    group_type: groupType,
-                    action,
-                    source: "web",
-                }),
-            });
+            let success = false;
 
-            const result = await res.json();
+            if (selectedSession && data.room_id) {
+                // Session-scoped: use group-control endpoint
+                const res = await fetch("/api/iot/group-control", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        instructor_id: profileId,
+                        room_id: data.room_id,
+                        group_type: groupType,
+                        action,
+                        source: "web",
+                    }),
+                });
+                const result = await res.json();
+                success = result.success;
+            } else {
+                // Fallback: control each device directly (no auth required)
+                const results = await Promise.allSettled(
+                    endpoints.map((ep) =>
+                        fetch("/api/iot/control", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                device_id: ep.device_id,
+                                code: ep.dp_code || "switch_1",
+                                value: action === "ON",
+                                source: "web",
+                            }),
+                        })
+                    )
+                );
+                success = results.some(
+                    (r) => r.status === "fulfilled" && r.value.ok
+                );
+            }
 
-            if (result.success) {
+            if (success) {
                 // Update local state immediately
                 setData((prev) => {
                     if (!prev) return prev;
-                    // Map LIGHTS → LIGHT_GROUP, FANS → FAN_GROUP, ACS → AC_GROUP
-                    const keyMap: Record<string, string> = {
-                        LIGHTS: "LIGHT_GROUP",
-                        FANS: "FAN_GROUP",
-                        ACS: "AC_GROUP",
-                    };
-                    const key = keyMap[groupType] as keyof typeof prev.groups;
                     return {
                         ...prev,
                         groups: {
