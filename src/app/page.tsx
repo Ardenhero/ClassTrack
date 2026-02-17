@@ -709,7 +709,7 @@ export default async function Dashboard({
         </div>
 
         {/* IoT Switches */}
-        <IoTSwitches />
+        <IoTSwitches profileId={profileId} />
       </div>
       {/* Content was previously wrapped here */}
     </DashboardLayout>
