@@ -24,6 +24,7 @@ export default async function InstructorsPage() {
       name,
       role,
       pin_code,
+      department_id,
       departments (
         name,
         code
@@ -145,8 +146,24 @@ export default async function InstructorsPage() {
                                 <div>
                                     <p className="font-medium text-gray-900">{inst.name}</p>
                                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        {/* @ts-expect-error departments join */}
-                                        {inst.departments?.name && <span>{inst.departments.name}</span>}
+                                        <form action={async (formData: FormData) => {
+                                            "use server";
+                                            const { updateInstructorDepartment } = await import("./instructorActions");
+                                            const deptId = formData.get("department_id") as string;
+                                            await updateInstructorDepartment(inst.id, deptId === "" ? null : deptId);
+                                        }}>
+                                            <select
+                                                name="department_id"
+                                                defaultValue={inst.department_id || ""}
+                                                className="px-1 py-0.5 border border-gray-200 rounded bg-transparent focus:ring-1 focus:ring-nwu-red outline-none transition-all text-[10px] font-medium w-32"
+                                                onChange={(e) => (e.target.form as HTMLFormElement).requestSubmit()}
+                                            >
+                                                <option value="">(No Dept)</option>
+                                                {departments?.map((d) => (
+                                                    <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                                                ))}
+                                            </select>
+                                        </form>
                                         {inst.role === "admin" && (
                                             <span className="px-2 py-0.5 bg-nwu-gold/20 text-nwu-red rounded-full font-bold">Admin</span>
                                         )}
