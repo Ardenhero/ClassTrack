@@ -47,14 +47,14 @@ interface SessionState {
 interface RoomControlsResponse {
     room_id: string;
     room_name: string;
-    session: SessionInfo;
-    session_state: SessionState;
+    session: SessionInfo | null;
+    session_state: SessionState | null;
     groups: {
         LIGHT_GROUP: Endpoint[];
         FAN_GROUP: Endpoint[];
         AC_GROUP: Endpoint[];
     };
-    all_endpoints: Endpoint[];
+    all_endpoints?: Endpoint[];
     error?: string;
     reason?: string;
 }
@@ -114,20 +114,41 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
         }
 
         try {
-            // First get active sessions
-            const sessionRes = await fetch(
-                `/api/iot/active-session?instructor_id=${profileId}`
-            );
-            const sessionData = await sessionRes.json();
+            // First try to get active sessions
+            let sessionData = { authorized: false, sessions: [], primary: null };
+            try {
+                const sessionRes = await fetch(
+                    `/api/iot/active-session?instructor_id=${profileId}`
+                );
+                sessionData = await sessionRes.json();
+            } catch {
+                // If active-session endpoint fails, continue with fallback
+            }
 
             if (!sessionData.authorized) {
-                setError(
-                    sessionData.reason === "no_classes"
-                        ? "No classes assigned"
-                        : "No active class session right now"
-                );
-                setSessions([]);
-                setData(null);
+                // Fallback: show all devices directly (no room scoping)
+                const fallbackRes = await fetch(`/api/iot/control`);
+                const fallbackData = await fallbackRes.json();
+                if (fallbackData.devices) {
+                    // Group devices by type for the UI
+                    const lights = fallbackData.devices.filter((d: Record<string, string>) => d.type === 'light' || d.name?.toLowerCase().includes('light'));
+                    const fans = fallbackData.devices.filter((d: Record<string, string>) => d.type === 'fan' || d.name?.toLowerCase().includes('fan'));
+                    const acs = fallbackData.devices.filter((d: Record<string, string>) => d.type === 'ac' || d.name?.toLowerCase().includes('ac'));
+                    setData({
+                        room_id: "",
+                        room_name: "All Devices",
+                        session: null,
+                        session_state: null,
+                        groups: {
+                            LIGHT_GROUP: lights.map((d: Record<string, string>) => ({ device_id: d.id, dp_code: d.dp_code || 'switch_1', name: d.name, current_state: d.current_state })),
+                            FAN_GROUP: fans.map((d: Record<string, string>) => ({ device_id: d.id, dp_code: d.dp_code || 'switch_1', name: d.name, current_state: d.current_state })),
+                            AC_GROUP: acs.map((d: Record<string, string>) => ({ device_id: d.id, dp_code: d.dp_code || 'switch_1', name: d.name, current_state: d.current_state })),
+                        },
+                    });
+                    setError(null);
+                } else {
+                    setError("No devices found");
+                }
                 setLoading(false);
                 return;
             }
@@ -178,7 +199,7 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
         groupType: "LIGHTS" | "FANS" | "ACS",
         action: "ON" | "OFF"
     ) => {
-        if (!data || !selectedSession || !profileId) return;
+        if (!data || !profileId) return;
 
         setControlling(groupType);
         try {
@@ -216,10 +237,10 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
                                 current_state: action === "ON",
                             })),
                         },
-                        session_state: {
+                        session_state: prev.session_state ? {
                             ...prev.session_state,
                             manual_override: action === "OFF" ? true : prev.session_state.manual_override,
-                        },
+                        } : null,
                     };
                 });
             }
