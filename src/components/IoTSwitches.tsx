@@ -200,7 +200,6 @@ export function IoTSwitches({ profileId }: IoTSwitchesProps) {
                 // Update local state immediately
                 setData((prev) => {
                     if (!prev) return prev;
-                    const groupKey = `${groupType.replace("S", "")}_GROUP` as keyof typeof prev.groups;
                     // Map LIGHTS → LIGHT_GROUP, FANS → FAN_GROUP, ACS → AC_GROUP
                     const keyMap: Record<string, string> = {
                         LIGHTS: "LIGHT_GROUP",

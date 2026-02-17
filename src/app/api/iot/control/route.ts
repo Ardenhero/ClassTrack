@@ -167,7 +167,7 @@ export async function GET(request: Request) {
 
     try {
         const { searchParams } = new URL(request.url);
-        const instructorId = searchParams.get("instructor_id");
+        const _instructorId = searchParams.get("instructor_id");
         const roomId = searchParams.get("room_id");
 
         let query = supabase.from("iot_devices").select("*").order("name");
