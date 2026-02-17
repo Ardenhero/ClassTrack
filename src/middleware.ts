@@ -160,6 +160,7 @@ export async function middleware(request: NextRequest) {
         "/api/auth/signout",
         "/api/evidence/public-upload",
         "/api/fingerprint",
+        "/api/iot",
     ];
 
     const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
