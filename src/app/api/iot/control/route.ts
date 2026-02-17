@@ -86,7 +86,7 @@ export async function POST(request: Request) {
  * GET /api/iot/control — Get current status of all IoT devices.
  */
 // GET /api/iot/control — Get current status of IoT devices (Scoped)
-export async function GET() {
+export async function GET(request: Request) {
     const { cookies } = await import("next/headers");
     const { createServerClient } = await import("@supabase/ssr");
 
@@ -126,6 +126,9 @@ export async function GET() {
         );
 
         if (user) {
+            // Check for explicit profile selection from frontend
+            const profileId = request.headers.get("X-Profile-ID");
+
             // Try lookup by auth_user_id first
             const { data: instructors } = await adminClient
                 .from('instructors')
@@ -135,8 +138,15 @@ export async function GET() {
             let instructor = null;
 
             if (instructors && instructors.length > 0) {
-                // Prioritize the profile that has a department assigned
-                instructor = instructors.find(i => i.department_id) || instructors[0];
+                if (profileId) {
+                    // If frontend sent a specific profile, try to find it in the user's linked instructors
+                    instructor = instructors.find(i => i.id === profileId);
+                }
+
+                // Fallback: Prioritize the profile that has a department assigned
+                if (!instructor) {
+                    instructor = instructors.find(i => i.department_id) || instructors[0];
+                }
             }
 
             // Fallback to email lookup if auth_user_id isn't linked yet NO - REMOVING THIS AS IT IS BROKEN (No email col)

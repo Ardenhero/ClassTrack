@@ -43,7 +43,12 @@ export function IoTSwitches() {
 
     const loadDevices = useCallback(async () => {
         try {
-            const res = await fetch('/api/iot/control');
+            const headers: HeadersInit = {};
+            if (profile?.id) {
+                headers['X-Profile-ID'] = profile.id;
+            }
+
+            const res = await fetch('/api/iot/control', { headers });
             if (res.ok) {
                 const data = await res.json();
                 if (data.devices) {
@@ -56,7 +61,7 @@ export function IoTSwitches() {
             console.error("Failed to load devices", err);
         }
         setLoading(false);
-    }, []);
+    }, [profile]);
 
     useEffect(() => {
         loadDevices();
