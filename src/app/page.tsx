@@ -428,10 +428,12 @@ export default async function Dashboard({
     }
   }
 
-  // Fetch Real Notifications ( STRICT ISOLATION )
+  // Fetch Real Notifications ( STRICT ISOLATION — last 24h only )
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   let notifQuery = supabase
     .from('notifications')
     .select('*')
+    .gte('created_at', oneDayAgo)
     .order('created_at', { ascending: false })
     .limit(10);
 
