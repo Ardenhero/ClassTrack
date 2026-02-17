@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { resolveWebIdentity } from "@/lib/resolve-identity";
 import { getInstructorSessions } from "@/lib/session";

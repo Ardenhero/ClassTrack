@@ -151,14 +151,16 @@ export default async function RoomsPage() {
                                     <td className="px-6 py-4 font-bold text-gray-900 dark:text-white text-sm">{room.name}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                                            {/* @ts-ignore join */}
+                                            {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+                                            {/* @ts-ignore */}
                                             {room.departments?.name || "Unknown"}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center text-xs text-gray-600 dark:text-gray-400 font-medium">
                                             <MonitorSmartphone className="h-3 w-3 mr-1.5 text-gray-400" />
-                                            {/* @ts-ignore count */}
+                                            {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
+                                            {/* @ts-ignore */}
                                             {room.device_endpoints?.[0]?.count || 0} endpoints
                                         </div>
                                     </td>
