@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { resolveWebIdentity } from "@/lib/resolve-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
  *
  * Resets manual_override to false for the current session,
  * allowing auto-on to trigger again on next attendance scan.
+ * Identity resolved server-side.
  */
 export async function POST(request: Request) {
     const supabase = createClient(
@@ -17,11 +19,20 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { instructor_id, room_id, class_id } = body;
+        const { room_id, class_id } = body;
 
-        if (!instructor_id || !room_id) {
+        // Resolve identity server-side
+        const identity = await resolveWebIdentity();
+        if (!identity) {
             return NextResponse.json(
-                { error: "Missing instructor_id or room_id" },
+                { error: "Authentication required" },
+                { status: 401 }
+            );
+        }
+
+        if (!room_id) {
+            return NextResponse.json(
+                { error: "Missing room_id" },
                 { status: 400 }
             );
         }
@@ -32,11 +43,11 @@ export async function POST(request: Request) {
             .toISOString()
             .slice(0, 10);
 
-        // Verify authorization
+        // Verify authorization via active-session
         const baseUrl =
             process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const sessionRes = await fetch(
-            `${baseUrl}/api/iot/active-session?instructor_id=${instructor_id}`,
+            `${baseUrl}/api/iot/active-session?instructor_id=${identity.instructor_id}`,
             { cache: "no-store" }
         );
         const sessionData = await sessionRes.json();
