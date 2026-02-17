@@ -120,13 +120,12 @@ export async function GET() {
         let departmentId: string | null = null;
         let isSuperAdmin = isLegacyAdmin;
 
-        if (user) {
-            // Use service role just to look up the user's Department/Role securely
-            const adminClient = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!
-            );
+        const adminClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
 
+        if (user) {
             // Try lookup by auth_user_id first
             let { data: instructor } = await adminClient
                 .from('instructors')
@@ -152,11 +151,8 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Fetch devices
-        // If Super Admin, allow all? User asked for "Per-account isolation".
-        // But Super Admin usually needs to see all.
-        // Let's scope by department if not super admin.
-        let query = supabase.from('iot_devices').select('*').order('name');
+        // Fetch devices using service role to bypass RLS, then manually scope below
+        let query = adminClient.from('iot_devices').select('*').order('name');
 
         if (!isSuperAdmin) {
             if (departmentId) {
