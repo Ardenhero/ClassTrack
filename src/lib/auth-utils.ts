@@ -82,20 +82,3 @@ export async function checkIsAdmin() {
 
     return false;
 }
-
-export async function checkAuth() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: profile } = await supabase
-        .from('instructors')
-        .select('*')
-        .eq('auth_user_id', user.id)
-        .maybeSingle();
-
-    if (!profile) return null;
-    if (profile.role !== 'admin' && !profile.is_super_admin) return null;
-
-    return { user, profile };
-}

@@ -10,7 +10,8 @@ interface SlotData {
     slot_id: number;
     student_id?: string;
     student_name?: string;
-    status: "occupied" | "empty" | "orphan";
+    instructor_id?: string; // Added for isolation check
+    status: "occupied" | "empty" | "orphan" | "restricted";
 }
 
 export function AdminBiometricMatrix() {
@@ -25,29 +26,9 @@ export function AdminBiometricMatrix() {
         const supabase = createClient();
 
         try {
-            // 1. Resolve the department scope for this user
-            let departmentId: string | null = null;
-            if (profile?.id) {
-                const { data: myInstructor } = await supabase
-                    .from('instructors')
-                    .select('department_id')
-                    .eq('id', profile.id)
-                    .single();
-                departmentId = myInstructor?.department_id || null;
-            }
-
-            // 2. Get all instructor IDs in the same department
-            let scopedInstructorIds: string[] = [profile?.id || ""];
-            if (departmentId) {
-                const { data: deptInstructors } = await supabase
-                    .from('instructors')
-                    .select('id')
-                    .eq('department_id', departmentId);
-                if (deptInstructors && deptInstructors.length > 0) {
-                    scopedInstructorIds = deptInstructors.map((inst: { id: string }) => inst.id);
-                }
-            } else if (profile?.id) {
-                // Fallback: scope to own account (multiple profiles under same auth_user_id)
+            // 1. Resolve Account Scope if Admin
+            let currentAccountScope = [profile?.id || ""];
+            if (profile?.role === 'admin' && profile?.id) {
                 const { data: adminRecord } = await supabase
                     .from('instructors')
                     .select('auth_user_id')
@@ -59,23 +40,19 @@ export function AdminBiometricMatrix() {
                         .from('instructors')
                         .select('id')
                         .eq('auth_user_id', adminRecord.auth_user_id);
-                    scopedInstructorIds = accountInstructors?.map((inst: { id: string }) => inst.id) || [profile.id];
+                    currentAccountScope = accountInstructors?.map((inst: { id: string }) => inst.id) || [profile.id];
                 }
             }
 
-            // 3. Get ONLY students within my department scope (no global fetch)
-            const { data: scopedStudents, error } = await supabase
+            // 2. Get ALL students with fingerprint_slot_id (to avoid collisions)
+            const { data: allOccupiedStudents, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
-                .not("fingerprint_slot_id", "is", null)
-                .in("instructor_id", scopedInstructorIds) as {
-                    data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null;
-                    error: PostgrestError | null
-                };
+                .not("fingerprint_slot_id", "is", null) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
-            // 4. Get recent orphan scans from audit logs (filtered by my identity)
+            // 3. Get recent orphan scans from audit logs (filtered by my identity)
             const { data: orphans } = await supabase
                 .from("biometric_audit_logs")
                 .select("fingerprint_slot_id")
@@ -84,19 +61,21 @@ export function AdminBiometricMatrix() {
                 .order("timestamp", { ascending: false })
                 .limit(50);
 
-            // 5. Build the 1-127 Matrix — slots from other departments appear EMPTY
+            // 4. Build the 1-127 Matrix
             const matrix: SlotData[] = [];
             const orphanSet = new Set(orphans?.map((l: { fingerprint_slot_id: number }) => l.fingerprint_slot_id));
 
             for (let i = 1; i <= 127; i++) {
-                const student = scopedStudents?.find(s => s.fingerprint_slot_id === i);
+                const student = allOccupiedStudents?.find(s => s.fingerprint_slot_id === i);
 
                 if (student) {
+                    const isMine = currentAccountScope.includes(student.instructor_id);
                     matrix.push({
                         slot_id: i,
-                        student_id: student.id,
-                        student_name: student.name,
-                        status: "occupied"
+                        student_id: isMine ? student.id : undefined,
+                        student_name: isMine ? student.name : "Restricted",
+                        instructor_id: student.instructor_id,
+                        status: isMine ? "occupied" : "restricted"
                     });
                 } else if (orphanSet.has(i)) {
                     matrix.push({
@@ -133,8 +112,11 @@ export function AdminBiometricMatrix() {
 
             if (error) throw error;
 
+            // Optimistic update will be handled by realtime subscription, but we can also reload
+            // loadMatrix(); // Let realtime handle it? Or explicit reload to be safe.
+            // Explicit reload is safer for now until realtime checks out
             await loadMatrix();
-            setSelectedSlot(null);
+            setSelectedSlot(null); // Deselect after unlink
 
         } catch (err) {
             console.error("Failed to unlink slot:", err);
@@ -157,6 +139,7 @@ export function AdminBiometricMatrix() {
         if (profile?.role === "admin" || profile?.is_super_admin) {
             loadMatrix();
 
+            // Real-time Subscription
             const supabase = createClient();
             const channel = supabase
                 .channel('biometric-matrix-updates')
@@ -173,6 +156,7 @@ export function AdminBiometricMatrix() {
                     { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: `event_type=eq.ORPHAN_SCAN` },
                     (payload: RealtimePostgresChangesPayload<{ metadata: { instructor_id?: string } }>) => {
                         console.log("Realtime: Orphan scan detected", payload);
+                        // Only reload if the orphan scan belongs to THIS instructor
                         const newRecord = payload.new as { metadata?: { instructor_id?: string } };
                         if (newRecord?.metadata?.instructor_id === profile?.id) {
                             loadMatrix();
@@ -223,7 +207,9 @@ export function AdminBiometricMatrix() {
                                         ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
                                         : slot.status === 'orphan'
                                             ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-500/50'
-                                            : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : slot.status === 'restricted'
+                                                ? 'bg-gray-200 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed'
+                                                : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }
                                 `}
                                 title={slot.status === 'occupied' ? slot.student_name : `Slot ${slot.slot_id}: ${slot.status}`}
@@ -274,6 +260,10 @@ export function AdminBiometricMatrix() {
                                 ) : selectedSlot.status === 'orphan' ? (
                                     <p className="text-red-600 text-xs">
                                         Fingerprint exists on device but no student is linked.
+                                    </p>
+                                ) : selectedSlot.status === 'restricted' ? (
+                                    <p className="text-gray-500 text-xs italic">
+                                        This slot is occupied by another instructor&apos;s student.
                                     </p>
                                 ) : (
                                     <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>

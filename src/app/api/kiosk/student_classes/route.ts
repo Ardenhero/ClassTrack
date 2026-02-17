@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     try {
         const { data: classes, error } = await supabase
             .from('classes')
-            .select('id, name, start_time, end_time, room_id, room')
+            .select('id, name, start_time, end_time')
             .eq('instructor_id', instructor_id)
             .order('start_time', { ascending: true })
             .order('name', { ascending: true });
