@@ -41,7 +41,10 @@ export async function POST(request: Request) {
         }
 
         // Send command to Tuya
-        const result = await controlDevice(device_id, code, value);
+        // For multi-channel devices, DB id may have a suffix like "_ch2"
+        // Strip it to get the real Tuya device ID
+        const realDeviceId = device_id.replace(/_ch\d+$/, '');
+        const result = await controlDevice(realDeviceId, code, value);
 
         if (!result.success) {
             return NextResponse.json(
@@ -98,12 +101,13 @@ export async function GET() {
 
         // Optionally refresh from Tuya for each device
         const enriched = await Promise.all(
-            (devices || []).map(async (device: { id: string; name: string; type: string; room: string; current_state: boolean; online: boolean }) => {
+            (devices || []).map(async (device: { id: string; name: string; type: string; room: string; dp_code: string; current_state: boolean; online: boolean }) => {
                 try {
-                    const status = await getDeviceStatus(device.id);
+                    const realId = device.id.replace(/_ch\d+$/, '');
+                    const status = await getDeviceStatus(realId);
                     if (status.success && status.data) {
                         const switchDp = status.data.find((dp: Record<string, unknown>) =>
-                            typeof dp.code === 'string' && dp.code.startsWith('switch')
+                            dp.code === (device.dp_code || 'switch_1')
                         );
                         return {
                             ...device,
