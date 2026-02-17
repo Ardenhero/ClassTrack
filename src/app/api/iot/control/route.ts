@@ -223,7 +223,6 @@ export async function GET(request: Request) {
         // Public/Anonymous GET not allowed for list? 
         // User said: "A public GET returning scoped devices is still a leak"
         // So we require auth here too.
-        // Assuming GET is only used by Web. ESP32 doesn't use GET list (it hardcodes or uses active-session).
         if (!identity) {
             return NextResponse.json(
                 { error: "Unauthorized" },
@@ -231,9 +230,22 @@ export async function GET(request: Request) {
             );
         }
 
+        // STRICT SCOPING: User MUST have a department to list devices.
+        // Otherwise they see nothing (prevents "leak" to unassigned users).
+        // EXCEPTION: Super Admins can see everything.
+        if (!departmentId && !identity.is_super_admin) {
+            return NextResponse.json({
+                devices: [],
+                room_scoped: false,
+                department_scoped: false,
+                message: "User has no department assigned"
+            });
+        }
+
         let query = supabase.from("iot_devices").select("*").order("name");
 
-        if (departmentId) {
+        // Always filter by Department (unless Super Admin)
+        if (!identity.is_super_admin) {
             query = query.eq("department_id", departmentId);
         }
 

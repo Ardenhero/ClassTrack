@@ -5,7 +5,15 @@ import { checkAuth } from "@/lib/auth-utils";
 
 export default async function RoomsPage() {
     const auth = await checkAuth();
-    if (!auth) return null; // Should be handled by layout/middleware
+    if (!auth) {
+        return (
+            <div className="p-8 text-center text-red-500">
+                <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+                <p>You do not have permission to view this page.</p>
+                <p className="text-xs text-gray-400 mt-4">Ensure you are logged in as an Admin or Super Admin.</p>
+            </div>
+        );
+    }
 
     const { profile } = auth;
     const isSuperAdmin = profile.is_super_admin;
