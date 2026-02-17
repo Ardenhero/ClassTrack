@@ -1,102 +1,122 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Lightbulb, Fan, Snowflake } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Lightbulb, Fan, Snowflake, Loader2, Wifi, WifiOff, Zap } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { useProfile } from "@/context/ProfileContext";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+
+interface IoTDevice {
+    id: string;
+    name: string;
+    type: string;
+    room: string;
+    dp_code: string;
+    current_state: boolean;
+    online: boolean;
+    updated_at: string;
+}
+
+// Map device names to appropriate icons/colors
+function getDeviceVisuals(name: string) {
+    const lower = name.toLowerCase();
+    if (lower.includes("light")) return { Icon: Lightbulb, colorOn: "yellow", colorClass: "bg-yellow-500 shadow-yellow-200", bgOn: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700/50" };
+    if (lower.includes("fan")) return { Icon: Fan, colorOn: "blue", colorClass: "bg-blue-500 shadow-blue-200", bgOn: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700/50", spin: true };
+    if (lower.includes("ac") || lower.includes("air")) return { Icon: Snowflake, colorOn: "cyan", colorClass: "bg-cyan-500 shadow-cyan-200", bgOn: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700/50" };
+    // Default: power icon style
+    return { Icon: Zap, colorOn: "green", colorClass: "bg-green-500 shadow-green-200", bgOn: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700/50" };
+}
 
 export function IoTSwitches() {
-    const supabase = createClient();
-    const [devices, setDevices] = useState({
-        lights: false,
-        fans: false,
-        ac: false // Changed default to false to avoid flash if offline
-    });
+    const { profile } = useProfile();
+    const [devices, setDevices] = useState<IoTDevice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [toggling, setToggling] = useState<string | null>(null);
+
+    const loadDevices = useCallback(async () => {
+        const supabase = createClient();
+        const { data, error } = await supabase
+            .from("iot_devices")
+            .select("*")
+            .neq("type", "gateway")
+            .order("name");
+
+        if (!error && data) {
+            setDevices(data as IoTDevice[]);
+        }
+        setLoading(false);
+    }, []);
 
     useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
+        loadDevices();
 
-                const { data } = await supabase
-                    .from('room_settings')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (data) {
-                    setDevices({
-                        lights: data.lights,
-                        fans: data.fans,
-                        ac: data.ac
-                    });
-                } else {
-                    // Create default settings if none exist
-                    const { error: insertError } = await supabase
-                        .from('room_settings')
-                        .insert({
-                            user_id: user.id,
-                            lights: false,
-                            fans: false,
-                            ac: false
-                        });
-
-                    if (!insertError) {
-                        setDevices({
-                            lights: false,
-                            fans: false,
-                            ac: false
-                        });
-                    }
+        // Realtime: update toggles instantly when DB changes
+        const supabase = createClient();
+        const channel = supabase
+            .channel("iot_switches_realtime")
+            .on(
+                "postgres_changes",
+                { event: "UPDATE", schema: "public", table: "iot_devices" },
+                (payload: RealtimePostgresChangesPayload<IoTDevice>) => {
+                    const updated = payload.new as IoTDevice;
+                    setDevices((prev) =>
+                        prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d))
+                    );
+                    setToggling((prev) => (prev === updated.id ? null : prev));
                 }
-            } catch (error) {
-                console.error('Error fetching settings:', error);
-            } finally {
-                setLoading(false);
-            }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
         };
+    }, [loadDevices]);
 
-        fetchSettings();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const toggleDevice = async (device: keyof typeof devices) => {
-        const newState = !devices[device];
+    const toggleDevice = async (device: IoTDevice) => {
+        setToggling(device.id);
 
         // Optimistic update
-        setDevices(prev => ({
-            ...prev,
-            [device]: newState
-        }));
+        setDevices((prev) =>
+            prev.map((d) =>
+                d.id === device.id ? { ...d, current_state: !d.current_state } : d
+            )
+        );
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            const res = await fetch(
+                `/api/iot/control`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        device_id: device.id,
+                        code: device.dp_code || "switch_1",
+                        value: !device.current_state,
+                        source: "web",
+                        profile_id: profile?.id,
+                    }),
+                }
+            );
 
-            const { error } = await supabase
-                .from('room_settings')
-                .upsert({
-                    user_id: user.id,
-                    ...devices,
-                    [device]: newState,
-                    updated_at: new Date().toISOString()
-                });
-
-            if (error) {
-                console.error('Error saving setting:', error);
-                // Revert on error
-                setDevices(prev => ({
-                    ...prev,
-                    [device]: !newState
-                }));
+            if (!res.ok) {
+                // Revert on failure
+                setDevices((prev) =>
+                    prev.map((d) =>
+                        d.id === device.id ? { ...d, current_state: device.current_state } : d
+                    )
+                );
+                console.error("Toggle failed:", await res.json());
             }
-        } catch (error) {
-            console.error('Error in toggleDevice:', error);
+        } catch (err) {
             // Revert on error
-            setDevices(prev => ({
-                ...prev,
-                [device]: !newState
-            }));
+            setDevices((prev) =>
+                prev.map((d) =>
+                    d.id === device.id ? { ...d, current_state: device.current_state } : d
+                )
+            );
+            console.error("Toggle error:", err);
+        } finally {
+            setTimeout(() => setToggling((prev) => (prev === device.id ? null : prev)), 5000);
         }
     };
 
@@ -113,84 +133,85 @@ export function IoTSwitches() {
         );
     }
 
+    if (devices.length === 0) {
+        return (
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Room Controls</h3>
+                </div>
+                <p className="text-sm text-gray-400 text-center py-4">No IoT devices configured yet.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">Room Controls</h3>
                 <div className="flex items-center space-x-2">
-                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Connected</span>
+                    {devices.some(d => d.online) ? (
+                        <>
+                            <Wifi className="h-3.5 w-3.5 text-green-500" />
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Connected</span>
+                        </>
+                    ) : (
+                        <>
+                            <WifiOff className="h-3.5 w-3.5 text-red-400" />
+                            <span className="text-xs text-red-400">Offline</span>
+                        </>
+                    )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Lights */}
-                <button
-                    onClick={() => toggleDevice('lights')}
-                    className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col items-center justify-center space-y-3 ${devices.lights
-                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700/50'
-                        : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600'
-                        }`}
-                >
-                    <div className={`p-3 rounded-full ${devices.lights ? 'bg-yellow-500 text-white shadow-lg shadow-yellow-200 dark:shadow-none' : 'bg-gray-200 dark:bg-gray-600 text-gray-400'}`}>
-                        <Lightbulb className="h-6 w-6" />
-                    </div>
-                    <div className="text-center">
-                        <span className="block font-medium text-gray-900 dark:text-gray-100">Lights</span>
-                        <span className={`text-xs ${devices.lights ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-400'}`}>
-                            {devices.lights ? 'ON' : 'OFF'}
-                        </span>
-                    </div>
-                </button>
+                {devices.map((device) => {
+                    const visuals = getDeviceVisuals(device.name);
+                    const { Icon } = visuals;
+                    const isOn = device.current_state;
+                    const isToggling = toggling === device.id;
 
-                {/* Fans */}
-                <button
-                    onClick={() => toggleDevice('fans')}
-                    className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col items-center justify-center space-y-3 ${devices.fans
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700/50'
-                        : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600'
-                        }`}
-                >
-                    <div className={`p-3 rounded-full ${devices.fans ? 'bg-blue-500 text-white shadow-lg shadow-blue-200 dark:shadow-none' : 'bg-gray-200 dark:bg-gray-600 text-gray-400'}`}>
-                        <Fan className={`h-6 w-6 ${devices.fans ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-                    </div>
-                    <div className="text-center">
-                        <span className="block font-medium text-gray-900 dark:text-gray-100">Fans</span>
-                        <span className={`text-xs ${devices.fans ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-400'}`}>
-                            {devices.fans ? 'ON' : 'OFF'}
-                        </span>
-                    </div>
-                </button>
-
-                {/* AC */}
-                <button
-                    onClick={() => toggleDevice('ac')}
-                    className={`relative p-4 rounded-2xl border transition-all duration-200 flex flex-col items-center justify-center space-y-3 overflow-hidden ${devices.ac
-                        ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700/50'
-                        : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600'
-                        }`}
-                >
-                    {/* Snow Effect Overlay */}
-                    {devices.ac && (
-                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                            <Snowflake className="absolute -top-3 left-1/4 h-3 w-3 text-cyan-200 animate-snowfall" style={{ animationDuration: '2.5s', animationDelay: '0s' }} />
-                            <Snowflake className="absolute -top-3 right-1/4 h-2 w-2 text-cyan-300 animate-snowfall" style={{ animationDuration: '3s', animationDelay: '1s' }} />
-                            <Snowflake className="absolute -top-3 left-1/2 h-2.5 w-2.5 text-cyan-100 animate-snowfall" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-                        </div>
-                    )}
-
-                    <div className={`p-3 rounded-full relative z-10 ${devices.ac ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-200 dark:shadow-none' : 'bg-gray-200 dark:bg-gray-600 text-gray-400'}`}>
-                        <Snowflake className={`h-6 w-6 ${devices.ac ? 'animate-pulse' : ''}`} />
-                    </div>
-                    <div className="text-center relative z-10">
-                        <span className="block font-medium text-gray-900 dark:text-gray-100">A/C</span>
-                        <div className="flex items-center justify-center space-x-1">
-                            <span className={`text-xs ${devices.ac ? 'text-cyan-600 dark:text-cyan-400 font-bold' : 'text-gray-400'}`}>
-                                {devices.ac ? 'ON' : 'OFF'}
-                            </span>
-                        </div>
-                    </div>
-                </button>
+                    return (
+                        <button
+                            key={device.id}
+                            onClick={() => toggleDevice(device)}
+                            disabled={isToggling}
+                            className={`relative p-4 rounded-2xl border transition-all duration-200 flex flex-col items-center justify-center space-y-3 overflow-hidden ${isOn
+                                ? visuals.bgOn
+                                : "bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600"
+                                } ${isToggling ? "opacity-70 cursor-wait" : ""}`}
+                        >
+                            <div
+                                className={`p-3 rounded-full relative z-10 ${isOn
+                                    ? `${visuals.colorClass} text-white shadow-lg dark:shadow-none`
+                                    : "bg-gray-200 dark:bg-gray-600 text-gray-400"
+                                    }`}
+                            >
+                                {isToggling ? (
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                ) : (
+                                    <Icon
+                                        className={`h-6 w-6 ${isOn && visuals.spin ? "animate-spin" : ""
+                                            }`}
+                                        style={isOn && visuals.spin ? { animationDuration: "3s" } : {}}
+                                    />
+                                )}
+                            </div>
+                            <div className="text-center relative z-10">
+                                <span className="block font-medium text-gray-900 dark:text-gray-100">
+                                    {device.name}
+                                </span>
+                                <span
+                                    className={`text-xs font-bold ${isOn
+                                        ? `text-${visuals.colorOn}-600 dark:text-${visuals.colorOn}-400`
+                                        : "text-gray-400"
+                                        }`}
+                                >
+                                    {isOn ? "ON" : "OFF"}
+                                </span>
+                            </div>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );
