@@ -17,6 +17,13 @@ interface IoTDevice {
     updated_at: string;
 }
 
+interface DebugInfo {
+    userEmail?: string | null;
+    departmentId?: string | null;
+    isSuperAdmin?: boolean;
+    deviceCount?: number;
+}
+
 // Map device names to appropriate icons/colors
 function getDeviceVisuals(name: string) {
     const lower = name.toLowerCase();
@@ -32,7 +39,7 @@ export function IoTSwitches() {
     const [devices, setDevices] = useState<IoTDevice[]>([]);
     const [loading, setLoading] = useState(true);
     const [toggling, setToggling] = useState<string | null>(null);
-    const [debugInfo, setDebugInfo] = useState<any>(null);
+    const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
     const loadDevices = useCallback(async () => {
         try {
