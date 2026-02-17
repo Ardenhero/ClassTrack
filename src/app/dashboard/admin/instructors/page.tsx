@@ -156,13 +156,19 @@ export default async function InstructorsPage() {
                                                 name="department_id"
                                                 defaultValue={inst.department_id || ""}
                                                 className="px-1 py-0.5 border border-gray-200 rounded bg-transparent focus:ring-1 focus:ring-nwu-red outline-none transition-all text-[10px] font-medium w-32"
-                                                onChange={(e) => (e.target.form as HTMLFormElement).requestSubmit()}
                                             >
                                                 <option value="">(No Dept)</option>
                                                 {departments?.map((d) => (
                                                     <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
                                                 ))}
                                             </select>
+                                            <button
+                                                type="submit"
+                                                className="p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-nwu-red hover:text-white transition-all"
+                                                title="Save Department"
+                                            >
+                                                <Key className="h-3 w-3" />
+                                            </button>
                                         </form>
                                         {inst.role === "admin" && (
                                             <span className="px-2 py-0.5 bg-nwu-gold/20 text-nwu-red rounded-full font-bold">Admin</span>
