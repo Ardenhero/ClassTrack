@@ -15,6 +15,7 @@ import { markAttendance } from "./actions";
 import { cookies } from "next/headers";
 import { getProfileRole, checkIsSuperAdmin } from "@/lib/auth-utils";
 import { CommandCenter } from "@/components/dashboard/super-admin/CommandCenter";
+import { GatewayHealth } from "@/components/dashboard/super-admin/GatewayHealth";
 import { startOfHour, endOfHour, eachHourOfInterval, subHours } from "date-fns";
 
 export default async function Dashboard({
@@ -180,6 +181,11 @@ export default async function Dashboard({
         </div>
 
         <CommandCenter stats={stats} logs={auditLogs || []} trafficData={trafficData} />
+
+        {/* IoT Infrastructure Health */}
+        <div className="mt-6">
+          <GatewayHealth />
+        </div>
       </DashboardLayout>
     );
   }
