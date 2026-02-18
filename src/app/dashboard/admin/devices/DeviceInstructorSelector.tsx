@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Users, Check } from "lucide-react";
 import { updateDeviceInstructors } from "./actions";
 
@@ -22,10 +23,20 @@ export function DeviceInstructorSelector({ deviceId, assignedIds, instructors, i
     const [tempSelectedIds, setTempSelectedIds] = useState<string[]>(assignedIds || []); // Temporary state for manual save
     const [isOpen, setIsOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
-    // Reset temp state when opening
-    const handleOpen = () => {
-        setTempSelectedIds(savedIds);
+    // Toggle open/close and calculate position
+    const handleToggle = () => {
+        if (!isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            // Check if near bottom of screen to flip up? (Optional, keeping simple for now)
+            setCoords({
+                top: rect.bottom + 4, // 4px gap
+                left: rect.left
+            });
+            setTempSelectedIds(savedIds); // Reset temp state
+        }
         setIsOpen(!isOpen);
     };
 
@@ -55,15 +66,16 @@ export function DeviceInstructorSelector({ deviceId, assignedIds, instructors, i
     };
 
     const count = savedIds.length;
-    const label = count === 0
-        ? (isSuperAdmin ? "All Admins/Instructors" : "All Dept Instructors")
-        : `${count} Selected`;
+    const label = isSuperAdmin
+        ? (count === 0 ? "All Admins" : `${count} Admins Selected`)
+        : (count === 0 ? "All Dept Instructors" : `${count} Selected`);
 
     return (
-        <div className="relative">
+        <>
             <button
-                onClick={handleOpen}
-                className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-nwu-red transition-all w-48 justify-between"
+                ref={buttonRef}
+                onClick={handleToggle}
+                className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-nwu-red transition-all w-48 justify-between relative"
             >
                 <div className="flex items-center gap-2 truncate">
                     <Users className="h-3.5 w-3.5 text-gray-500" />
@@ -73,40 +85,47 @@ export function DeviceInstructorSelector({ deviceId, assignedIds, instructors, i
                 </div>
             </button>
 
-            {isOpen && (
-                <>
+            {isOpen && coords && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999] flex items-start justify-start"
+                // Prevent catching clicks intended for the dropdown itself, but catch outside clicks
+                >
+                    <div className="fixed inset-0 bg-transparent" onClick={() => setIsOpen(false)} />
+
                     <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setIsOpen(false)}
-                    />
-                    <div className="absolute top-full mt-1 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 flex flex-col max-h-80">
-                        <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                        className="absolute bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col w-72 max-h-80 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                        style={{
+                            top: coords.top,
+                            left: coords.left
+                        }}
+                    >
+                        {/* Header */}
+                        <div className="p-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800">
                             <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">
-                                {isSuperAdmin ? "Grant Admin/Instructor Access" : "Grant Access"}
+                                {isSuperAdmin ? "Grant Admin Access" : "Grant Access"}
                             </p>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleClear}
-                                    className="text-xs text-gray-500 hover:text-nwu-red underline"
-                                >
-                                    Clear All
-                                </button>
-                                <span className="text-gray-300">|</span>
+                            <div className="flex gap-2 items-center justify-between">
                                 <span className="text-xs text-gray-400">
                                     {tempSelectedIds.length === 0
                                         ? "Default: Visible to Everyone"
-                                        : `${tempSelectedIds.length} selected`}
+                                        : `${tempSelectedIds.length} select`}
                                 </span>
+                                <button
+                                    onClick={handleClear}
+                                    className="text-xs text-nwu-red hover:underline font-medium"
+                                >
+                                    Clear All
+                                </button>
                             </div>
                         </div>
 
-                        <div className="overflow-y-auto p-1 flex-1">
+                        {/* Scrollable List */}
+                        <div className="overflow-y-auto flex-1 p-1 custom-scrollbar">
                             {instructors.length === 0 ? (
                                 <p className="p-3 text-xs text-gray-400 italic text-center">No accounts found.</p>
                             ) : (
                                 instructors.map(inst => {
                                     const isSelected = tempSelectedIds.includes(inst.id);
-                                    // Highlight if it looks like an admin (optional heuristic if we don't have is_super_admin on instructor object yet, but user asked for list)
                                     return (
                                         <label
                                             key={inst.id}
@@ -138,7 +157,8 @@ export function DeviceInstructorSelector({ deviceId, assignedIds, instructors, i
                             )}
                         </div>
 
-                        <div className="p-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 rounded-b-xl flex justify-end gap-2">
+                        {/* Fixed Footer */}
+                        <div className="p-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2 shrink-0">
                             <button
                                 onClick={() => setIsOpen(false)}
                                 className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-200 rounded-lg transition-colors"
@@ -154,8 +174,9 @@ export function DeviceInstructorSelector({ deviceId, assignedIds, instructors, i
                             </button>
                         </div>
                     </div>
-                </>
+                </div>,
+                document.body
             )}
-        </div>
+        </>
     );
 }
