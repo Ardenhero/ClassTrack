@@ -226,8 +226,13 @@ export function IoTSwitches() {
                                 <span className="block font-medium text-gray-900 dark:text-gray-100">
                                     {device.name}
                                 </span>
+                                {device.room && (
+                                    <span className="block text-[10px] text-gray-400 font-mono mt-0.5 uppercase tracking-wide">
+                                        {device.room}
+                                    </span>
+                                )}
                                 <span
-                                    className={`text-xs font-bold ${isOn
+                                    className={`text-xs font-bold mt-1 block ${isOn
                                         ? `text-${visuals.colorOn}-600 dark:text-${visuals.colorOn}-400`
                                         : "text-gray-400"
                                         }`}

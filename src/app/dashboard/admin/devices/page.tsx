@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { Cpu, Save } from "lucide-react";
-import { updateDeviceDepartment } from "./actions";
+import { updateDeviceDepartment, updateDeviceDetails } from "./actions";
 
 export default async function DevicesPage() {
     const supabase = createClient();
@@ -40,7 +40,7 @@ export default async function DevicesPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b text-sm font-bold text-gray-600">
-                                <th className="py-3 px-4">NAME</th>
+                                <th className="py-3 px-4 w-1/3">DEVICE DETAILS</th>
                                 <th className="py-3 px-4">TUYA ID</th>
                                 <th className="py-3 px-4">TYPE</th>
                                 <th className="py-3 px-4">ASSIGNED DEPARTMENT</th>
@@ -50,8 +50,38 @@ export default async function DevicesPage() {
                             {devices?.map((device) => (
                                 <tr key={device.id} className="group hover:bg-gray-50 transition-colors">
                                     <td className="py-4 px-4">
-                                        <div className="font-medium text-gray-900">{device.name}</div>
-                                        <div className="text-xs text-gray-400 font-medium">Room: {device.room || 'N/A'}</div>
+                                        <form className="flex flex-col gap-2" action={async (formData: FormData) => {
+                                            "use server";
+                                            const name = formData.get("name") as string;
+                                            const room = formData.get("room") as string;
+                                            await updateDeviceDetails(device.id, name, room);
+                                        }}>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    name="name"
+                                                    defaultValue={device.name}
+                                                    placeholder="Device Name"
+                                                    className="px-2 py-1 text-sm font-medium border border-transparent hover:border-gray-300 focus:border-nwu-red rounded transition-all w-full bg-transparent focus:bg-white"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    name="room"
+                                                    defaultValue={device.room || ""}
+                                                    placeholder="Room Name (e.g., Room 301)"
+                                                    className="px-2 py-1 text-xs text-gray-500 border border-transparent hover:border-gray-300 focus:border-nwu-red rounded transition-all w-full bg-transparent focus:bg-white"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="p-1 text-gray-400 hover:text-nwu-red transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                    title="Save Details"
+                                                >
+                                                    <Save className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </form>
                                     </td>
                                     <td className="py-4 px-4 text-xs font-mono text-gray-500">
                                         {device.id}
