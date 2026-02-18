@@ -42,6 +42,9 @@ export async function checkIsSuperAdmin() {
 
     if (!profileId) return false;
 
+    // Legacy Admin Profile is ALWAYS Super Admin
+    if (profileId === 'admin-profile') return true;
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(profileId)) return false;
 
