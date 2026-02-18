@@ -216,11 +216,13 @@ export default async function DepartmentsPage() {
                                                     </form>
                                                 </>
                                             )}
-                                            <form action={deleteDepartment.bind(null, dept.id)}>
-                                                <button className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </form>
+                                            {isSuperAdmin && (
+                                                <form action={deleteDepartment.bind(null, dept.id)}>
+                                                    <button className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </form>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
