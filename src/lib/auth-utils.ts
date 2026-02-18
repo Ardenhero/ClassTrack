@@ -42,19 +42,36 @@ export async function checkIsSuperAdmin() {
 
     if (!profileId) return false;
 
-    // Legacy Admin Profile is ALWAYS Super Admin
-    if (profileId === 'admin-profile') return true;
-
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(profileId)) return false;
 
-    const { data } = await supabase
-        .from('instructors')
-        .select('is_super_admin')
-        .eq('id', profileId)
-        .maybeSingle();
+    // CASE 1: Valid UUID Profile ID
+    if (uuidRegex.test(profileId)) {
+        const { data } = await supabase
+            .from('instructors')
+            .select('is_super_admin')
+            .eq('id', profileId)
+            .maybeSingle();
+        return data?.is_super_admin === true;
+    }
 
-    return data?.is_super_admin === true;
+    // CASE 2: Legacy 'admin-profile' (System Admin)
+    // We must check if the underlying Auth User has a Super Admin row.
+    if (profileId === 'admin-profile') {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
+
+        const { data } = await supabase
+            .from('instructors')
+            .select('is_super_admin')
+            .eq('auth_user_id', user.id)
+            .eq('role', 'admin') // Ensure we are looking at their admin profile
+            .eq('is_super_admin', true)
+            .maybeSingle();
+
+        return !!data;
+    }
+
+    return false;
 }
 
 export async function checkIsAdmin() {

@@ -82,7 +82,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
     const supabase = createClient();
     const { profile, clearProfile, isSwitching } = useProfile();
 
-    const isSuperAdmin = profile?.is_super_admin || (profile?.role === 'admin' && profile?.name === 'Super Admin') || profile?.id === 'admin-profile';
+    const isSuperAdmin = profile?.is_super_admin || (profile?.role === 'admin' && profile?.name === 'Super Admin');
     const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
 
     const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
