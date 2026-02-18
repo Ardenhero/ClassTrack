@@ -1,7 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { Plus, Users, Key } from "lucide-react";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { checkIsSuperAdmin } from "@/lib/auth-utils";
 import { DeleteInstructorButton } from "./DeleteInstructorButton";
 
@@ -193,7 +192,7 @@ export default async function InstructorsPage() {
                                             ) : (
                                                 // Read Only for Dept Admins
                                                 <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
-                                                    {/* @ts-ignore */}
+                                                    {/* @ts-expect-error: Joined table type is not inferred correctly */}
                                                     {inst.departments?.code || "No Dept"}
                                                 </span>
                                             )}
