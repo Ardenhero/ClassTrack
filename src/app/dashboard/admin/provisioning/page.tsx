@@ -164,6 +164,7 @@ export default function AdminManagementPage() {
                                                                 await updateAdminDepartment(admin.id, newDeptId || null);
                                                                 fetchAdmins(); // Refresh
                                                             } catch (err) {
+                                                                console.error(err);
                                                                 alert("Failed to update department");
                                                             }
                                                         }}
