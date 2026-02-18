@@ -76,6 +76,15 @@ export default async function DevicesPage() {
         }
     }
 
+    // Execute the query
+    const { data: devices } = await query as { data: any[] | null, error: any };
+
+    // Fetch departments for the dropdown (needed for Admin UI)
+    const { data: departments } = await supabase
+        .from("departments")
+        .select("id, name, code")
+        .order("name");
+
     // 4. Fetch available instructors for the dropdown
     let instructorListQuery = supabase.from('instructors').select('id, name, department_id').order('name');
     if (!isSuperAdmin && departmentId) {

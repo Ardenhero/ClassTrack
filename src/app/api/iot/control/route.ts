@@ -119,102 +119,114 @@ export async function GET(request: Request) {
 
         let departmentId: string | null = null;
         let isSuperAdmin = isLegacyAdmin;
-        let instructor: any = null;
+        let instructor: { id: string; department_id: string | null; is_super_admin: boolean } | null | undefined = null;
 
         const adminClient = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
-
-        if (user) {
-            // Check for explicit profile selection from frontend
-            const profileId = request.headers.get("X-Profile-ID");
-
-            // Try lookup by auth_user_id first
-            const { data: instructors } = await adminClient
-                .from('instructors')
-                .select('id, department_id, is_super_admin')
-                .eq('auth_user_id', user.id);
-
-            if (instructors && instructors.length > 0) {
-                if (profileId) {
-                    // If frontend sent a specific profile, try to find it in the user's linked instructors
-                    instructor = instructors.find(i => i.id === profileId);
-                }
-
-                // Fallback: Prioritize the profile that has a department assigned
-                if (!instructor) {
-                    instructor = instructors.find(i => i.department_id) || instructors[0];
-                }
-            }
-
-            // Fallback to email lookup if auth_user_id isn't linked yet NO - REMOVING THIS AS IT IS BROKEN (No email col)
-            // The user already has auth_user_id linked, so this is fine. 
-            // If we really needed it, we'd need to join tables, but keeping it simple for now.
-
-            if (instructor) {
-                departmentId = instructor.department_id;
-                isSuperAdmin = isSuperAdmin || instructor.is_super_admin;
-            }
-        } else if (!isLegacyAdmin) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        // Fetch devices using service role to bypass RLS
-        // We fetch ALL (or filtered by department to be safe if strictly hierarchical)
-        // But since we want to support explicit assignment that might override, we fetch broadly then filter.
-        // Optimization: We could use .or() but JS filtering is safer for the "Exclusion" logic.
-        const { data: allDevices, error } = await adminClient
-            .from('iot_devices')
-            .select('*')
-            .order('name');
-
-        if (error) {
-            console.error("[IoT Control] Query Error:", error);
-            throw error;
-        }
-
+        // ...
+        // (skipping to line 178 context)
         // Apply Visibility Rules in Memory
-        const devices = (allDevices || []).filter((device: any) => {
-            if (isSuperAdmin) return true;
+        // 178:
+        interface DeviceWithAssignments {
+            id: string;
+            department_id: string | null;
+            assigned_instructor_ids: string[] | null;
+            [key: string]: unknown; // Allow other props
+        }
 
-            // 1. Explicit Assignment Logic
-            const assignedIds = device.assigned_instructor_ids;
-            if (Array.isArray(assignedIds) && assignedIds.length > 0) {
-                // STRICT MODE: If assignments exist, MUST be in the list
-                // (Even if department matches, if you aren't in the list, you don't see it)
-                return instructor && assignedIds.includes(instructor.id);
+        const devices = (allDevices || []).filter((device: DeviceWithAssignments) => {
+
+            if (user) {
+                // Check for explicit profile selection from frontend
+                const profileId = request.headers.get("X-Profile-ID");
+
+                // Try lookup by auth_user_id first
+                const { data: instructors } = await adminClient
+                    .from('instructors')
+                    .select('id, department_id, is_super_admin')
+                    .eq('auth_user_id', user.id);
+
+                if (instructors && instructors.length > 0) {
+                    if (profileId) {
+                        // If frontend sent a specific profile, try to find it in the user's linked instructors
+                        instructor = instructors.find(i => i.id === profileId);
+                    }
+
+                    // Fallback: Prioritize the profile that has a department assigned
+                    if (!instructor) {
+                        instructor = instructors.find(i => i.department_id) || instructors[0];
+                    }
+                }
+
+                // Fallback to email lookup if auth_user_id isn't linked yet NO - REMOVING THIS AS IT IS BROKEN (No email col)
+                // The user already has auth_user_id linked, so this is fine. 
+                // If we really needed it, we'd need to join tables, but keeping it simple for now.
+
+                if (instructor) {
+                    departmentId = instructor.department_id;
+                    isSuperAdmin = isSuperAdmin || instructor.is_super_admin;
+                }
+            } else if (!isLegacyAdmin) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             }
 
-            // 2. Fallback: Department Match
-            if (device.department_id) {
-                return departmentId && device.department_id === departmentId;
+            // Fetch devices using service role to bypass RLS
+            // We fetch ALL (or filtered by department to be safe if strictly hierarchical)
+            // But since we want to support explicit assignment that might override, we fetch broadly then filter.
+            // Optimization: We could use .or() but JS filtering is safer for the "Exclusion" logic.
+            const { data: allDevices, error } = await adminClient
+                .from('iot_devices')
+                .select('*')
+                .order('name');
+
+            if (error) {
+                console.error("[IoT Control] Query Error:", error);
+                throw error;
             }
 
-            // 3. Global Devices (no dept) -> Visible to whom?
-            // Usually Global = Admin only? Or Everyone?
-            // User said: "Global Department... disables... room controls on admin side... can still see... in Instructor profile".
-            // If device has NO department, it shouldn't be visible to instructors usually, unless explicitly assigned.
-            return false;
-        });
+            // Apply Visibility Rules in Memory
+            const devices = (allDevices || []).filter((device: any) => {
+                if (isSuperAdmin) return true;
 
-        // Optionally refresh from Tuya (Optimistic/Basic status)
-        const enriched = await Promise.all(
-            (devices || []).map(async (device: { id: string; name: string; type: string; room: string; dp_code: string; current_state: boolean; online: boolean }) => {
-                // ... (Keep existing simple logic or Tuya check if needed, simplified for brevity as per revert)
-                return { ...device, live: true };
-            })
-        );
+                // 1. Explicit Assignment Logic
+                const assignedIds = device.assigned_instructor_ids;
+                if (Array.isArray(assignedIds) && assignedIds.length > 0) {
+                    // STRICT MODE: If assignments exist, MUST be in the list
+                    // (Even if department matches, if you aren't in the list, you don't see it)
+                    return instructor && assignedIds.includes(instructor.id);
+                }
 
-        return NextResponse.json({
-            devices: enriched
-        });
+                // 2. Fallback: Department Match
+                if (device.department_id) {
+                    return departmentId && device.department_id === departmentId;
+                }
 
-    } catch (err) {
-        console.error("[IoT Control GET] Error:", err);
-        return NextResponse.json(
-            { error: "Internal server error", details: String(err) },
-            { status: 500 }
-        );
+                // 3. Global Devices (no dept) -> Visible to whom?
+                // Usually Global = Admin only? Or Everyone?
+                // User said: "Global Department... disables... room controls on admin side... can still see... in Instructor profile".
+                // If device has NO department, it shouldn't be visible to instructors usually, unless explicitly assigned.
+                return false;
+            });
+
+            // Optionally refresh from Tuya (Optimistic/Basic status)
+            const enriched = await Promise.all(
+                (devices || []).map(async (device: { id: string; name: string; type: string; room: string; dp_code: string; current_state: boolean; online: boolean }) => {
+                    // ... (Keep existing simple logic or Tuya check if needed, simplified for brevity as per revert)
+                    return { ...device, live: true };
+                })
+            );
+
+            return NextResponse.json({
+                devices: enriched
+            });
+
+        } catch (err) {
+            console.error("[IoT Control GET] Error:", err);
+            return NextResponse.json(
+                { error: "Internal server error", details: String(err) },
+                { status: 500 }
+            );
+        }
     }
-}
