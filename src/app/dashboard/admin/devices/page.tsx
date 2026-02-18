@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { checkIsSuperAdmin } from "@/lib/auth-utils";
 import { Cpu, Save, Plus } from "lucide-react";
 import { updateDeviceDepartment, updateDeviceDetails, createDevice } from "./actions";
 
@@ -19,7 +20,7 @@ export default async function DevicesPage() {
         .from('instructors')
         .select('id, department_id, is_super_admin')
         .eq('auth_user_id', user.id)
-        .single();
+        .maybeSingle();
 
     // 3. Define the query based on Role
     let query = supabase
