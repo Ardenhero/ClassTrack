@@ -77,6 +77,7 @@ export default async function DevicesPage() {
     }
 
     // Execute the query
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: devices } = await query as { data: any[] | null, error: any };
 
     // Fetch departments for the dropdown (needed for Admin UI)

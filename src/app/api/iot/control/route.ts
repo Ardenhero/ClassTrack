@@ -192,7 +192,7 @@ export async function GET(request: Request) {
         });
 
         // Optionally refresh from Tuya (Optimistic/Basic status)
-        const enriched = devices.map((device: any) => {
+        const enriched = devices.map((device: DeviceWithAssignments) => {
             return { ...device, live: true };
         });
 
