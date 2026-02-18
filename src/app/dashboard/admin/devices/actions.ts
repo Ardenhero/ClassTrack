@@ -1,18 +1,21 @@
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
+
 import { revalidatePath } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export async function updateDeviceDepartment(deviceId: string, departmentId: string | null) {
-    const supabase = createClient();
+    const adminClient = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    const { error } = await supabase
+    const { error } = await adminClient
         .from('iot_devices')
         .update({ department_id: departmentId })
         .eq('id', deviceId);
 
     if (error) {
-        console.error("Error updating device department:", error);
         return { success: false, error: error.message };
     }
 
@@ -22,9 +25,14 @@ export async function updateDeviceDepartment(deviceId: string, departmentId: str
 
 export async function updateDeviceDetails(deviceId: string, name: string, room: string) {
     console.log("[updateDeviceDetails] Updating:", { deviceId, name, room });
-    const supabase = createClient();
 
-    const { error } = await supabase
+    // Use Service Role to bypass RLS policies
+    const adminClient = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { error } = await adminClient
         .from('iot_devices')
         .update({ name, room })
         .eq('id', deviceId);
