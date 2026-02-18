@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { checkIsSuperAdmin } from "@/lib/auth-utils";
 import { cookies } from "next/headers";
 import { Cpu, Save, Plus } from "lucide-react";
@@ -8,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function DevicesPage() {
     const supabase = createClient();
+    const adminSupabase = createAdminClient();
 
     // 1. Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -18,6 +20,7 @@ export default async function DevicesPage() {
 
     // 2. Get Instructor Profile to check Role & Department
     // PRIORITIZE the profile from the cookie if available (handles multiple profiles)
+    // ... (rest of profile fetching logic remains same)
     const cookieStore = cookies();
     const profileId = cookieStore.get("sc_profile_id")?.value;
 
@@ -40,8 +43,9 @@ export default async function DevicesPage() {
 
     const { data: instructor } = await instructorQuery.maybeSingle();
 
-    // 3. Define the query based on Role
-    let query = supabase
+    // 3. Define the query based on Role, using ADMIN client to bypass RLS
+    // We will manually enforce scoping below.
+    let query = adminSupabase
         .from("iot_devices")
         .select(`
             *,
@@ -64,7 +68,10 @@ export default async function DevicesPage() {
             query = query.eq('department_id', departmentId);
         } else {
             // No department assigned = No access to devices
-            // (Or empty list if we want to be nice)
+            // but we might want to check if they are "admin" role without department? 
+            // The prompt says "If the System Admin is already tied to a single department...". 
+            // Implies they HAVE a department.
+            // If they don't, showing nothing is correct.
             query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // Force empty
         }
     }
