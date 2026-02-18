@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { Cpu, Save } from "lucide-react";
 import { updateDeviceDepartment, updateDeviceDetails } from "./actions";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DevicesPage() {
     const supabase = createClient();
 
@@ -26,29 +28,29 @@ export default async function DevicesPage() {
 
     return (
         <div className="space-y-8">
-            <div className="bg-white rounded-2xl shadow-md border p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-nwu-red" />
                     Manage IoT Devices ({devices?.length || 0})
                 </h2>
 
-                <p className="text-sm text-gray-500 mb-6 font-medium bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
                     Assign devices to departments to enable proper isolation. Only instructors in the assigned department will be able to see and control these devices.
                 </p>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b text-sm font-bold text-gray-600">
+                            <tr className="border-b border-gray-100 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300">
                                 <th className="py-3 px-4 w-1/3">DEVICE DETAILS</th>
                                 <th className="py-3 px-4">TUYA ID</th>
                                 <th className="py-3 px-4">TYPE</th>
                                 <th className="py-3 px-4">ASSIGNED DEPARTMENT</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {devices?.map((device) => (
-                                <tr key={device.id} className="group hover:bg-gray-50 transition-colors">
+                                <tr key={device.id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                     <td className="py-4 px-4">
                                         <form className="flex flex-col gap-2" action={async (formData: FormData) => {
                                             "use server";
@@ -62,7 +64,7 @@ export default async function DevicesPage() {
                                                     name="name"
                                                     defaultValue={device.name}
                                                     placeholder="Device Name"
-                                                    className="px-2 py-1 text-sm font-medium border border-transparent hover:border-gray-300 focus:border-nwu-red rounded transition-all w-full bg-transparent focus:bg-white"
+                                                    className="px-2 py-1 text-sm font-medium border border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-nwu-red rounded transition-all w-full bg-transparent focus:bg-white dark:focus:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
                                                 />
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -71,7 +73,7 @@ export default async function DevicesPage() {
                                                     name="room"
                                                     defaultValue={device.room || ""}
                                                     placeholder="Room Name (e.g., Room 301)"
-                                                    className="px-2 py-1 text-xs text-gray-500 border border-transparent hover:border-gray-300 focus:border-nwu-red rounded transition-all w-full bg-transparent focus:bg-white"
+                                                    className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 border border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-nwu-red rounded transition-all w-full bg-transparent focus:bg-white dark:focus:bg-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
                                                 />
                                                 <button
                                                     type="submit"
@@ -83,7 +85,7 @@ export default async function DevicesPage() {
                                             </div>
                                         </form>
                                     </td>
-                                    <td className="py-4 px-4 text-xs font-mono text-gray-500">
+                                    <td className="py-4 px-4 text-xs font-mono text-gray-500 dark:text-gray-400">
                                         {device.id}
                                     </td>
                                     <td className="py-4 px-4 uppercase text-xs font-bold text-nwu-red">
@@ -98,7 +100,7 @@ export default async function DevicesPage() {
                                             <select
                                                 name="department_id"
                                                 defaultValue={device.department_id || ""}
-                                                className="px-2 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-xs font-medium w-48"
+                                                className="px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-xs font-medium w-48 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                             >
                                                 <option value="">(Global/Unassigned)</option>
                                                 {departments?.map((d) => (
@@ -107,7 +109,7 @@ export default async function DevicesPage() {
                                             </select>
                                             <button
                                                 type="submit"
-                                                className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-nwu-red hover:text-white transition-all shadow-sm"
+                                                className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-nwu-red hover:text-white transition-all shadow-sm"
                                                 title="Save Department"
                                             >
                                                 <Save className="h-4 w-4" />

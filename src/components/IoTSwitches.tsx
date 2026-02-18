@@ -227,7 +227,7 @@ export function IoTSwitches() {
                                     {device.name}
                                 </span>
                                 {device.room && (
-                                    <span className="block text-[10px] text-gray-400 font-mono mt-0.5 uppercase tracking-wide">
+                                    <span className="block text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5 uppercase tracking-wide">
                                         {device.room}
                                     </span>
                                 )}
