@@ -192,6 +192,7 @@ export default async function InstructorsPage() {
                                             ) : (
                                                 // Read Only for Dept Admins
                                                 <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
+                                                    {/* @ts-expect-error: Supabase sometimes infers relations as arrays */}
                                                     {inst.departments?.code || "No Dept"}
                                                 </span>
                                             )}
