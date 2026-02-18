@@ -158,7 +158,9 @@ export default async function DevicesPage() {
                                 <th className="py-3 px-4">TUYA ID</th>
                                 <th className="py-3 px-4">TYPE</th>
                                 <th className="py-3 px-4">ASSIGNED DEPARTMENT</th>
-                                <th className="py-3 px-4">INSTRUCTOR ACCESS</th>
+                                <th className="py-3 px-4">
+                                    {isSuperAdmin ? "ADMIN ACCESS" : "INSTRUCTOR ACCESS"}
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
