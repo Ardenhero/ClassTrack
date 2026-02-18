@@ -7,8 +7,22 @@ export const dynamic = 'force-dynamic';
 export default async function DevicesPage() {
     const supabase = createClient();
 
-    // Fetch all IoT devices with their department info
-    const { data: devices } = await supabase
+    // 1. Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return <div>Please log in.</div>;
+    }
+
+    // 2. Get Instructor Profile to check Role & Department
+    const { data: instructor } = await supabase
+        .from('instructors')
+        .select('id, department_id, is_super_admin')
+        .eq('auth_user_id', user.id)
+        .single();
+
+    // 3. Define the query based on Role
+    let query = supabase
         .from("iot_devices")
         .select(`
             *,
@@ -19,6 +33,23 @@ export default async function DevicesPage() {
             )
         `)
         .order("name");
+
+    const isSuperAdmin = instructor?.is_super_admin;
+    const departmentId = instructor?.department_id;
+
+    // RULE: Only Super Admin sees ALL devices.
+    // Department Admins only see devices assigned to their Department.
+    if (!isSuperAdmin) {
+        if (departmentId) {
+            query = query.eq('department_id', departmentId);
+        } else {
+            // No department assigned = No access to devices
+            // (Or empty list if we want to be nice)
+            query = query.eq('id', '00000000-0000-0000-0000-000000000000'); // Force empty
+        }
+    }
+
+    const { data: devices } = await query;
 
     // Fetch departments for the dropdown
     const { data: departments } = await supabase
@@ -92,29 +123,36 @@ export default async function DevicesPage() {
                                         {device.type}
                                     </td>
                                     <td className="py-4 px-4 text-sm">
-                                        <form className="flex items-center gap-2" action={async (formData: FormData) => {
-                                            "use server";
-                                            const deptId = formData.get("department_id") as string;
-                                            await updateDeviceDepartment(device.id, deptId === "" ? null : deptId);
-                                        }}>
-                                            <select
-                                                name="department_id"
-                                                defaultValue={device.department_id || ""}
-                                                className="px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-xs font-medium w-48 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                            >
-                                                <option value="">(Global/Unassigned)</option>
-                                                {departments?.map((d) => (
-                                                    <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                type="submit"
-                                                className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-nwu-red hover:text-white transition-all shadow-sm"
-                                                title="Save Department"
-                                            >
-                                                <Save className="h-4 w-4" />
-                                            </button>
-                                        </form>
+                                        {isSuperAdmin ? (
+                                            <form className="flex items-center gap-2" action={async (formData: FormData) => {
+                                                "use server";
+                                                const deptId = formData.get("department_id") as string;
+                                                await updateDeviceDepartment(device.id, deptId === "" ? null : deptId);
+                                            }}>
+                                                <select
+                                                    name="department_id"
+                                                    defaultValue={device.department_id || ""}
+                                                    className="px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-xs font-medium w-48 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                >
+                                                    <option value="">(Global/Unassigned)</option>
+                                                    {departments?.map((d) => (
+                                                        <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    type="submit"
+                                                    className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-nwu-red hover:text-white transition-all shadow-sm"
+                                                    title="Save Department"
+                                                >
+                                                    <Save className="h-4 w-4" />
+                                                </button>
+                                            </form>
+                                        ) : (
+                                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded">
+                                                {/* @ts-ignore */}
+                                                {device.departments?.name || "Unassigned"}
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
