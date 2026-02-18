@@ -35,7 +35,8 @@ export default async function DevicesPage() {
         `)
         .order("name");
 
-    const isSuperAdmin = instructor?.is_super_admin;
+    const isGlobalSuperAdmin = await checkIsSuperAdmin();
+    const isSuperAdmin = isGlobalSuperAdmin || instructor?.is_super_admin;
     const departmentId = instructor?.department_id;
 
     // RULE: Only Super Admin sees ALL devices.
