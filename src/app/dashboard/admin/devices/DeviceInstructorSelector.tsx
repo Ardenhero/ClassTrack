@@ -66,9 +66,17 @@ export function DeviceInstructorSelector({ deviceId, assignedIds, instructors, i
     };
 
     const count = savedIds.length;
-    const label = isSuperAdmin
-        ? (count === 0 ? "All Admins" : `${count} Admins Selected`)
-        : (count === 0 ? "All Dept Instructors" : `${count} Selected`);
+    let label = "";
+
+    if (count === 0) {
+        label = isSuperAdmin ? "All Admins" : "All Dept Instructors";
+    } else {
+        if (isSuperAdmin) {
+            label = count === 1 ? "1 Admin Selected" : `${count} Admins Selected`;
+        } else {
+            label = count === 1 ? "1 Instructor Selected" : `${count} Instructors Selected`;
+        }
+    }
 
     return (
         <>
