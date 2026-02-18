@@ -64,7 +64,10 @@ export default async function DevicesPage() {
                     <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                         <Plus className="h-4 w-4" /> Register New Device
                     </h3>
-                    <form action={createDevice} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <form action={async (formData: FormData) => {
+                        "use server";
+                        await createDevice(formData);
+                    }} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                         <div className="md:col-span-1">
                             <label className="text-xs font-medium text-gray-500 mb-1 block">Tuya Device ID</label>
                             <input name="id" required placeholder="bf41..." className="w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-900 border-gray-200 dark:border-gray-600" />
