@@ -234,7 +234,6 @@ export default async function DevicesPage() {
                                     <td className="py-4 px-4">
                                         <DeviceInstructorSelector
                                             deviceId={device.id}
-                                            // @ts-expect-error: assigned_instructor_ids is a new column
                                             assignedIds={device.assigned_instructor_ids}
                                             instructors={availableInstructors || []}
                                         />
