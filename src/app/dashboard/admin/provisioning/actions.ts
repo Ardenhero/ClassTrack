@@ -124,3 +124,46 @@ export async function toggleAdminStatus(authUserId: string, isLocked: boolean) {
     revalidatePath("/dashboard/admin/provisioning");
     return { success: true };
 }
+
+export async function updateAdminDepartment(adminId: string, departmentId: string | null) {
+    // Authorization Check
+    const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) throw new Error("Unauthorized");
+
+    const { data: profile } = await supabase
+        .from('instructors')
+        .select('is_super_admin')
+        .eq('auth_user_id', currentUser.id)
+        .single();
+
+    if (!profile?.is_super_admin) throw new Error("Forbidden");
+
+    // Protection: Verify target is NOT a Super Admin
+    const { data: targetProfile } = await supabase
+        .from('instructors')
+        .select('is_super_admin')
+        .eq('id', adminId)
+        .single();
+
+    if (targetProfile?.is_super_admin) {
+        throw new Error("Cannot modify Super Admin accounts.");
+    }
+
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase
+        .from('instructors')
+        .update({ department_id: departmentId })
+        .eq('id', adminId);
+
+    if (error) throw error;
+
+    await adminSupabase.rpc('log_action', {
+        p_action: 'UPDATE_ADMIN_DEPT',
+        p_target_type: 'instructors',
+        p_target_id: adminId,
+        p_details: { department_id: departmentId }
+    });
+
+    revalidatePath("/dashboard/admin/provisioning");
+}
