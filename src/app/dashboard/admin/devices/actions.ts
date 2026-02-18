@@ -77,6 +77,27 @@ export async function createDevice(formData: FormData) {
         return { success: false, error: error.message };
     }
 
+
     revalidatePath("/dashboard/admin/devices");
+    return { success: true };
+}
+
+export async function updateDeviceInstructors(deviceId: string, instructorIds: string[]) {
+    const adminClient = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { error } = await adminClient
+        .from('iot_devices')
+        .update({ assigned_instructor_ids: instructorIds })
+        .eq('id', deviceId);
+
+    if (error) {
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/admin/devices");
+    revalidatePath("/api/iot/control");
     return { success: true };
 }
