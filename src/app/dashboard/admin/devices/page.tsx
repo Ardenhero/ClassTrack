@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/lib/auth-utils";
+import { cookies } from "next/headers";
 import { Cpu, Save, Plus } from "lucide-react";
 import { updateDeviceDepartment, updateDeviceDetails, createDevice } from "./actions";
 
@@ -16,11 +17,28 @@ export default async function DevicesPage() {
     }
 
     // 2. Get Instructor Profile to check Role & Department
-    const { data: instructor } = await supabase
+    // PRIORITIZE the profile from the cookie if available (handles multiple profiles)
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+
+    let instructorQuery = supabase
         .from('instructors')
         .select('id, department_id, is_super_admin')
-        .eq('auth_user_id', user.id)
-        .maybeSingle();
+        .eq('auth_user_id', user.id);
+
+    if (profileId && profileId !== 'admin-profile') {
+        instructorQuery = instructorQuery.eq('id', profileId);
+    } else if (profileId === 'admin-profile') {
+        // Special case: If admin-profile, we want the admin record
+        instructorQuery = instructorQuery.eq('role', 'admin');
+    }
+
+    // We use maybeSingle() because even with the cookie, we might not find it, 
+    // or if no cookie, we hope for a single result.
+    // If multiple exist and no cookie, maybeSingle might fail or return one. 
+    // Ideally we want the 'admin' one if available.
+
+    const { data: instructor } = await instructorQuery.maybeSingle();
 
     // 3. Define the query based on Role
     let query = supabase

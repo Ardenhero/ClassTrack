@@ -11,6 +11,18 @@ export default async function InstructorsPage() {
     // Get the current auth user
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Fetch current user's instructor profile to get their Department Name (for display)
+    // and Department ID (for assignment)
+    const { data: currentUserProfile } = await supabase
+        .from('instructors')
+        .select('department_id, departments(name, code)')
+        .eq('auth_user_id', user?.id)
+        .maybeSingle();
+
+    // @ts-expect-error: Supabase inference
+    const currentUserDeptName = currentUserProfile?.departments?.name;
+    const currentUserDeptId = currentUserProfile?.department_id;
+
     // Determine filter based on role
     let query = supabase
         .from("instructors")
@@ -121,6 +133,18 @@ export default async function InstructorsPage() {
                                 ))}
                             </select>
                         </div>
+                    ) : (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                        <input
+                            type="text"
+                            disabled
+                            value={currentUserDeptName || "Your Department"}
+                            className="w-full px-3 py-2 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg text-sm cursor-not-allowed"
+                        />
+                        {/* Hidden input to actually submit the ID */}
+                        <input type="hidden" name="department_id" value={currentUserDeptId || ""} />
+                    </div>
                     )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">PIN Code (optional)</label>

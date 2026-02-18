@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { UserPlus, Shield, Mail, Key, Loader2, CheckCircle2, Building2, ShieldCheck, ShieldOff, Copy, Check } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
-import { provisionAdmin, toggleAdminStatus } from "./actions";
+import { provisionAdmin, toggleAdminStatus, updateAdminDepartment } from "./actions";
 import { cn } from "@/utils/cn";
 
 interface Department {
@@ -153,7 +153,29 @@ export default function AdminManagementPage() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                                                 <Building2 className="h-3 w-3 mr-1.5 text-gray-400" />
-                                                {admin.departments?.name || "Global University"}
+                                                {/* Allow Super Admin to change department */}
+                                                {!admin.is_super_admin && admin.auth_user_id !== currentUserId ? (
+                                                    <select
+                                                        className="bg-transparent border-b border-dashed border-gray-300 focus:border-nwu-red outline-none py-0.5 text-xs w-32"
+                                                        value={departments.find(d => d.name === admin.departments?.name)?.id || ""}
+                                                        onChange={async (e) => {
+                                                            const newDeptId = e.target.value;
+                                                            try {
+                                                                await updateAdminDepartment(admin.id, newDeptId || null);
+                                                                fetchAdmins(); // Refresh
+                                                            } catch (err) {
+                                                                alert("Failed to update department");
+                                                            }
+                                                        }}
+                                                    >
+                                                        <option value="">Global / Unassigned</option>
+                                                        {departments.map((d) => (
+                                                            <option key={d.id} value={d.id}>{d.name}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <span>{admin.departments?.name || "Global University"}</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
