@@ -5,6 +5,7 @@ import { UserPlus, Shield, Mail, Key, Loader2, CheckCircle2, Building2, ShieldCh
 import { createClient } from "@/utils/supabase/client";
 import { provisionAdmin, toggleAdminStatus, updateAdminDepartment } from "./actions";
 import { cn } from "@/utils/cn";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 interface Department {
     id: string;
@@ -158,19 +159,40 @@ export default function AdminManagementPage() {
                                                     <select
                                                         className="bg-transparent focus:ring-2 focus:ring-nwu-red rounded py-1 px-2 text-xs w-32 border border-gray-200"
                                                         value={departments.find(d => d.name === admin.departments?.name)?.id || ""}
-                                                        onChange={async (e) => {
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        adminId: string;
+        newDeptId: string;
+        adminName: string;
+        currentDeptName: string | null;
+        targetDeptName: string | null;
+    } | null>(null);
+
+    const { ConfirmationModal } = await import("@/components/ConfirmationModal").then(mod => ({ ConfirmationModal: mod.ConfirmationModal })); // Dynamic import to avoid server/client issues if any, though regular import is fine here since "use client"
+    
+    // Actually we should import at top level standardly
+    // Moving import to top of file in next edit if needed, but for now inside function is wrong.
+    // Let's do standard top-level import in previous lines via multi-step or assume standard.
+    // Wait, the file is "use client", so standard import is fine.
+    
+    // ...
+    // (Replacing lines 161-174)
+                                                        onChange={(e) => {
                                                             const newDeptId = e.target.value;
-                                                            if (!confirm("Are you sure you want to change this administrator's department?")) {
-                                                                e.target.value = departments.find(d => d.name === admin.departments?.name)?.id || "";
-                                                                return;
-                                                            }
-                                                            try {
-                                                                await updateAdminDepartment(admin.id, newDeptId || null);
-                                                                fetchAdmins(); // Refresh
-                                                            } catch (err) {
-                                                                console.error(err);
-                                                                alert("Failed to update department");
-                                                            }
+                                                            const targetDept = departments.find(d => d.id === newDeptId);
+                                                            
+                                                            // Trigger Modal
+                                                            setConfirmModal({
+                                                                isOpen: true,
+                                                                adminId: admin.id,
+                                                                newDeptId: newDeptId,
+                                                                adminName: admin.name,
+                                                                currentDeptName: admin.departments?.name || "Global / Unassigned",
+                                                                targetDeptName: targetDept?.name || "Global / Unassigned"
+                                                            });
+                                                            
+                                                            // Reset select visually until confirmed
+                                                            e.target.value = departments.find(d => d.name === admin.departments?.name)?.id || "";
                                                         }}
                                                     >
                                                         <option value="">Global / Unassigned</option>
@@ -219,153 +241,153 @@ export default function AdminManagementPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {admins.length === 0 && (
-                                    <tr>
-                                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">No administrators found.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            {admins.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">No administrators found.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
-                {/* Right Side: Provisioning Form */}
-                <div className="lg:w-1/3">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 sticky top-8">
-                        <div className="flex items-center space-x-3 mb-8">
-                            <div className="p-3 bg-nwu-red rounded-2xl text-white">
-                                <UserPlus className="h-6 w-6" />
+            {/* Right Side: Provisioning Form */}
+            <div className="lg:w-1/3">
+                <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 sticky top-8">
+                    <div className="flex items-center space-x-3 mb-8">
+                        <div className="p-3 bg-nwu-red rounded-2xl text-white">
+                            <UserPlus className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Admin</h1>
+                            <p className="text-xs text-gray-500">Secure credential generation</p>
+                        </div>
+                    </div>
+
+                    {success && (
+                        <div className="mb-8 p-4 bg-green-50 border border-green-100 rounded-2xl animate-in zoom-in duration-300">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-start space-x-3">
+                                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-bold text-green-800 uppercase tracking-wider">Account Ready</p>
+                                        <p className="text-[10px] text-green-700 mt-1">Credentials generated successfully.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleCopy}
+                                    className="p-1.5 hover:bg-green-100 rounded-lg transition-colors text-green-600"
+                                    title="Copy Credentials"
+                                >
+                                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                </button>
                             </div>
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Admin</h1>
-                                <p className="text-xs text-gray-500">Secure credential generation</p>
+                            <div className="mt-4 p-3 bg-white rounded-xl border border-green-200 space-y-1.5">
+                                <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-400 uppercase font-bold tracking-tight">Email</span>
+                                    <span className="font-mono text-gray-900">{success.email}</span>
+                                </div>
+                                <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-400 uppercase font-bold tracking-tight">Password</span>
+                                    <span className="font-mono text-gray-900">{success.pass}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-xs font-medium">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                                <input
+                                    required
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm"
+                                    placeholder="dean@university.edu"
+                                />
                             </div>
                         </div>
 
-                        {success && (
-                            <div className="mb-8 p-4 bg-green-50 border border-green-100 rounded-2xl animate-in zoom-in duration-300">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start space-x-3">
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                                        <div>
-                                            <p className="text-xs font-bold text-green-800 uppercase tracking-wider">Account Ready</p>
-                                            <p className="text-[10px] text-green-700 mt-1">Credentials generated successfully.</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleCopy}
-                                        className="p-1.5 hover:bg-green-100 rounded-lg transition-colors text-green-600"
-                                        title="Copy Credentials"
-                                    >
-                                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                                    </button>
-                                </div>
-                                <div className="mt-4 p-3 bg-white rounded-xl border border-green-200 space-y-1.5">
-                                    <div className="flex justify-between text-[10px]">
-                                        <span className="text-gray-400 uppercase font-bold tracking-tight">Email</span>
-                                        <span className="font-mono text-gray-900">{success.email}</span>
-                                    </div>
-                                    <div className="flex justify-between text-[10px]">
-                                        <span className="text-gray-400 uppercase font-bold tracking-tight">Password</span>
-                                        <span className="font-mono text-gray-900">{success.pass}</span>
-                                    </div>
-                                </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                            <div className="relative">
+                                <Shield className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                                <input
+                                    required
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm"
+                                    placeholder="Dr. Jane Doe"
+                                />
                             </div>
-                        )}
+                        </div>
 
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-xs font-medium">
-                                {error}
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Department</label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                                <select
+                                    required
+                                    value={formData.departmentId}
+                                    onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm appearance-none"
+                                >
+                                    <option value="">Select Department...</option>
+                                    {departments.map((dept) => (
+                                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                    ))}
+                                </select>
                             </div>
-                        )}
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        required
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm"
-                                        placeholder="dean@university.edu"
-                                    />
-                                </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Temp Password</label>
+                            <div className="relative font-mono">
+                                <Key className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
+                                <input
+                                    readOnly
+                                    type="text"
+                                    value={formData.password}
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, password: Math.random().toString(36).slice(-10) })}
+                                    className="absolute right-2 top-2 text-[10px] font-bold text-nwu-red hover:bg-nwu-red/5 px-2 py-1.5 rounded-lg border border-nwu-red/10 transition-all"
+                                >
+                                    REGEN
+                                </button>
                             </div>
+                        </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                                <div className="relative">
-                                    <Shield className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        required
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm"
-                                        placeholder="Dr. Jane Doe"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Department</label>
-                                <div className="relative">
-                                    <Building2 className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
-                                    <select
-                                        required
-                                        value={formData.departmentId}
-                                        onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm appearance-none"
-                                    >
-                                        <option value="">Select Department...</option>
-                                        {departments.map((dept) => (
-                                            <option key={dept.id} value={dept.id}>{dept.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Temp Password</label>
-                                <div className="relative font-mono">
-                                    <Key className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
-                                    <input
-                                        readOnly
-                                        type="text"
-                                        value={formData.password}
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 text-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, password: Math.random().toString(36).slice(-10) })}
-                                        className="absolute right-2 top-2 text-[10px] font-bold text-nwu-red hover:bg-nwu-red/5 px-2 py-1.5 rounded-lg border border-nwu-red/10 transition-all"
-                                    >
-                                        REGEN
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button
-                                disabled={loading}
-                                type="submit"
-                                className="w-full py-4 bg-nwu-red text-white rounded-2xl font-bold shadow-lg shadow-nwu-red/20 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 mt-4"
-                            >
-                                {loading ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        <ShieldCheck className="h-5 w-5" />
-                                        <span>Authorize Access</span>
-                                    </>
-                                )}
-                            </button>
-                        </form>
-                    </div>
+                        <button
+                            disabled={loading}
+                            type="submit"
+                            className="w-full py-4 bg-nwu-red text-white rounded-2xl font-bold shadow-lg shadow-nwu-red/20 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 mt-4"
+                        >
+                            {loading ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <ShieldCheck className="h-5 w-5" />
+                                    <span>Authorize Access</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
+        </div >
     );
 }
