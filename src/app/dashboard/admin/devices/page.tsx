@@ -76,13 +76,15 @@ export default async function DevicesPage() {
         }
     }
 
-    const { data: devices } = await query;
+    // 4. Fetch available instructors for the dropdown
+    let instructorListQuery = supabase.from('instructors').select('id, name, department_id').order('name');
+    if (!isSuperAdmin && departmentId) {
+        instructorListQuery = instructorListQuery.eq('department_id', departmentId);
+    }
+    const { data: availableInstructors } = await instructorListQuery;
 
-    // Fetch departments for the dropdown
-    const { data: departments } = await supabase
-        .from("departments")
-        .select("id, name, code")
-        .order("name");
+    // Import client component
+    const { DeviceInstructorSelector } = await import("./DeviceInstructorSelector");
 
     return (
         <div className="space-y-8">
@@ -131,17 +133,18 @@ export default async function DevicesPage() {
                 </h2>
 
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
-                    Assign devices to departments to enable proper isolation. Only instructors in the assigned department will be able to see and control these devices.
+                    Assign devices to departments to enable proper isolation. You can also restrict access to specific instructors.
                 </p>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                <div className="overflow-x-auto h-[600px] overflow-y-auto pb-20"> {/* constraints for dropdown visibility */}
+                    <table className="w-full text-left border-collapse pb-24">
                         <thead>
                             <tr className="border-b border-gray-100 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300">
-                                <th className="py-3 px-4 w-1/3">DEVICE DETAILS</th>
+                                <th className="py-3 px-4 w-1/4">DEVICE DETAILS</th>
                                 <th className="py-3 px-4">TUYA ID</th>
                                 <th className="py-3 px-4">TYPE</th>
                                 <th className="py-3 px-4">ASSIGNED DEPARTMENT</th>
+                                <th className="py-3 px-4">INSTRUCTOR ACCESS</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -218,11 +221,19 @@ export default async function DevicesPage() {
                                             </span>
                                         )}
                                     </td>
+                                    <td className="py-4 px-4">
+                                        <DeviceInstructorSelector
+                                            deviceId={device.id}
+                                            // @ts-expect-error: assigned_instructor_ids is a new column
+                                            assignedIds={device.assigned_instructor_ids}
+                                            instructors={availableInstructors || []}
+                                        />
+                                    </td>
                                 </tr>
                             ))}
                             {(!devices || devices.length === 0) && (
                                 <tr>
-                                    <td colSpan={4} className="py-8 text-center text-sm text-gray-400 italic">
+                                    <td colSpan={5} className="py-8 text-center text-sm text-gray-400 italic">
                                         No IoT devices found in database.
                                     </td>
                                 </tr>

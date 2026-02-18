@@ -156,10 +156,14 @@ export default function AdminManagementPage() {
                                                 {/* Allow Super Admin to change department */}
                                                 {!admin.is_super_admin && admin.auth_user_id !== currentUserId ? (
                                                     <select
-                                                        className="bg-transparent border-b border-dashed border-gray-300 focus:border-nwu-red outline-none py-0.5 text-xs w-32"
+                                                        className="bg-transparent focus:ring-2 focus:ring-nwu-red rounded py-1 px-2 text-xs w-32 border border-gray-200"
                                                         value={departments.find(d => d.name === admin.departments?.name)?.id || ""}
                                                         onChange={async (e) => {
                                                             const newDeptId = e.target.value;
+                                                            if (!confirm("Are you sure you want to change this administrator's department?")) {
+                                                                e.target.value = departments.find(d => d.name === admin.departments?.name)?.id || "";
+                                                                return;
+                                                            }
                                                             try {
                                                                 await updateAdminDepartment(admin.id, newDeptId || null);
                                                                 fetchAdmins(); // Refresh

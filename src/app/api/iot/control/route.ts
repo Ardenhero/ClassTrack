@@ -119,6 +119,7 @@ export async function GET(request: Request) {
 
         let departmentId: string | null = null;
         let isSuperAdmin = isLegacyAdmin;
+        let instructor: any = null;
 
         const adminClient = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -134,8 +135,6 @@ export async function GET(request: Request) {
                 .from('instructors')
                 .select('id, department_id, is_super_admin')
                 .eq('auth_user_id', user.id);
-
-            let instructor = null;
 
             if (instructors && instructors.length > 0) {
                 if (profileId) {
@@ -161,22 +160,43 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Fetch devices using service role to bypass RLS, then manually scope below
-        let query = adminClient.from('iot_devices').select('*').order('name');
+        // Fetch devices using service role to bypass RLS
+        // We fetch ALL (or filtered by department to be safe if strictly hierarchical)
+        // But since we want to support explicit assignment that might override, we fetch broadly then filter.
+        // Optimization: We could use .or() but JS filtering is safer for the "Exclusion" logic.
+        const { data: allDevices, error } = await adminClient
+            .from('iot_devices')
+            .select('*')
+            .order('name');
 
-        if (!isSuperAdmin) {
-            if (departmentId) {
-                query = query.eq('department_id', departmentId);
-            } else {
-                query = query.is('department_id', null);
-            }
-        }
-
-        const { data: devices, error } = await query;
         if (error) {
             console.error("[IoT Control] Query Error:", error);
             throw error;
         }
+
+        // Apply Visibility Rules in Memory
+        const devices = (allDevices || []).filter((device: any) => {
+            if (isSuperAdmin) return true;
+
+            // 1. Explicit Assignment Logic
+            const assignedIds = device.assigned_instructor_ids;
+            if (Array.isArray(assignedIds) && assignedIds.length > 0) {
+                // STRICT MODE: If assignments exist, MUST be in the list
+                // (Even if department matches, if you aren't in the list, you don't see it)
+                return instructor && assignedIds.includes(instructor.id);
+            }
+
+            // 2. Fallback: Department Match
+            if (device.department_id) {
+                return departmentId && device.department_id === departmentId;
+            }
+
+            // 3. Global Devices (no dept) -> Visible to whom?
+            // Usually Global = Admin only? Or Everyone?
+            // User said: "Global Department... disables... room controls on admin side... can still see... in Instructor profile".
+            // If device has NO department, it shouldn't be visible to instructors usually, unless explicitly assigned.
+            return false;
+        });
 
         // Optionally refresh from Tuya (Optimistic/Basic status)
         const enriched = await Promise.all(
