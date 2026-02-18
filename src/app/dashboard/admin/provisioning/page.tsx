@@ -130,7 +130,7 @@ export default function AdminManagementPage() {
                         <div>
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
                                 <ShieldCheck className="mr-2 h-6 w-6 text-nwu-gold" />
-                                Existing Deans & Admins
+                                Existing Department Admins
                             </h2>
                             <p className="text-sm text-gray-500">Managing {admins.length} institution-level accounts</p>
                         </div>
@@ -156,7 +156,7 @@ export default function AdminManagementPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{admin.name}</p>
-                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest leading-none mt-0.5">{admin.role}</p>
+                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest leading-none mt-0.5">{admin.is_super_admin ? "Super Admin" : admin.role}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -166,7 +166,7 @@ export default function AdminManagementPage() {
                                                 {/* Allow Super Admin to change department */}
                                                 {!admin.is_super_admin && admin.auth_user_id !== currentUserId ? (
                                                     <select
-                                                        className="bg-transparent focus:ring-2 focus:ring-nwu-red rounded py-1 px-2 text-xs w-32 border border-gray-200"
+                                                        className="bg-transparent focus:ring-2 focus:ring-nwu-red rounded py-1 px-2 text-xs w-32 border-none"
                                                         value={departments.find(d => d.name === admin.departments?.name)?.id || ""}
                                                         onChange={(e) => {
                                                             const newDeptId = e.target.value;
@@ -188,13 +188,13 @@ export default function AdminManagementPage() {
                                                             // So it shouldn't visually change unless `admin` updates.
                                                         }}
                                                     >
-                                                        <option value="">Global / Unassigned</option>
+                                                        <option value="">Unassigned</option>
                                                         {departments.map((d) => (
                                                             <option key={d.id} value={d.id}>{d.name}</option>
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <span>{admin.departments?.name || "Global University"}</span>
+                                                    <span>{admin.departments?.name || (admin.is_super_admin ? "Northwestern University" : "Unassigned")}</span>
                                                 )}
                                             </div>
                                         </td>
