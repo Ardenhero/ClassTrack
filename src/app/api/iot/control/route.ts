@@ -154,14 +154,10 @@ export async function GET(request: Request) {
             // If we really needed it, we'd need to join tables, but keeping it simple for now.
 
             if (instructor) {
-                console.log("[IoT Debug] Instructor matched:", instructor.id, "Dept:", instructor.department_id);
                 departmentId = instructor.department_id;
                 isSuperAdmin = isSuperAdmin || instructor.is_super_admin;
-            } else {
-                console.log("[IoT Debug] No instructor profile found for user:", user.email);
             }
         } else if (!isLegacyAdmin) {
-            console.log("[IoT Debug] Unauthorized (No User + Not Legacy Admin)");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -169,24 +165,18 @@ export async function GET(request: Request) {
         let query = adminClient.from('iot_devices').select('*').order('name');
 
         if (!isSuperAdmin) {
-            console.log("[IoT Debug] Filtering by Dept:", departmentId);
             if (departmentId) {
                 query = query.eq('department_id', departmentId);
             } else {
-                console.log("[IoT Debug] No Dept - showing unassigned only");
                 query = query.is('department_id', null);
             }
-        } else {
-            console.log("[IoT Debug] Super Admin - showing all");
         }
 
         const { data: devices, error } = await query;
         if (error) {
-            console.error("[IoT Debug] Query Error:", error);
+            console.error("[IoT Control] Query Error:", error);
             throw error;
         }
-
-        console.log("[IoT Debug] Devices Found:", devices?.length);
 
         // Optionally refresh from Tuya (Optimistic/Basic status)
         const enriched = await Promise.all(
@@ -197,13 +187,7 @@ export async function GET(request: Request) {
         );
 
         return NextResponse.json({
-            devices: enriched,
-            debug: {
-                userEmail: user?.email,
-                departmentId,
-                isSuperAdmin,
-                deviceCount: devices?.length || 0
-            }
+            devices: enriched
         });
 
     } catch (err) {

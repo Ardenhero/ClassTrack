@@ -17,13 +17,6 @@ interface IoTDevice {
     updated_at: string;
 }
 
-interface DebugInfo {
-    userEmail?: string | null;
-    departmentId?: string | null;
-    isSuperAdmin?: boolean;
-    deviceCount?: number;
-}
-
 // Map device names to appropriate icons/colors
 function getDeviceVisuals(name: string) {
     const lower = name.toLowerCase();
@@ -39,7 +32,6 @@ export function IoTSwitches() {
     const [devices, setDevices] = useState<IoTDevice[]>([]);
     const [loading, setLoading] = useState(true);
     const [toggling, setToggling] = useState<string | null>(null);
-    const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
 
     const loadDevices = useCallback(async () => {
         try {
@@ -53,8 +45,6 @@ export function IoTSwitches() {
                 const data = await res.json();
                 if (data.devices) {
                     setDevices(data.devices);
-                    if (data.debug) console.log("IoT Debug:", data.debug);
-                    setDebugInfo(data.debug);
                 }
             }
         } catch (err) {
@@ -157,14 +147,6 @@ export function IoTSwitches() {
                 </div>
                 <p className="text-sm text-gray-400 text-center py-4">
                     No IoT devices configured yet.
-                    {debugInfo && (
-                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs text-left font-mono">
-                            <p className="font-bold text-gray-500 mb-1">Debug Info:</p>
-                            <p>User: {debugInfo.userEmail || 'Unknown'}</p>
-                            <p>Dept ID: {debugInfo.departmentId || 'None (Global)'}</p>
-                            <p>Super Admin: {debugInfo.isSuperAdmin ? 'Yes' : 'No'}</p>
-                        </div>
-                    )}
                 </p>
             </div>
         );
