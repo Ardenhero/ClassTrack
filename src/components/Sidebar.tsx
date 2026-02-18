@@ -26,7 +26,8 @@ import {
     FileCheck,
     BarChart3,
     KeyRound,
-    ChevronLeft
+    ChevronLeft,
+    Cpu
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -59,6 +60,7 @@ const superAdminNavigation = [
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
+    { name: "Devices", href: "/dashboard/admin/devices", icon: Cpu },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
@@ -80,7 +82,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
     const supabase = createClient();
     const { profile, clearProfile, isSwitching } = useProfile();
 
-    const isSuperAdmin = profile?.is_super_admin || profile?.role === 'admin' && profile?.name === 'Super Admin';
+    const isSuperAdmin = profile?.is_super_admin || (profile?.role === 'admin' && profile?.name === 'Super Admin') || profile?.id === 'admin-profile';
     const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
 
     const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
