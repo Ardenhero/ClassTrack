@@ -24,8 +24,6 @@ export async function updateDeviceDepartment(deviceId: string, departmentId: str
 }
 
 export async function updateDeviceDetails(deviceId: string, name: string, room: string) {
-    console.log("[updateDeviceDetails] Updating:", { deviceId, name, room });
-
     // Use Service Role to bypass RLS policies
     const adminClient = createSupabaseClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,11 +36,9 @@ export async function updateDeviceDetails(deviceId: string, name: string, room: 
         .eq('id', deviceId);
 
     if (error) {
-        console.error("[updateDeviceDetails] Error:", error);
         return { success: false, error: error.message };
     }
 
-    console.log("[updateDeviceDetails] Update successful");
     revalidatePath("/dashboard/admin/devices");
     revalidatePath("/api/iot/control"); // Ensure frontend sees new names
     return { success: true };
