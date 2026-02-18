@@ -88,7 +88,11 @@ export default async function DevicesPage() {
 
     // 4. Fetch available instructors for the dropdown
     let instructorListQuery = supabase.from('instructors').select('id, name, department_id').order('name');
-    if (!isSuperAdmin && departmentId) {
+
+    if (isSuperAdmin) {
+        // User Request: For Super Admin, only show Admins in the list
+        instructorListQuery = instructorListQuery.eq('role', 'admin');
+    } else if (departmentId) {
         instructorListQuery = instructorListQuery.eq('department_id', departmentId);
     }
     const { data: availableInstructors } = await instructorListQuery;
@@ -236,6 +240,7 @@ export default async function DevicesPage() {
                                             deviceId={device.id}
                                             assignedIds={device.assigned_instructor_ids}
                                             instructors={availableInstructors || []}
+                                            isSuperAdmin={Boolean(isSuperAdmin)}
                                         />
                                     </td>
                                 </tr>
