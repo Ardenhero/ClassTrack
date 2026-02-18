@@ -229,7 +229,7 @@ export default async function DepartmentsPage() {
                             ))}
                             {departments?.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 italic">No departments registered. Register one above.</td>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 italic">You are not registered to a department. Please contact or consult the Northwestern University IT Department.</td>
                                 </tr>
                             )}
                         </tbody>
