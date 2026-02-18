@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
-import { Cpu, Save } from "lucide-react";
-import { updateDeviceDepartment, updateDeviceDetails } from "./actions";
+import { Cpu, Save, Plus } from "lucide-react";
+import { updateDeviceDepartment, updateDeviceDetails, createDevice } from "./actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +59,41 @@ export default async function DevicesPage() {
 
     return (
         <div className="space-y-8">
+            {isSuperAdmin && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6">
+                    <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4 flex items-center gap-2">
+                        <Plus className="h-4 w-4" /> Register New Device
+                    </h3>
+                    <form action={createDevice} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-medium text-gray-500 mb-1 block">Tuya Device ID</label>
+                            <input name="id" required placeholder="bf41..." className="w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-900 border-gray-200 dark:border-gray-600" />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
+                            <input name="name" required placeholder="e.g. Lobby AC" className="w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-900 border-gray-200 dark:border-gray-600" />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-medium text-gray-500 mb-1 block">Type</label>
+                            <select name="type" className="w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-900 border-gray-200 dark:border-gray-600">
+                                <option value="SWITCH">Smart Switch</option>
+                                <option value="FAN">Smart Fan</option>
+                                <option value="LIGHT">Smart Light</option>
+                                <option value="AC">Air Conditioner</option>
+                            </select>
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-xs font-medium text-gray-500 mb-1 block">DP Code</label>
+                            <input name="dp_code" placeholder="switch_1" defaultValue="switch_1" className="w-full px-3 py-2 text-sm border rounded-lg dark:bg-gray-900 border-gray-200 dark:border-gray-600" />
+                        </div>
+                        <div className="md:col-span-1">
+                            <button type="submit" className="w-full bg-nwu-red text-white py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition">
+                                Register
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-nwu-red" />

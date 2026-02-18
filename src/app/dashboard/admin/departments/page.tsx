@@ -120,34 +120,36 @@ export default async function DepartmentsPage() {
                 </div>
             </div>
 
-            {/* Add Department Form */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Register New Department</h3>
-                <form action={addDepartment} className="flex gap-4 items-end">
-                    <div className="flex-1 space-y-1">
-                        <label className="text-xs font-medium text-gray-500">Department Name</label>
-                        <input
-                            name="name"
-                            placeholder="e.g. Computer Engineering"
-                            required
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors"
-                        />
-                    </div>
-                    <div className="w-32 space-y-1">
-                        <label className="text-xs font-medium text-gray-500">Code</label>
-                        <input
-                            name="code"
-                            placeholder="e.g. CpE"
-                            required
-                            className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors"
-                        />
-                    </div>
-                    <button type="submit" className="bg-nwu-red text-white px-6 py-2.5 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center shadow-lg shadow-nwu-red/10">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                    </button>
-                </form>
-            </div>
+            {/* Add Department Form - Super Admin Only */}
+            {isSuperAdmin && (
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 className="text-sm font-bold uppercase text-gray-400 tracking-wider mb-4">Register New Department</h3>
+                    <form action={addDepartment} className="flex gap-4 items-end">
+                        <div className="flex-1 space-y-1">
+                            <label className="text-xs font-medium text-gray-500">Department Name</label>
+                            <input
+                                name="name"
+                                placeholder="e.g. Computer Engineering"
+                                required
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors"
+                            />
+                        </div>
+                        <div className="w-32 space-y-1">
+                            <label className="text-xs font-medium text-gray-500">Code</label>
+                            <input
+                                name="code"
+                                placeholder="e.g. CpE"
+                                required
+                                className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-900 focus:outline-none focus:border-nwu-red transition-colors"
+                            />
+                        </div>
+                        <button type="submit" className="bg-nwu-red text-white px-6 py-2.5 rounded-xl font-bold hover:bg-red-700 transition-colors flex items-center shadow-lg shadow-nwu-red/10">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add
+                        </button>
+                    </form>
+                </div>
+            )}
 
             {/* Departments List */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">

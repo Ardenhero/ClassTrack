@@ -6,18 +6,14 @@ import { checkIsSuperAdmin } from "@/lib/auth-utils";
 import { DeleteInstructorButton } from "./DeleteInstructorButton";
 
 export default async function InstructorsPage() {
-    // SECURITY: Super Admin should not manage specific instructors
     const isSuperAdmin = await checkIsSuperAdmin();
-    if (isSuperAdmin) {
-        redirect("/dashboard/admin/approvals");
-    }
     const supabase = createClient();
 
     // Get the current auth user
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Fetch only this owner's instructors with their departments
-    const { data: instructors } = await supabase
+    // Determine filter based on role
+    let query = supabase
         .from("instructors")
         .select(`
       id,
@@ -30,8 +26,16 @@ export default async function InstructorsPage() {
         code
       )
     `)
-        .eq("owner_id", user?.id ?? "")
         .order("name");
+
+    // If NOT Super Admin, filter by their owned instructors (or department)
+    // Note: The original code used 'owner_id', which implies Admins create Instructor accounts.
+    // We should keep that logic but expand it for Super Admins to see ALL.
+    if (!isSuperAdmin) {
+        query = query.eq("owner_id", user?.id ?? "");
+    }
+
+    const { data: instructors } = await query;
 
     // Fetch departments for the dropdown
     const { data: departments } = await supabase
@@ -55,10 +59,22 @@ export default async function InstructorsPage() {
         const dept = department_id && department_id !== "" ? department_id : null;
         const userRole = role === "admin" ? "admin" : "instructor";
 
+        // If Super Admin, use selected dept.
+        // If Dept Admin, force use of their own dept.
+        let finalDept = dept;
+        if (!isSuperAdmin) {
+            const { data: creator } = await supabase
+                .from('instructors')
+                .select('department_id')
+                .eq('auth_user_id', user?.id)
+                .single();
+            finalDept = creator?.department_id || null;
+        }
+
         const { error } = await supabase.from("instructors").insert({
             name,
             pin_code: pin,
-            department_id: dept,
+            department_id: finalDept,
             role: userRole,
             owner_id: user?.id
         });
@@ -70,7 +86,7 @@ export default async function InstructorsPage() {
             await supabase.from("notifications").insert({
                 user_id: user?.id ?? "",
                 title: "System: Account Created",
-                message: `Instructor account for ${name} was created by Admin.`,
+                message: `Instructor account for ${name} was created.`,
                 type: "success",
                 read: false
             });
@@ -96,15 +112,17 @@ export default async function InstructorsPage() {
                             placeholder="Instructor name"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                        <select name="department_id" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
-                            <option value="">No Department</option>
-                            {departments?.map((d) => (
-                                <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
-                            ))}
-                        </select>
-                    </div>
+                    {isSuperAdmin && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                            <select name="department_id" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
+                                <option value="">No Department</option>
+                                {departments?.map((d) => (
+                                    <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">PIN Code (optional)</label>
                         <input
@@ -152,23 +170,33 @@ export default async function InstructorsPage() {
                                             const deptId = formData.get("department_id") as string;
                                             await updateInstructorDepartment(inst.id, deptId === "" ? null : deptId);
                                         }}>
-                                            <select
-                                                name="department_id"
-                                                defaultValue={inst.department_id || ""}
-                                                className="px-1 py-0.5 border border-gray-200 rounded bg-transparent focus:ring-1 focus:ring-nwu-red outline-none transition-all text-[10px] font-medium w-32"
-                                            >
-                                                <option value="">(No Dept)</option>
-                                                {departments?.map((d) => (
-                                                    <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
-                                                ))}
-                                            </select>
-                                            <button
-                                                type="submit"
-                                                className="p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-nwu-red hover:text-white transition-all"
-                                                title="Save Department"
-                                            >
-                                                <Key className="h-3 w-3" />
-                                            </button>
+                                            {isSuperAdmin ? (
+                                                <>
+                                                    <select
+                                                        name="department_id"
+                                                        defaultValue={inst.department_id || ""}
+                                                        className="px-1 py-0.5 border border-gray-200 rounded bg-transparent focus:ring-1 focus:ring-nwu-red outline-none transition-all text-[10px] font-medium w-32"
+                                                    >
+                                                        <option value="">(No Dept)</option>
+                                                        {departments?.map((d) => (
+                                                            <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                        type="submit"
+                                                        className="ml-1 p-1 bg-gray-100 text-gray-400 rounded hover:bg-nwu-red hover:text-white transition-all"
+                                                        title="Save Department"
+                                                    >
+                                                        <Key className="h-3 w-3" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                // Read Only for Dept Admins
+                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
+                                                    {/* @ts-ignore */}
+                                                    {inst.departments?.code || "No Dept"}
+                                                </span>
+                                            )}
                                         </form>
                                         {inst.role === "admin" && (
                                             <span className="px-2 py-0.5 bg-nwu-gold/20 text-nwu-red rounded-full font-bold">Admin</span>
