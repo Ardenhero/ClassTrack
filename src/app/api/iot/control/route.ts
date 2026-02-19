@@ -32,11 +32,13 @@ export async function POST(request: Request) {
         // Resolve instructor_id from email (for ESP32 requests) or profile_id (for web requests)
         let triggeredBy: string | null = profile_id || null;
         if (email && !triggeredBy) {
+            // First try direct email column (if it exists/just added)
             const { data: instructor } = await supabase
                 .from('instructors')
                 .select('id')
                 .eq('email', email)
-                .single();
+                .maybeSingle();
+
             triggeredBy = instructor?.id || null;
         }
 
