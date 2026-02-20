@@ -191,74 +191,75 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                     {isLive ? "Live — Listening for scans" : "Connecting..."}
                 </span>
             </div>
-
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SIN</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Class Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time In</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time Out</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                    </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {rows.map((row, idx) => {
-                        const Icon = resolveIcon(row.iconName);
-                        const isNew = flash === row.id;
-                        return (
-                            <tr
-                                key={`${row.id}-${idx}`}
-                                className={`transition-all duration-500 ${isNew
-                                    ? "bg-green-50 dark:bg-green-900/20 ring-1 ring-green-200 dark:ring-green-800"
-                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                                    }`}
-                                data-testid="attendance-record"
-                            >
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {format(parseISO(row.date), "MMM d, yyyy")}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
-                                    {row.studentSin || "-"}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-nwu-red/10 flex items-center justify-center text-nwu-red font-bold text-xs ring-1 ring-nwu-red/20">
-                                            {row.studentName[0]}
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SIN</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Class Name</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time In</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time Out</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {rows.map((row, idx) => {
+                            const Icon = resolveIcon(row.iconName);
+                            const isNew = flash === row.id;
+                            return (
+                                <tr
+                                    key={`${row.id}-${idx}`}
+                                    className={`transition-all duration-500 ${isNew
+                                        ? "bg-green-50 dark:bg-green-900/20 ring-1 ring-green-200 dark:ring-green-800"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                        }`}
+                                    data-testid="attendance-record"
+                                >
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {format(parseISO(row.date), "MMM d, yyyy")}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
+                                        {row.studentSin || "-"}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-nwu-red/10 flex items-center justify-center text-nwu-red font-bold text-xs ring-1 ring-nwu-red/20">
+                                                {row.studentName[0]}
+                                            </div>
+                                            <div className="ml-4">
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{row.studentName}</div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">{row.yearLevel}</div>
+                                            </div>
                                         </div>
-                                        <div className="ml-4">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{row.studentName}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">{row.yearLevel}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                        {row.className}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
+                                        {row.timeIn}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500 dark:text-gray-400">
+                                        {row.timeOut}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${row.badgeColor} w-fit`}>
+                                            <Icon className="h-3 w-3 mr-1.5" />
+                                            {row.statusLabel}
                                         </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                    {row.className}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-gray-100">
-                                    {row.timeIn}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500 dark:text-gray-400">
-                                    {row.timeOut}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${row.badgeColor} w-fit`}>
-                                        <Icon className="h-3 w-3 mr-1.5" />
-                                        {row.statusLabel}
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-            {rows.length === 0 && (
-                <div className="p-12 text-center text-gray-500 dark:text-gray-400 empty-state">
-                    No logs found
-                </div>
-            )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+                {rows.length === 0 && (
+                    <div className="p-12 text-center text-gray-500 dark:text-gray-400 empty-state">
+                        No logs found
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
