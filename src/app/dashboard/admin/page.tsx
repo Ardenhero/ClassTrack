@@ -2,6 +2,7 @@
 
 import { useProfile } from "@/context/ProfileContext";
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
+import { KioskHealthCard } from "@/components/KioskHealthCard";
 import { Users, BookOpen, ShieldCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
@@ -53,9 +54,10 @@ export default function AdminDashboardPage() {
                     </Link>
                 </div>
 
-                {/* Biometric Matrix */}
-                <div className="lg:col-span-1">
+                {/* Biometric Matrix + Kiosk Health */}
+                <div className="lg:col-span-1 space-y-4">
                     <AdminBiometricMatrix />
+                    <KioskHealthCard />
                 </div>
             </div>
         </div>

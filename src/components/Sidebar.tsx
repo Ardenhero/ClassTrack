@@ -27,7 +27,8 @@ import {
     BarChart3,
     KeyRound,
     ChevronLeft,
-    Cpu
+    Cpu,
+    QrCode
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -37,6 +38,7 @@ const instructorNavigation = [
     { name: "Evidence Queue", href: "/evidence", icon: FileCheck },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
+    { name: "QR Scanner", href: "/dashboard/scanner", icon: QrCode },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
@@ -48,6 +50,7 @@ const adminNavigation = [
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
+    { name: "QR Scanner", href: "/dashboard/scanner", icon: QrCode },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
