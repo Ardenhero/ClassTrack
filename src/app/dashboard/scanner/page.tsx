@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Camera, CheckCircle2, AlertTriangle, QrCode, X, Loader2, UserCheck } from "lucide-react";
 
 interface ScanResult {
@@ -62,8 +63,9 @@ export default function ScannerPage() {
         setLogged(false);
 
         try {
+            // Do not force facingMode so desktop browsers don't fail immediately
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }
+                video: { width: { ideal: 640 }, height: { ideal: 480 } }
             });
             streamRef.current = stream;
 
@@ -73,24 +75,9 @@ export default function ScannerPage() {
             }
             setScanning(true);
             scanFrame();
-        } catch {
-            // Fallback for laptops/desktops that don't have an "environment" facing camera
-            try {
-                const fallbackStream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
-                });
-                streamRef.current = fallbackStream;
-
-                if (videoRef.current) {
-                    videoRef.current.srcObject = fallbackStream;
-                    await videoRef.current.play();
-                }
-                setScanning(true);
-                scanFrame();
-            } catch (fallbackErr) {
-                console.error("Camera access failed:", fallbackErr);
-                setError("Camera access denied or no camera found. Please enable camera permissions.");
-            }
+        } catch (err) {
+            console.error("Camera access failed:", err);
+            setError("Camera access denied or no camera found. Please enable camera permissions in your browser.");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -232,157 +219,159 @@ export default function ScannerPage() {
     }, [stopScanning]);
 
     return (
-        <div className="max-w-2xl mx-auto p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <QrCode className="h-6 w-6 text-indigo-500" />
-                        QR Attendance Scanner
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Scan a student&apos;s verified QR code for fallback attendance.
-                    </p>
-                </div>
-            </div>
-
-            {/* Class Selector */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-                <label className="block text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">
-                    Active Class
-                </label>
-                <select
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium"
-                >
-                    {classes.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Camera View */}
-            <div className="relative bg-black rounded-2xl overflow-hidden aspect-video">
-                <video
-                    ref={videoRef}
-                    className={`w-full h-full object-cover ${scanning ? 'block' : 'hidden'}`}
-                    playsInline
-                    muted
-                />
-                <canvas ref={canvasRef} className="hidden" />
-
-                {!scanning && !result && !error && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                        <div className="w-20 h-20 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                            <Camera className="h-10 w-10 text-indigo-400" />
-                        </div>
-                        <button
-                            onClick={startScanning}
-                            disabled={!selectedClass || classesLoading}
-                            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-600 text-white rounded-xl font-semibold transition-all flex items-center gap-2"
-                        >
-                            {classesLoading ? <><Loader2 className="h-5 w-5 animate-spin" /> Loading Classes...</> : "Start Scanning"}
-                        </button>
-                    </div>
-                )}
-
-                {scanning && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        {/* Scanning overlay */}
-                        <div className="w-56 h-56 border-2 border-indigo-400 rounded-2xl relative">
-                            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-indigo-400 rounded-tl-xl" />
-                            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-indigo-400 rounded-tr-xl" />
-                            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-indigo-400 rounded-bl-xl" />
-                            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-indigo-400 rounded-br-xl" />
-                            {/* Scan line animation */}
-                            <div className="absolute left-2 right-2 h-0.5 bg-indigo-400 animate-bounce" style={{ top: '50%' }} />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Scan Controls */}
-            {scanning && (
-                <button
-                    onClick={stopScanning}
-                    className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
-                >
-                    <X className="h-5 w-5" />
-                    Stop Scanning
-                </button>
-            )}
-
-            {/* Result */}
-            {result && !logged && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-green-500/50 p-6 space-y-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <UserCheck className="h-6 w-6 text-green-500" />
-                        </div>
-                        <div>
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">
-                                {result.student_name}
-                            </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {result.room_name} • QR Verified ✓
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={logAttendance}
-                            disabled={logging}
-                            className="flex-1 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-500 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
-                        >
-                            {logging ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
-                            {logging ? "Logging..." : "Confirm Attendance"}
-                        </button>
-                        <button
-                            onClick={() => { setResult(null); startScanning(); }}
-                            className="px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all"
-                        >
-                            Skip
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Logged Confirmation */}
-            {logged && (
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-6 text-center space-y-3">
-                    <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
-                    <p className="text-lg font-bold text-green-700 dark:text-green-400">
-                        Attendance Logged!
-                    </p>
-                    <p className="text-sm text-green-600 dark:text-green-500">
-                        {result?.student_name} — QR Verified Fallback
-                    </p>
-                    <button
-                        onClick={() => { setLogged(false); setResult(null); startScanning(); }}
-                        className="mt-4 px-6 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-500 transition-all"
-                    >
-                        Scan Next Student
-                    </button>
-                </div>
-            )}
-
-            {/* Error */}
-            {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-200 dark:border-red-800 p-4 flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+        <DashboardLayout>
+            <div className="max-w-2xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-red-700 dark:text-red-400">{error}</p>
-                        <button
-                            onClick={() => { setError(null); startScanning(); }}
-                            className="mt-2 text-xs text-red-600 hover:text-red-500 underline"
-                        >
-                            Try again
-                        </button>
+                        <h1 className="text-2xl font-bold text-nwu-red flex items-center gap-2">
+                            <QrCode className="h-6 w-6 text-nwu-red" />
+                            QR Attendance Scanner
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Scan a student&apos;s verified QR code for fallback attendance.
+                        </p>
                     </div>
                 </div>
-            )}
-        </div>
+
+                {/* Class Selector */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                    <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">
+                        Active Class
+                    </label>
+                    <select
+                        value={selectedClass}
+                        onChange={(e) => setSelectedClass(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm font-medium focus:ring-red-500 focus:border-red-500"
+                    >
+                        {classes.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Camera View */}
+                <div className="relative bg-black rounded-2xl overflow-hidden shadow-sm aspect-video">
+                    <video
+                        ref={videoRef}
+                        className={`w-full h-full object-cover ${scanning ? 'block' : 'hidden'}`}
+                        playsInline
+                        muted
+                    />
+                    <canvas ref={canvasRef} className="hidden" />
+
+                    {!scanning && !result && !error && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50">
+                            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+                                <Camera className="h-10 w-10 text-nwu-red" />
+                            </div>
+                            <button
+                                onClick={startScanning}
+                                disabled={!selectedClass || classesLoading}
+                                className="px-6 py-3 bg-nwu-red hover:bg-red-800 disabled:bg-gray-400 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-sm"
+                            >
+                                {classesLoading ? <><Loader2 className="h-5 w-5 animate-spin" /> Loading Classes...</> : "Start Scanning"}
+                            </button>
+                        </div>
+                    )}
+
+                    {scanning && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            {/* Scanning overlay */}
+                            <div className="w-56 h-56 border-2 border-nwu-red rounded-2xl relative shadow-[0_0_0_4000px_rgba(0,0,0,0.4)]">
+                                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-xl" />
+                                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-xl" />
+                                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-xl" />
+                                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-xl" />
+                                {/* Scan line animation */}
+                                <div className="absolute left-2 right-2 h-[2px] bg-red-400 animate-[bounce_2s_ease-in-out_infinite] shadow-[0_0_8px_rgba(248,113,113,0.8)]" style={{ top: '50%' }} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Scan Controls */}
+                {scanning && (
+                    <button
+                        onClick={stopScanning}
+                        className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-gray-200"
+                    >
+                        <X className="h-5 w-5" />
+                        Stop Scanning
+                    </button>
+                )}
+
+                {/* Result */}
+                {result && !logged && (
+                    <div className="bg-white rounded-2xl border-2 border-green-500 p-6 space-y-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center border border-green-100">
+                                <UserCheck className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-lg font-bold text-gray-900">
+                                    {result.student_name}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {result.room_name} • QR Verified ✓
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={logAttendance}
+                                disabled={logging}
+                                className="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
+                            >
+                                {logging ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+                                {logging ? "Logging..." : "Confirm Attendance"}
+                            </button>
+                            <button
+                                onClick={() => { setResult(null); startScanning(); }}
+                                className="px-4 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-all"
+                            >
+                                Skip
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Logged Confirmation */}
+                {logged && (
+                    <div className="bg-green-50 rounded-2xl border border-green-200 p-6 text-center space-y-3 shadow-sm">
+                        <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto" />
+                        <p className="text-lg font-bold text-green-800">
+                            Attendance Logged!
+                        </p>
+                        <p className="text-sm text-green-700">
+                            {result?.student_name} — QR Verified Fallback
+                        </p>
+                        <button
+                            onClick={() => { setLogged(false); setResult(null); startScanning(); }}
+                            className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-all shadow-sm"
+                        >
+                            Scan Next Student
+                        </button>
+                    </div>
+                )}
+
+                {/* Error */}
+                {error && (
+                    <div className="bg-red-50 rounded-2xl border border-red-200 p-4 flex items-start gap-3 shadow-sm">
+                        <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="text-sm font-medium text-red-800">{error}</p>
+                            <button
+                                onClick={() => { setError(null); startScanning(); }}
+                                className="mt-2 text-xs font-semibold text-red-600 hover:text-red-800 underline"
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </DashboardLayout>
     );
 }
