@@ -64,7 +64,6 @@ const superAdminNavigation = [
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
-    { name: "Rooms", href: "/dashboard/admin/rooms", icon: DoorClosed },
     { name: "Devices", href: "/dashboard/admin/devices", icon: Cpu },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
