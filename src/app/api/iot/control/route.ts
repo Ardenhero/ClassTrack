@@ -29,16 +29,74 @@ export async function POST(request: Request) {
             );
         }
 
+        // ===== v3.2 GRACE BUFFER: Prevent auto-off if room still occupied or class recently ended =====
+        if (value === false && source === 'auto') {
+            try {
+                // Get the device's room_id
+                const { data: device } = await supabase
+                    .from('iot_devices')
+                    .select('room_id')
+                    .eq('id', device_id)
+                    .single();
+
+                if (device?.room_id) {
+                    // Check room occupancy
+                    const { data: occupancy } = await supabase
+                        .from('room_occupancy')
+                        .select('current_count')
+                        .eq('room_id', device.room_id)
+                        .single();
+
+                    if (occupancy && occupancy.current_count > 0) {
+                        return NextResponse.json({
+                            error: 'grace_buffer_active',
+                            message: `Room still has ${occupancy.current_count} occupant(s). Auto-off blocked.`,
+                        }, { status: 409 });
+                    }
+
+                    // Check if latest class in this room ended within last 15 minutes
+                    const now = new Date();
+                    const manilaOffset = 8 * 60;
+                    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+                    const manilaDate = new Date(utcMs + manilaOffset * 60000);
+                    const nowStr = manilaDate.toLocaleTimeString('en-US', { hour12: false });
+                    const getMinutes = (t: string) => { const p = t.split(':').map(Number); return p[0] * 60 + p[1]; };
+                    const currentMin = getMinutes(nowStr);
+
+                    const { data: roomClasses } = await supabase
+                        .from('classes')
+                        .select('end_time')
+                        .eq('room_id', device.room_id)
+                        .not('end_time', 'is', null)
+                        .order('end_time', { ascending: false })
+                        .limit(1);
+
+                    if (roomClasses && roomClasses.length > 0 && roomClasses[0].end_time) {
+                        const endMin = getMinutes(roomClasses[0].end_time);
+                        const elapsed = currentMin - endMin;
+                        if (elapsed < 15 && elapsed >= 0) {
+                            return NextResponse.json({
+                                error: 'grace_buffer_active',
+                                message: `Class ended ${elapsed}m ago. 15-minute grace buffer active.`,
+                                minutes_remaining: 15 - elapsed,
+                            }, { status: 409 });
+                        }
+                    }
+                }
+            } catch (graceErr) {
+                // Non-fatal: if grace buffer check fails, allow the command through
+                console.warn('[IoT] Grace buffer check error (non-fatal):', graceErr);
+            }
+        }
+
         // Resolve instructor_id from email (for ESP32 requests) or profile_id (for web requests)
         let triggeredBy: string | null = profile_id || null;
         if (email && !triggeredBy) {
-            // First try direct email column (if it exists/just added)
             const { data: instructor } = await supabase
                 .from('instructors')
                 .select('id')
                 .eq('email', email)
-                .maybeSingle();
-
+                .single();
             triggeredBy = instructor?.id || null;
         }
 

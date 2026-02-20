@@ -13,7 +13,10 @@ const LogSchema = z.object({
     // Biometric fields
     fingerprint_slot_id: z.number().int().optional(),
     device_id: z.string().optional(),
-    entry_method: z.enum(['biometric', 'manual_override', 'rfid']).optional(),
+    entry_method: z.enum(['biometric', 'manual_override', 'rfid', 'qr_verified']).optional(),
+    // v3.2 Correction fields
+    is_correction: z.boolean().optional(),
+    corrects_log_id: z.string().uuid().optional(),
 });
 
 // Use Service Role Key to bypass RLS and Auth requirements for this trusted endpoint
@@ -85,6 +88,73 @@ export async function POST(request: Request) {
                     if (inst) instructorIdInput = inst.id;
                 }
             }
+        }
+
+        // ===== v3.2 CORRECTION WINDOW (5-minute undo) =====
+        if (result.data.is_correction && result.data.corrects_log_id) {
+            console.log(`[API] Correction Request: Replacing log ${result.data.corrects_log_id}`);
+
+            // Find the original log
+            const { data: originalLog, error: origErr } = await supabase
+                .from('attendance_logs')
+                .select('id, timestamp, class_id, student_id, user_id, status, entry_method')
+                .eq('id', result.data.corrects_log_id)
+                .single();
+
+            if (origErr || !originalLog) {
+                return NextResponse.json({ error: 'Original log not found' }, { status: 404 });
+            }
+
+            // Check 5-minute window
+            const originalTime = new Date(originalLog.timestamp).getTime();
+            const now = Date.now();
+            const fiveMinutes = 5 * 60 * 1000;
+
+            if (now - originalTime > fiveMinutes) {
+                return NextResponse.json({
+                    error: 'correction_window_expired',
+                    message: 'Cannot correct attendance after 5 minutes. Contact your instructor.',
+                }, { status: 403 });
+            }
+
+            // Void the original log (mark as corrected)
+            await supabase
+                .from('attendance_logs')
+                .update({
+                    is_correction: true,
+                    original_timestamp: originalLog.timestamp,
+                })
+                .eq('id', originalLog.id);
+
+            // Insert replacement log
+            const { data: correctedLog, error: insertErr } = await supabase
+                .from('attendance_logs')
+                .insert({
+                    student_id: originalLog.student_id,
+                    class_id: classIdInput || originalLog.class_id,
+                    user_id: originalLog.user_id,
+                    status: originalLog.status,
+                    timestamp: timestamp,
+                    entry_method: originalLog.entry_method,
+                    is_correction: true,
+                    corrects_log_id: originalLog.id,
+                    original_timestamp: originalLog.timestamp,
+                })
+                .select('id')
+                .single();
+
+            if (insertErr) {
+                console.error('[Correction] Insert error:', insertErr);
+                return NextResponse.json({ error: insertErr.message }, { status: 500 });
+            }
+
+            return NextResponse.json({
+                success: true,
+                action: 'correction',
+                original_log_id: originalLog.id,
+                corrected_log_id: correctedLog?.id,
+                message: 'Attendance log corrected successfully.',
+            });
         }
 
         // BIOMETRIC PATH: If fingerprint_slot_id is provided, look up student by slot
@@ -203,6 +273,14 @@ export async function POST(request: Request) {
                     .update({ time_out: timestamp, status: calculatedStatus, entry_method: entryMethod })
                     .eq('id', openSession.id);
 
+                // v3.2: Decrement room occupancy on Time Out
+                try {
+                    const { data: classRoom } = await supabase.from('classes').select('room_id').eq('id', classIdInput).single();
+                    if (classRoom?.room_id) {
+                        await supabase.rpc('update_room_occupancy', { p_room_id: classRoom.room_id, p_delta: -1 });
+                    }
+                } catch (occErr) { console.error('[Occupancy] Decrement error (non-fatal):', occErr); }
+
                 return NextResponse.json({ success: true, student_name: studentInfo.name, status: calculatedStatus, action: 'time_out' });
             } else {
                 // Handle Time In for biometric
@@ -231,6 +309,14 @@ export async function POST(request: Request) {
                     timestamp: timestamp,
                     entry_method: entryMethod,
                 });
+
+                // v3.2: Increment room occupancy on Time In
+                try {
+                    const { data: classRoom } = await supabase.from('classes').select('room_id').eq('id', classIdInput).single();
+                    if (classRoom?.room_id) {
+                        await supabase.rpc('update_room_occupancy', { p_room_id: classRoom.room_id, p_delta: 1 });
+                    }
+                } catch (occErr) { console.error('[Occupancy] Increment error (non-fatal):', occErr); }
 
                 // AUTO-ON: If this is the first Time In for this class today, turn on room devices
                 try {
