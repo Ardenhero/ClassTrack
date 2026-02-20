@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { QrCode, Clock, AlertTriangle, CheckCircle2, Loader2, Search, ShieldCheck } from "lucide-react";
 
 // Student Portal — PWA-ready page for QR fallback attendance
@@ -16,8 +16,9 @@ export default function StudentPortalPage() {
     const [error, setError] = useState<string | null>(null);
     const [countdown, setCountdown] = useState(60);
     const [loading, setLoading] = useState(false);
-    // Track generation attempts per class ID
-    const [generationCounts, setGenerationCounts] = useState<Record<string, number>>({});
+    // Track generation attempts per class ID (useRef to avoid stale closure in useCallback)
+    const generationCountsRef = useRef<Record<string, number>>({});
+    const [, forceRender] = useState(0); // trigger re-render to update badge
 
     // Countdown timer for QR expiration
     useEffect(() => {
@@ -60,10 +61,10 @@ export default function StudentPortalPage() {
     const generateQR = useCallback(async (classId: string, roomId: string, actionParam: string) => {
         if (!student) return;
 
-        // Check generation limit
-        const currentCount = generationCounts[classId] || 0;
+        // Check generation limit (read from ref to avoid stale closure)
+        const currentCount = generationCountsRef.current[classId] || 0;
         if (currentCount >= 3) {
-            setError("You have reached the maximum number of QR generations (3) for this class today. Please contact your instructor.");
+            setError("You have reached the maximum number of QR generations (3) for this class. Please contact your instructor.");
             setStep("error");
             return;
         }
@@ -104,11 +105,9 @@ export default function StudentPortalPage() {
             setCountdown(60);
             setStep("qr");
 
-            // Increment count for this class on success
-            setGenerationCounts(prev => ({
-                ...prev,
-                [classId]: (prev[classId] || 0) + 1
-            }));
+            // Increment count for this class on success (mutate ref directly)
+            generationCountsRef.current[classId] = (generationCountsRef.current[classId] || 0) + 1;
+            forceRender(n => n + 1); // re-render to update badge
 
         } catch {
             setError("Failed to generate QR code. Please try again.");
@@ -320,7 +319,7 @@ export default function StudentPortalPage() {
                         <div className="bg-white rounded-xl p-4 inline-block mb-4 border border-gray-100 shadow-sm relative">
                             {/* Generation Counter Badge */}
                             <div className="absolute -top-3 -right-3 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md z-10 border-2 border-white">
-                                {generationCounts[selectedClass || ""] || 1}/3
+                                {generationCountsRef.current[selectedClass || ""] || 1}/3
                             </div>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={qrDataUrl} alt="Attendance QR Code" className="w-64 h-64 mx-auto" />
