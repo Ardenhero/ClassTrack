@@ -161,6 +161,8 @@ export async function middleware(request: NextRequest) {
         "/api/evidence/public-upload",
         "/api/fingerprint",
         "/api/iot",
+        "/student/portal",
+        "/api/qr",
     ];
 
     const isPublicPath = publicPaths.some(p => pathname.startsWith(p));
