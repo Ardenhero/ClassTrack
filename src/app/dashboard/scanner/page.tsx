@@ -63,7 +63,7 @@ export default function ScannerPage() {
         setLogged(false);
 
         try {
-            // Do not force facingMode so desktop browsers don't fail immediately
+            // Attempt 1: Standard definition (ideal for QR scanning speed)
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: { ideal: 640 }, height: { ideal: 480 } }
             });
@@ -75,9 +75,36 @@ export default function ScannerPage() {
             }
             setScanning(true);
             scanFrame();
-        } catch (err) {
-            console.error("Camera access failed:", err);
-            setError("Camera access denied or no camera found. Please enable camera permissions in your browser.");
+        } catch (err1) {
+            console.warn("Primary camera request failed, trying fallback:", err1);
+
+            try {
+                // Attempt 2: Absolute minimum requirements (just "gimme a camera")
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+                streamRef.current = fallbackStream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = fallbackStream;
+                    await videoRef.current.play();
+                }
+                setScanning(true);
+                scanFrame();
+            } catch (err2) {
+                console.error("All camera requests failed:", err2);
+                const error = err2 as Error;
+                const errorDetails = error?.name || "UnknownError";
+                if (errorDetails === "NotAllowedError") {
+                    setError("Camera access denied by browser. Please check your browser's site settings and allow camera access.");
+                } else if (errorDetails === "NotFoundError") {
+                    setError("No camera device found on this system.");
+                } else if (errorDetails === "NotReadableError") {
+                    setError("Camera is already in use by another application.");
+                } else {
+                    setError(`Camera failed: ${errorDetails}. Please ensure permissions are granted.`);
+                }
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
