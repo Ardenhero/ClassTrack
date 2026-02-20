@@ -521,6 +521,25 @@ export async function POST(request: Request) {
                 }
             } else {
                 // TIME IN
+                // Duplicate prevention: check if already scanned today for this class
+                const todayStart = new Date().toISOString().split('T')[0];
+                const { data: existingLog } = await supabase
+                    .from('attendance_logs')
+                    .select('id')
+                    .eq('student_id', student.id)
+                    .eq('class_id', classRef.id)
+                    .gte('timestamp', todayStart)
+                    .maybeSingle();
+
+                if (existingLog) {
+                    console.log(`[API] Duplicate Time In blocked: Student=${student.id}, Class=${classRef.id}`);
+                    return NextResponse.json({
+                        error: "Already Scanned",
+                        student_name: student_name,
+                        duplicate: true
+                    }, { status: 409 });
+                }
+
                 if (classRef.start_time) {
                     const startMinutes = getMinutes(classRef.start_time);
                     const delta = currentMinutes - startMinutes;

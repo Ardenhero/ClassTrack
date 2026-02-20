@@ -16,11 +16,11 @@ export async function POST(request: Request) {
     );
 
     try {
-        const { student_id, room_id, class_id } = await request.json();
+        const { student_id, room_id, class_id, action } = await request.json();
 
-        if (!student_id || !room_id || !class_id) {
+        if (!student_id || !room_id || !class_id || !action) {
             return NextResponse.json(
-                { error: "student_id, room_id, and class_id are required" },
+                { error: "student_id, room_id, class_id, and action are required" },
                 { status: 400 }
             );
         }
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
             room_id: room_id,
             room_name: room.name,
             class_id: class_id,
+            action: action,
             nonce,
             timestamp: new Date().toISOString(),
         };
@@ -101,6 +102,7 @@ export async function PUT(request: Request) {
             room_id: string;
             room_name: string;
             class_id: string;
+            action?: string;
             nonce: string;
             timestamp: string;
         } | null;
@@ -135,6 +137,7 @@ export async function PUT(request: Request) {
             room_id: decoded.room_id,
             room_name: decoded.room_name,
             class_id,
+            action: decoded.action || "check_in", // Default to check_in for backward compatibility
         });
 
     } catch (err) {
