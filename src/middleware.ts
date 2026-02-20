@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
     supabaseResponse.headers.set('X-Frame-Options', 'DENY');
     supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
     supabaseResponse.headers.set('Referrer-Policy', 'origin-when-cross-origin');
-    supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    supabaseResponse.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
 
     // ============================================
     // 3. Supabase Auth Session
@@ -126,7 +126,7 @@ export async function middleware(request: NextRequest) {
                     supabaseResponse.headers.set('X-Frame-Options', 'DENY');
                     supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
                     supabaseResponse.headers.set('Referrer-Policy', 'origin-when-cross-origin');
-                    supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+                    supabaseResponse.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
                     supabaseResponse.headers.set("X-RateLimit-Limit", String(rateLimit.limit));
                     supabaseResponse.headers.set("X-RateLimit-Remaining", String(rateLimit.remaining));
 
