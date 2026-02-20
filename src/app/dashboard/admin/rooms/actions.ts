@@ -1,6 +1,7 @@
+"use server";
+
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { checkIsSuperAdmin } from "@/lib/auth-utils";
 
 export async function createRoom(formData: FormData) {
     const supabase = createClient();
