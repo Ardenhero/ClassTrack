@@ -17,6 +17,8 @@ interface SlotData {
 export function AdminBiometricMatrix() {
     const { profile } = useProfile();
     const [slots, setSlots] = useState<SlotData[]>([]);
+    const [rooms, setRooms] = useState<{ id: string; name: string }[]>([]);
+    const [selectedRoomId, setSelectedRoomId] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
     const [unlinking, setUnlinking] = useState(false);
@@ -44,22 +46,66 @@ export function AdminBiometricMatrix() {
                 }
             }
 
-            // 2. Get students ONLY within my scope (Account Isolation)
-            // This ensures we never see "Restricted" slots from other accounts.
-            const { data: allOccupiedStudents, error } = await supabase
+            // 2. Fetch rooms accessible to this profile
+            const { data: roomsData, error: roomsError } = await supabase
+                .from("rooms")
+                .select("id, name")
+                .order("name");
+
+            if (!roomsError && roomsData) {
+                setRooms(roomsData);
+                // Auto-select first room if none selected
+                if (!selectedRoomId && roomsData.length > 0) {
+                    setSelectedRoomId(roomsData[0].id);
+                }
+            }
+
+            const activeRoomId = selectedRoomId || (roomsData?.[0]?.id ?? null);
+
+            // 3. Find the kiosk device for this room
+            let deviceId = null;
+            if (activeRoomId) {
+                const { data: kioskReq } = await supabase
+                    .from("iot_devices")
+                    .select("id")
+                    .eq("type", "KIOSK")
+                    .eq("room_id", activeRoomId)
+                    .maybeSingle();
+                if (kioskReq) {
+                    deviceId = kioskReq.id;
+                }
+            }
+
+            // 4. Get students ONLY within my scope AND the specific device
+            // This ensures we never see "Restricted" slots from other accounts, 
+            // and we only see slots for the active room's device.
+            let studentsQuery = supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
                 .not("fingerprint_slot_id", "is", null)
-                .in("instructor_id", currentAccountScope) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
+                .in("instructor_id", currentAccountScope);
+
+            // Scope down to device if one is assigned
+            if (deviceId) {
+                studentsQuery = studentsQuery.eq("device_id", deviceId);
+            }
+
+            const { data: allOccupiedStudents, error } = await studentsQuery as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
-            // 3. Get recent orphan scans from audit logs (filtered by my identity)
-            const { data: orphans } = await supabase
+            // 5. Get recent orphan scans from audit logs (filtered by my identity, ideally by device_id too)
+            let orphanQuery = supabase
                 .from("biometric_audit_logs")
                 .select("fingerprint_slot_id")
                 .eq("event_type", "ORPHAN_SCAN")
-                .contains("metadata", { instructor_id: profile?.id })
+                .contains("metadata", { instructor_id: profile?.id });
+
+            if (deviceId) {
+                orphanQuery = orphanQuery.eq("device_id", deviceId);
+            }
+
+            const { data: orphans } = await orphanQuery
                 .order("timestamp", { ascending: false })
                 .limit(50);
 
@@ -98,7 +144,7 @@ export function AdminBiometricMatrix() {
         } finally {
             setLoading(false);
         }
-    }, [profile]);
+    }, [profile, selectedRoomId]);
 
     const unlinkSlot = async (slot: SlotData) => {
         if (!slot.student_id || !confirm(`Are you sure you want to unlink ${slot.student_name}? This will remove their fingerprint association from the database.`)) return;
@@ -175,7 +221,7 @@ export function AdminBiometricMatrix() {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 flex flex-col h-full">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <Fingerprint className="h-5 w-5 text-nwu-red" />
@@ -185,12 +231,29 @@ export function AdminBiometricMatrix() {
                         <span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span>
                     </p>
                 </div>
-                <button
-                    onClick={loadMatrix}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
-                >
-                    <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-                </button>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <select
+                        className="flex-1 md:w-48 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        value={selectedRoomId}
+                        onChange={(e) => setSelectedRoomId(e.target.value)}
+                        disabled={loading || rooms.length === 0}
+                    >
+                        {rooms.length === 0 ? (
+                            <option value="">No Rooms Available</option>
+                        ) : (
+                            rooms.map(room => (
+                                <option key={room.id} value={room.id}>{room.name}</option>
+                            ))
+                        )}
+                    </select>
+
+                    <button
+                        onClick={loadMatrix}
+                        className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                    </button>
+                </div>
             </div>
 
             {loading && slots.length === 0 ? (

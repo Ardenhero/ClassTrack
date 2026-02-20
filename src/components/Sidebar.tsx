@@ -28,7 +28,8 @@ import {
     KeyRound,
     ChevronLeft,
     Cpu,
-    QrCode
+    QrCode,
+    DoorClosed
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -50,8 +51,8 @@ const adminNavigation = [
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
-    { name: "QR Scanner", href: "/dashboard/scanner", icon: QrCode },
     { name: "Reports", href: "/reports", icon: BarChart3 },
+    { name: "Rooms", href: "/dashboard/admin/rooms", icon: DoorClosed },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
@@ -63,6 +64,7 @@ const superAdminNavigation = [
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
+    { name: "Rooms", href: "/dashboard/admin/rooms", icon: DoorClosed },
     { name: "Devices", href: "/dashboard/admin/devices", icon: Cpu },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
