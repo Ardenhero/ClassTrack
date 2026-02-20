@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Wifi, WifiOff, Clock, RefreshCw, Radio } from "lucide-react";
+import { Wifi, WifiOff, Clock, RefreshCw, Radio, MapPin } from "lucide-react";
 
 interface KioskDevice {
     id: string;
@@ -19,6 +19,8 @@ export function KioskHealthCard() {
     const [loading, setLoading] = useState(true);
     const [pingingDevice, setPingingDevice] = useState<string | null>(null);
     const [pingResult, setPingResult] = useState<{ serial: string; status: "sent" | "error" } | null>(null);
+    const [pinningDevice, setPinningDevice] = useState<string | null>(null);
+    const [pinResult, setPinResult] = useState<{ serial: string; status: "sent" | "error" } | null>(null);
 
     const fetchDevices = useCallback(async () => {
         try {
@@ -46,7 +48,7 @@ export function KioskHealthCard() {
             const res = await fetch("/api/kiosk/ping", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ device_serial: deviceSerial }),
+                body: JSON.stringify({ device_serial: deviceSerial, command: "ping" }),
             });
             if (res.ok) {
                 setPingResult({ serial: deviceSerial, status: "sent" });
@@ -57,8 +59,29 @@ export function KioskHealthCard() {
             setPingResult({ serial: deviceSerial, status: "error" });
         } finally {
             setPingingDevice(null);
-            // Auto-clear the ping result after 5 seconds
             setTimeout(() => setPingResult(null), 5000);
+        }
+    };
+
+    const handlePin = async (deviceSerial: string) => {
+        setPinningDevice(deviceSerial);
+        setPinResult(null);
+        try {
+            const res = await fetch("/api/kiosk/ping", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ device_serial: deviceSerial, command: "pin" }),
+            });
+            if (res.ok) {
+                setPinResult({ serial: deviceSerial, status: "sent" });
+            } else {
+                setPinResult({ serial: deviceSerial, status: "error" });
+            }
+        } catch {
+            setPinResult({ serial: deviceSerial, status: "error" });
+        } finally {
+            setPinningDevice(null);
+            setTimeout(() => setPinResult(null), 5000);
         }
     };
 
@@ -130,24 +153,42 @@ export function KioskHealthCard() {
                                 onClick={() => handlePing(device.device_serial)}
                                 disabled={pingingDevice === device.device_serial}
                                 className={`p-1.5 rounded-lg transition-all ${pingResult?.serial === device.device_serial && pingResult.status === "sent"
-                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
-                                        : pingResult?.serial === device.device_serial && pingResult.status === "error"
-                                            ? 'bg-red-100 dark:bg-red-900/30 text-red-500'
-                                            : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500'
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                                    : pingResult?.serial === device.device_serial && pingResult.status === "error"
+                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-500'
+                                        : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-blue-500'
                                     }`}
                                 title="Send diagnostic ping"
                             >
                                 <Radio className={`h-3.5 w-3.5 ${pingingDevice === device.device_serial ? 'animate-ping' : ''}`} />
                             </button>
-                            {/* Ping result label */}
+                            {/* Pin Button */}
+                            <button
+                                onClick={() => handlePin(device.device_serial)}
+                                disabled={pinningDevice === device.device_serial}
+                                className={`p-1.5 rounded-lg transition-all ${pinResult?.serial === device.device_serial && pinResult.status === "sent"
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                                    : pinResult?.serial === device.device_serial && pinResult.status === "error"
+                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-500'
+                                        : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 hover:text-purple-500'
+                                    }`}
+                                title="Pin kiosk to room"
+                            >
+                                <MapPin className={`h-3.5 w-3.5 ${pinningDevice === device.device_serial ? 'animate-bounce' : ''}`} />
+                            </button>
+                            {/* Result labels */}
                             {pingResult?.serial === device.device_serial && (
-                                <span className={`text-[10px] font-bold ${pingResult.status === "sent" ? 'text-green-600' : 'text-red-500'
-                                    }`}>
-                                    {pingResult.status === "sent" ? "Sent ✓" : "Failed"}
+                                <span className={`text-[10px] font-bold ${pingResult.status === "sent" ? 'text-green-600' : 'text-red-500'}`}>
+                                    {pingResult.status === "sent" ? "Ping ✓" : "Failed"}
+                                </span>
+                            )}
+                            {pinResult?.serial === device.device_serial && (
+                                <span className={`text-[10px] font-bold ${pinResult.status === "sent" ? 'text-green-600' : 'text-red-500'}`}>
+                                    {pinResult.status === "sent" ? "Pin ✓" : "Failed"}
                                 </span>
                             )}
                             {/* Heartbeat time */}
-                            <div className="flex items-center gap-1 text-gray-400">
+                            <div className="flex items-center gap-1 text-gray-400" title={device.last_heartbeat || 'Never'}>
                                 <Clock className="h-3 w-3" />
                                 <span>{timeAgo(device.last_heartbeat)}</span>
                             </div>

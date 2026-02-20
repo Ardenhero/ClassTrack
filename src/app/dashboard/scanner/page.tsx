@@ -22,15 +22,23 @@ export default function ScannerPage() {
     const [logged, setLogged] = useState(false);
     const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
     const [selectedClass, setSelectedClass] = useState<string>("");
+    const [classesLoading, setClassesLoading] = useState(true);
+    const selectedClassRef = useRef<string>("");
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
+    // Keep ref in sync with state
+    useEffect(() => {
+        selectedClassRef.current = selectedClass;
+    }, [selectedClass]);
+
     // Load instructor's classes
     useEffect(() => {
         if (!profile) return;
         const supabase = createClient();
+        setClassesLoading(true);
         const loadClasses = async () => {
             const { data } = await supabase
                 .from('classes')
@@ -40,7 +48,9 @@ export default function ScannerPage() {
             setClasses(data || []);
             if (data && data.length > 0) {
                 setSelectedClass(data[0].id);
+                selectedClassRef.current = data[0].id;
             }
+            setClassesLoading(false);
         };
         loadClasses();
     }, [profile]);
@@ -123,7 +133,8 @@ export default function ScannerPage() {
     const verifyQR = async (payload: string) => {
         stopScanning();
 
-        if (!selectedClass) {
+        const currentClass = selectedClassRef.current;
+        if (!currentClass) {
             setError("Please select a class first.");
             return;
         }
@@ -132,7 +143,7 @@ export default function ScannerPage() {
             const res = await fetch("/api/qr/generate", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ qr_payload: payload, class_id: selectedClass }),
+                body: JSON.stringify({ qr_payload: payload, class_id: currentClass }),
             });
 
             const data = await res.json();
@@ -252,10 +263,10 @@ export default function ScannerPage() {
                         </div>
                         <button
                             onClick={startScanning}
-                            disabled={!selectedClass}
-                            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-600 text-white rounded-xl font-semibold transition-all"
+                            disabled={!selectedClass || classesLoading}
+                            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-600 text-white rounded-xl font-semibold transition-all flex items-center gap-2"
                         >
-                            Start Scanning
+                            {classesLoading ? <><Loader2 className="h-5 w-5 animate-spin" /> Loading Classes...</> : "Start Scanning"}
                         </button>
                     </div>
                 )}
