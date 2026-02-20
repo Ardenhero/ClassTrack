@@ -84,7 +84,7 @@ export default function StudentPortalPage() {
             const dataUrl = await QRCode.toDataURL(data.qr_payload, {
                 width: 300,
                 margin: 2,
-                color: { dark: "#1a1a2e", light: "#ffffff" },
+                color: { dark: "#000000", light: "#ffffff" },
                 errorCorrectionLevel: "M",
             });
             setQrDataUrl(dataUrl);
@@ -98,25 +98,25 @@ export default function StudentPortalPage() {
     }, [student]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 mb-4">
-                        <ShieldCheck className="h-8 w-8 text-indigo-400" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-50 border border-red-100 mb-4 shadow-sm">
+                        <ShieldCheck className="h-8 w-8 text-nwu-red" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">ClassTrack</h1>
-                    <p className="text-sm text-slate-400 mt-1">Verified QR Attendance</p>
+                    <h1 className="text-2xl font-bold text-gray-900">ClassTrack</h1>
+                    <p className="text-sm text-gray-500 mt-1">Verified QR Attendance</p>
                 </div>
 
                 {/* Step 1: Login */}
                 {step === "login" && (
-                    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-2xl">
-                        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <Search className="h-5 w-5 text-indigo-400" />
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <Search className="h-5 w-5 text-nwu-red" />
                             Student Identification
                         </h2>
-                        <p className="text-sm text-slate-400 mb-6">
+                        <p className="text-sm text-gray-600 mb-6">
                             Enter your Student ID Number (SIN) to generate a verified attendance QR code.
                         </p>
                         <input
@@ -125,13 +125,13 @@ export default function StudentPortalPage() {
                             onChange={(e) => setSin(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && lookupStudent()}
                             placeholder="e.g. 2024-00123"
-                            className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-center text-lg tracking-wider font-mono"
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-center text-lg tracking-wider font-mono shadow-sm"
                             autoFocus
                         />
                         <button
                             onClick={lookupStudent}
                             disabled={loading || !sin.trim()}
-                            className="w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold transition-all flex items-center justify-center gap-2"
+                            className="w-full mt-4 py-3 rounded-xl bg-nwu-red hover:bg-red-800 disabled:bg-gray-300 disabled:text-gray-500 text-white font-semibold transition-all flex items-center justify-center gap-2 shadow-sm"
                         >
                             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5" />}
                             {loading ? "Looking up..." : "Continue"}
@@ -141,23 +141,23 @@ export default function StudentPortalPage() {
 
                 {/* Step 2: Select Class */}
                 {step === "select" && student && (
-                    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-2xl">
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center border border-green-100">
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
                             </div>
                             <div>
-                                <p className="text-white font-semibold">{student.name}</p>
-                                <p className="text-xs text-slate-400">SIN: {sin}</p>
+                                <p className="text-gray-900 font-semibold">{student.name}</p>
+                                <p className="text-xs text-gray-500">SIN: {sin}</p>
                             </div>
                         </div>
 
-                        <h3 className="text-sm font-bold uppercase text-slate-400 tracking-wider mb-3">
+                        <h3 className="text-sm font-bold uppercase text-gray-500 tracking-wider mb-3">
                             Select Your Class
                         </h3>
 
                         {classes.length === 0 ? (
-                            <p className="text-sm text-slate-500 italic py-4 text-center">
+                            <p className="text-sm text-gray-500 italic py-4 text-center">
                                 No classes found. Contact your instructor.
                             </p>
                         ) : (
@@ -175,12 +175,12 @@ export default function StudentPortalPage() {
                                                 setStep("error");
                                             }
                                         }}
-                                        className="w-full text-left px-4 py-3 rounded-xl bg-slate-700/40 hover:bg-indigo-600/30 border border-slate-600/50 hover:border-indigo-500/50 transition-all group"
+                                        className="w-full text-left px-4 py-3 rounded-xl bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 transition-all group shadow-sm"
                                     >
-                                        <p className="font-medium text-white group-hover:text-indigo-300 transition-colors">
+                                        <p className="font-medium text-gray-900 group-hover:text-nwu-red transition-colors">
                                             {cls.name}
                                         </p>
-                                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                                             <span className="flex items-center gap-1">
                                                 <Clock className="h-3 w-3" />
                                                 {cls.start_time?.slice(0, 5)} – {cls.end_time?.slice(0, 5)}
@@ -198,7 +198,7 @@ export default function StudentPortalPage() {
 
                         <button
                             onClick={() => { setStep("login"); setStudent(null); setSin(""); }}
-                            className="w-full mt-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+                            className="w-full mt-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
                         >
                             ← Different Student
                         </button>
@@ -207,10 +207,10 @@ export default function StudentPortalPage() {
 
                 {/* Step 3: Generating */}
                 {step === "generating" && (
-                    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl text-center">
-                        <Loader2 className="h-12 w-12 text-indigo-400 animate-spin mx-auto mb-4" />
-                        <p className="text-white font-semibold">Generating QR Code...</p>
-                        <p className="text-sm text-slate-400 mt-2">
+                    <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-md text-center">
+                        <Loader2 className="h-12 w-12 text-nwu-red animate-spin mx-auto mb-4" />
+                        <p className="text-gray-900 font-semibold">Generating QR Code...</p>
+                        <p className="text-sm text-gray-500 mt-2">
                             Please wait a moment.
                         </p>
                     </div>
@@ -218,33 +218,33 @@ export default function StudentPortalPage() {
 
                 {/* Step 4: QR Display */}
                 {step === "qr" && qrDataUrl && (
-                    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-2xl text-center">
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md text-center">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                                <QrCode className="h-5 w-5 text-indigo-400" />
-                                <span className="text-white font-semibold">Show to Instructor</span>
+                                <QrCode className="h-5 w-5 text-nwu-red" />
+                                <span className="text-gray-900 font-semibold">Show to Instructor</span>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${countdown > 20 ? 'bg-green-500/20 text-green-400' :
-                                countdown > 10 ? 'bg-yellow-500/20 text-yellow-400' :
-                                    'bg-red-500/20 text-red-400 animate-pulse'
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${countdown > 20 ? 'bg-green-100 text-green-700 border border-green-200' :
+                                countdown > 10 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+                                    'bg-red-100 text-red-700 border border-red-200 animate-pulse'
                                 }`}>
                                 {countdown}s
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-4 inline-block mb-4">
+                        <div className="bg-white rounded-xl p-4 inline-block mb-4 border border-gray-100 shadow-sm">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={qrDataUrl} alt="Attendance QR Code" className="w-64 h-64" />
+                            <img src={qrDataUrl} alt="Attendance QR Code" className="w-64 h-64 mx-auto" />
                         </div>
 
-                        <p className="text-sm text-slate-400">
-                            {student?.name} • Verified ✓
+                        <p className="text-sm text-gray-500">
+                            {student?.name} • <span className="text-green-600 font-semibold">Verified ✓</span>
                         </p>
 
                         {/* Progress bar */}
-                        <div className="mt-4 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="mt-4 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000 ease-linear"
+                                className="h-full bg-nwu-red transition-all duration-1000 ease-linear"
                                 style={{ width: `${(countdown / 60) * 100}%` }}
                             />
                         </div>
@@ -255,7 +255,7 @@ export default function StudentPortalPage() {
                                     generateQR(selectedClass, selectedRoomId);
                                 }
                             }}
-                            className="mt-4 px-4 py-2 text-sm text-indigo-400 hover:text-white transition-colors"
+                            className="mt-4 px-4 py-2 text-sm text-nwu-red hover:text-red-800 transition-colors"
                         >
                             Regenerate QR
                         </button>
@@ -264,23 +264,23 @@ export default function StudentPortalPage() {
 
                 {/* Error State */}
                 {step === "error" && (
-                    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-red-500/30 p-6 shadow-2xl text-center">
-                        <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-                            <AlertTriangle className="h-6 w-6 text-red-400" />
+                    <div className="bg-white rounded-2xl border border-red-200 p-6 shadow-md text-center">
+                        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4 border border-red-100">
+                            <AlertTriangle className="h-6 w-6 text-red-600" />
                         </div>
-                        <p className="text-white font-semibold mb-2">Error</p>
-                        <p className="text-sm text-slate-400 mb-6">{error}</p>
+                        <p className="text-gray-900 font-semibold mb-2">Error</p>
+                        <p className="text-sm text-gray-600 mb-6">{error}</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={() => { setStep("login"); setSin(""); setStudent(null); setError(null); }}
-                                className="flex-1 py-2 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 transition-all text-sm"
+                                className="flex-1 py-2 rounded-xl bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-all text-sm font-semibold shadow-sm"
                             >
                                 Start Over
                             </button>
                             {student && (
                                 <button
                                     onClick={() => { setStep("select"); setError(null); }}
-                                    className="flex-1 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-500 transition-all text-sm"
+                                    className="flex-1 py-2 rounded-xl bg-nwu-red text-white hover:bg-red-800 transition-all text-sm font-semibold shadow-sm"
                                 >
                                     Try Again
                                 </button>
@@ -290,7 +290,7 @@ export default function StudentPortalPage() {
                 )}
 
                 {/* Footer */}
-                <p className="text-center text-xs text-slate-600 mt-6">
+                <p className="text-center text-xs text-gray-400 mt-6">
                     ClassTrack v3.2 • Anti-Proxy Verified Attendance
                 </p>
             </div>
