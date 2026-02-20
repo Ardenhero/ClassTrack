@@ -210,20 +210,28 @@ export async function POST(request: Request) {
 
             // Duplicate prevention: check if already scanned today for this class
             const todayStart = new Date().toISOString().split('T')[0];
-            const { data: existingLog } = await supabase
-                .from('attendance_logs')
-                .select('id')
-                .eq('student_id', studentInfo.id)
-                .eq('class_id', classIdInput)
-                .gte('timestamp', todayStart)
-                .maybeSingle();
 
-            if (existingLog && (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN' || (!attendance_type && rpcStatusInput !== 'TIME_OUT'))) {
-                return NextResponse.json({
-                    error: "Already Timed In",
-                    student_name: studentInfo.name,
-                    duplicate: true
-                }, { status: 409 });
+            const isTimeOut = attendance_type === 'Time Out' || rpcStatusInput === 'TIME_OUT';
+
+            if (!isTimeOut) {
+                // TIME IN: Block if ANY log exists today for this student+class
+                const { data: existingTimeIn } = await supabase
+                    .from('attendance_logs')
+                    .select('id')
+                    .eq('student_id', studentInfo.id)
+                    .eq('class_id', classIdInput)
+                    .gte('timestamp', todayStart)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (existingTimeIn) {
+                    console.log(`[API] BIOMETRIC DUPLICATE Time In blocked: Student=${studentInfo.id}, Class=${classIdInput}`);
+                    return NextResponse.json({
+                        error: "Already Timed In",
+                        student_name: studentInfo.name,
+                        duplicate: true
+                    }, { status: 409 });
+                }
             }
 
             // Get class info for grading logic
