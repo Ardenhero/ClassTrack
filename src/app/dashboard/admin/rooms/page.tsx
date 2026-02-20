@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import { DoorClosed, Plus, Edit2, Cpu, Link as LinkIcon, Save, Loader2 } from "lucide-react";
+import { DoorClosed, Plus, Edit2, Cpu, Save, Loader2 } from "lucide-react";
 import { createRoom, updateRoomDetails, assignDeviceToRoom } from "./actions";
 
 interface Room {
@@ -40,7 +40,7 @@ export default function RoomsManagementPage() {
     const isAdmin = profile?.role === "admin" || profile?.is_super_admin;
     const canCreateRooms = profile?.is_super_admin || profile?.role === "admin"; // Both admins and supers can create rooms
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             // Fetch Rooms (RLS will filter based on department if normal admin, or return all if super admin)
@@ -65,13 +65,13 @@ export default function RoomsManagementPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [supabase]);
 
     useEffect(() => {
         if (isAdmin) {
             loadData();
         }
-    }, [isAdmin]);
+    }, [isAdmin, loadData]);
 
     if (!isAdmin) {
         return (
