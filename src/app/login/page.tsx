@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, QrCode, FileText } from "lucide-react";
 import Image from "next/image";
 import { login, signup } from "./actions";
 
@@ -141,13 +141,20 @@ export default function LoginPage() {
                         </p>
                     </div>
 
-                    <div className="text-center mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4 pt-4 border-t border-gray-200">
+                        <a
+                            href="/student/portal"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-transparent border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-nwu-red hover:border-nwu-red/30 transition-all duration-200 w-full sm:w-auto"
+                        >
+                            <QrCode className="w-4 h-4" />
+                            Student QR Portal
+                        </a>
                         <a
                             href="/submit-evidence"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-gray-600 bg-transparent border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-nwu-red hover:border-nwu-red/30 transition-all duration-200"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-transparent border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-nwu-red hover:border-nwu-red/30 transition-all duration-200 w-full sm:w-auto"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M12 18v-6" /><path d="m9 15 3-3 3 3" /></svg>
-                            Student? Submit an Excuse Letter
+                            <FileText className="w-4 h-4" />
+                            Submit Excuse Letter
                         </a>
                     </div>
 
