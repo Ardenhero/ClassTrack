@@ -99,13 +99,13 @@ export async function GET() {
     );
 
     try {
-        // First, mark stale devices as offline (heartbeat older than 2 minutes)
-        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+        // First, mark stale devices as offline (heartbeat older than 3 minutes)
+        const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
         await supabase
             .from('kiosk_devices')
             .update({ is_online: false })
             .eq('is_online', true)
-            .lt('last_heartbeat', twoMinutesAgo);
+            .lt('last_heartbeat', threeMinutesAgo);
 
         // Fetch all devices with room info
         const { data: devices, error } = await supabase

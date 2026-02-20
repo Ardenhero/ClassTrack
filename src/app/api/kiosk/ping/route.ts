@@ -15,7 +15,9 @@ export async function POST(request: Request) {
     );
 
     try {
-        const { device_serial } = await request.json();
+        const { device_serial, command } = await request.json();
+        const validCommands = ['ping', 'pin', 'pair', 'reboot', 'sync'];
+        const cmd = validCommands.includes(command) ? command : 'ping';
 
         if (!device_serial) {
             return NextResponse.json(
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
         // Set pending command
         const { error, count } = await supabase
             .from('kiosk_devices')
-            .update({ pending_command: 'ping' })
+            .update({ pending_command: cmd })
             .eq('device_serial', device_serial);
 
         if (error) {
