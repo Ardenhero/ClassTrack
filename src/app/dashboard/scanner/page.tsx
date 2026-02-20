@@ -74,7 +74,23 @@ export default function ScannerPage() {
             setScanning(true);
             scanFrame();
         } catch {
-            setError("Camera access denied. Please enable camera permissions.");
+            // Fallback for laptops/desktops that don't have an "environment" facing camera
+            try {
+                const fallbackStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                streamRef.current = fallbackStream;
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = fallbackStream;
+                    await videoRef.current.play();
+                }
+                setScanning(true);
+                scanFrame();
+            } catch (fallbackErr) {
+                console.error("Camera access failed:", fallbackErr);
+                setError("Camera access denied or no camera found. Please enable camera permissions.");
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
