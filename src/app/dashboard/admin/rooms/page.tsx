@@ -83,7 +83,7 @@ export default function RoomsManagementPage() {
     if (!isAdmin) {
         return (
             <div className="flex h-full items-center justify-center p-8">
-                <p className="text-[#6b7094]">You do not have permission to view this page.</p>
+                <p className="text-gray-500 dark:text-gray-400">You do not have permission to view this page.</p>
             </div>
         );
     }
@@ -136,8 +136,8 @@ export default function RoomsManagementPage() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-full p-10 bg-[#0c0e14]">
-                <Loader2 className="h-8 w-8 animate-spin text-[#6b7094]" />
+            <div className="flex justify-center items-center h-full p-10 bg-transparent">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-500 dark:text-gray-400" />
             </div>
         );
     }
@@ -154,52 +154,52 @@ export default function RoomsManagementPage() {
     );
 
     return (
-        <div className="min-h-screen bg-[#0c0e14] p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
+        <div className=" p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
             {/* Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-[#1e2336] rounded-xl p-4 border border-[rgba(255,255,255,0.07)] flex items-start gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
                         <DoorClosed className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-[#f0f2ff]">{totalRooms}</p>
-                        <p className="text-xs text-[#6b7094]">Total Rooms</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalRooms}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Total Rooms</p>
                     </div>
                 </div>
 
-                <div className="bg-[#1e2336] rounded-xl p-4 border border-[rgba(255,255,255,0.07)] flex items-start gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
                         <Wifi className="h-5 w-5 text-green-400" />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-[#f0f2ff]">{totalAssignedDevices}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalAssignedDevices}</p>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-semibold">Online</span>
                         </div>
-                        <p className="text-xs text-[#6b7094]">Active Devices</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Active Devices</p>
                     </div>
                 </div>
 
-                <div className="bg-[#1e2336] rounded-xl p-4 border border-[rgba(255,255,255,0.07)] flex items-start gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center shrink-0">
                         <AlertTriangle className="h-5 w-5 text-yellow-400" />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-[#f0f2ff]">{maintenanceRooms}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{maintenanceRooms}</p>
                             {maintenanceRooms > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-semibold">Attention</span>}
                         </div>
-                        <p className="text-xs text-[#6b7094]">Needs Maintenance</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Needs Maintenance</p>
                     </div>
                 </div>
 
-                <div className="bg-[#1e2336] rounded-xl p-4 border border-[rgba(255,255,255,0.07)] flex items-start gap-3">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
                         <Activity className="h-5 w-5 text-purple-400" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-[#f0f2ff]">{devices.length}</p>
-                        <p className="text-xs text-[#6b7094]">Total Devices</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{devices.length}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Total Devices</p>
                     </div>
                 </div>
             </div>
@@ -207,21 +207,21 @@ export default function RoomsManagementPage() {
             {/* Header + Search + Add */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-xl font-bold flex items-center gap-2 text-[#f0f2ff]">
+                    <h1 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                         <DoorClosed className="h-5 w-5 text-nwu-red" />
                         Room Management
                     </h1>
-                    <p className="text-sm text-[#6b7094] mt-0.5">Manage physical classrooms and assign IoT devices</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage physical classrooms and assign IoT devices</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:flex-initial">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6b7094]" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search rooms..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full md:w-56 pl-9 pr-3 py-2 text-sm rounded-lg bg-[#1e2336] border border-[rgba(255,255,255,0.07)] text-[#f0f2ff] placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                            className="w-full md:w-56 pl-9 pr-3 py-2 text-sm rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
                         />
                     </div>
                     {canCreateRooms && (
@@ -238,10 +238,10 @@ export default function RoomsManagementPage() {
 
             {/* Create Room Modal */}
             {isCreating && (
-                <div className="bg-[#1e2336] p-5 rounded-xl border border-[rgba(255,255,255,0.1)] shadow-xl">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-[#f0f2ff]">Create New Room</h3>
-                        <button onClick={() => setIsCreating(false)} className="text-[#6b7094] hover:text-[#f0f2ff] transition">
+                        <h3 className="font-bold text-gray-900 dark:text-white">Create New Room</h3>
+                        <button onClick={() => setIsCreating(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white transition">
                             <X className="h-4 w-4" />
                         </button>
                     </div>
@@ -255,7 +255,7 @@ export default function RoomsManagementPage() {
                                     value={newRoomName}
                                     onChange={(e) => setNewRoomName(e.target.value)}
                                     placeholder="e.g. STC 102"
-                                    className="w-full bg-[#12151f] border border-[rgba(255,255,255,0.07)] rounded-lg p-2.5 text-[#f0f2ff] placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                    className="w-full bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
                                 />
                             </div>
                             <div>
@@ -265,7 +265,7 @@ export default function RoomsManagementPage() {
                                     value={newRoomBuilding}
                                     onChange={(e) => setNewRoomBuilding(e.target.value)}
                                     placeholder="e.g. CEAT"
-                                    className="w-full bg-[#12151f] border border-[rgba(255,255,255,0.07)] rounded-lg p-2.5 text-[#f0f2ff] placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                    className="w-full bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
                                 />
                             </div>
                         </div>
@@ -280,7 +280,7 @@ export default function RoomsManagementPage() {
             {/* Room Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredRooms.length === 0 && !isCreating ? (
-                    <div className="col-span-full border-2 border-dashed border-[rgba(255,255,255,0.07)] p-10 text-center rounded-xl text-[#6b7094]">
+                    <div className="col-span-full border-2 border-dashed border-gray-200 dark:border-gray-700 p-10 text-center rounded-xl text-gray-500 dark:text-gray-400">
                         {searchQuery ? "No rooms match your search." : "No rooms created yet. Click \"Add Room\" to get started."}
                     </div>
                 ) : filteredRooms.map(room => {
@@ -295,7 +295,7 @@ export default function RoomsManagementPage() {
                     const hiddenCount = Math.max(0, roomDevices.length - MAX_VISIBLE_DEVICES);
 
                     return (
-                        <div key={room.id} className="bg-[#1e2336] rounded-xl border border-[rgba(255,255,255,0.07)] flex flex-col hover:border-[rgba(255,255,255,0.15)] transition-all group">
+                        <div key={room.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
                             {/* Card Header */}
                             <div className="p-5 pb-3">
                                 <div className="flex justify-between items-start">
@@ -305,24 +305,24 @@ export default function RoomsManagementPage() {
                                                 <input
                                                     value={editName}
                                                     onChange={(e) => setEditName(e.target.value)}
-                                                    className="w-full text-lg font-bold bg-[#12151f] border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-[#f0f2ff] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                                    className="w-full text-lg font-bold bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-nwu-red/50"
                                                 />
                                                 <input
                                                     value={editBuilding}
                                                     onChange={(e) => setEditBuilding(e.target.value)}
                                                     placeholder="Building"
-                                                    className="w-full text-sm bg-[#12151f] border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-[#a8adc4] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                                    className="w-full text-sm bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-[#a8adc4] outline-none focus:ring-1 focus:ring-nwu-red/50"
                                                 />
                                             </div>
                                         ) : (
                                             <>
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="font-bold text-lg text-[#f0f2ff] truncate">{room.name}</h3>
+                                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white truncate">{room.name}</h3>
                                                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${statusColor}`}>
                                                         {statusLabel}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-[#6b7094] mt-0.5 flex items-center gap-1">
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
                                                     <DoorClosed className="h-3 w-3" />
                                                     {deptName}
                                                 </p>
@@ -336,16 +336,16 @@ export default function RoomsManagementPage() {
                                                 <button onClick={saveEdit} className="p-1.5 text-green-400 hover:bg-green-500/10 rounded transition" title="Save">
                                                     <Save className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={() => setEditingRoomId(null)} className="p-1.5 text-[#6b7094] hover:bg-[#242840] rounded transition" title="Cancel">
+                                                <button onClick={() => setEditingRoomId(null)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-[#242840] rounded transition" title="Cancel">
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </>
                                         ) : (
                                             <>
-                                                <button onClick={() => startEditing(room)} className="p-1.5 text-[#6b7094] hover:text-blue-400 hover:bg-blue-500/10 rounded transition opacity-0 group-hover:opacity-100" title="Edit">
+                                                <button onClick={() => startEditing(room)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded transition opacity-0 group-hover:opacity-100" title="Edit">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteRoom(room.id)} className="p-1.5 text-[#6b7094] hover:text-red-400 hover:bg-red-500/10 rounded transition opacity-0 group-hover:opacity-100" title="Delete">
+                                                <button onClick={() => handleDeleteRoom(room.id)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition opacity-0 group-hover:opacity-100" title="Delete">
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </>
@@ -358,20 +358,20 @@ export default function RoomsManagementPage() {
                             <div className="px-5 pb-5 flex-1 flex flex-col">
                                 <div className="flex items-center justify-between mb-3">
                                     <h4 className="text-[11px] font-bold text-[#a8adc4] uppercase tracking-wider">Assigned Devices</h4>
-                                    <span className="text-[10px] text-[#6b7094]">{roomDevices.length} device{roomDevices.length !== 1 ? "s" : ""}</span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{roomDevices.length} device{roomDevices.length !== 1 ? "s" : ""}</span>
                                 </div>
 
                                 <div className="space-y-2 flex-1">
                                     {roomDevices.length === 0 && (
-                                        <p className="text-xs text-[#6b7094] italic py-2">No devices assigned.</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 italic py-2">No devices assigned.</p>
                                     )}
                                     {roomDevices.slice(0, MAX_VISIBLE_DEVICES).map(device => (
                                         <div key={device.id} className="flex items-center justify-between bg-[#12151f] p-2.5 rounded-lg border border-[rgba(255,255,255,0.05)] group/device">
                                             <div className="flex items-center gap-2.5 min-w-0">
                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${getDeviceDot(device.name)}`} />
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-medium text-[#f0f2ff] truncate">{device.name}</p>
-                                                    <p className="text-[10px] text-[#6b7094]">ID: {device.id.substring(0, 8).toUpperCase()}</p>
+                                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{device.name}</p>
+                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">ID: {device.id.substring(0, 8).toUpperCase()}</p>
                                                 </div>
                                             </div>
                                             <button
@@ -384,7 +384,7 @@ export default function RoomsManagementPage() {
                                     ))}
                                     {hiddenCount > 0 && (
                                         <div className="text-center py-1.5 rounded-lg bg-[#12151f] border border-[rgba(255,255,255,0.05)]">
-                                            <p className="text-[11px] text-[#6b7094]">+ {hiddenCount} more device{hiddenCount !== 1 ? "s" : ""}</p>
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400">+ {hiddenCount} more device{hiddenCount !== 1 ? "s" : ""}</p>
                                         </div>
                                     )}
                                 </div>
@@ -396,11 +396,11 @@ export default function RoomsManagementPage() {
                                             if (e.target.value) handleDeviceAssignment(e.target.value, room.id);
                                         }}
                                         value=""
-                                        className="w-full text-xs p-2 bg-transparent border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg text-[#6b7094] outline-none hover:border-[rgba(255,255,255,0.2)] hover:text-[#a8adc4] cursor-pointer transition"
+                                        className="w-full text-xs p-2 bg-transparent border border-dashed border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 outline-none hover:border-gray-300 dark:border-gray-600 hover:text-[#a8adc4] cursor-pointer transition"
                                     >
                                         <option value="" disabled>+ Assign existing device</option>
                                         {unassignedDevices.map(device => (
-                                            <option key={device.id} value={device.id} className="bg-[#1e2336] text-[#f0f2ff]">
+                                            <option key={device.id} value={device.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                                                 {device.type === 'KIOSK' ? '[KIOSK] ' : ''}{device.name}
                                             </option>
                                         ))}
@@ -415,13 +415,13 @@ export default function RoomsManagementPage() {
                 {canCreateRooms && !isCreating && (
                     <button
                         onClick={() => setIsCreating(true)}
-                        className="bg-[#12151f] rounded-xl border-2 border-dashed border-[rgba(255,255,255,0.07)] flex flex-col items-center justify-center py-12 hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1e2336]/50 transition-all cursor-pointer group min-h-[200px]"
+                        className="bg-[#12151f] rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center py-12 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-white dark:bg-gray-800/50 transition-all cursor-pointer group min-h-[200px]"
                     >
-                        <div className="w-12 h-12 rounded-full bg-[#1e2336] border border-[rgba(255,255,255,0.1)] flex items-center justify-center mb-3 group-hover:bg-nwu-red/10 group-hover:border-nwu-red/30 transition">
-                            <Plus className="h-6 w-6 text-[#6b7094] group-hover:text-nwu-red transition" />
+                        <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center mb-3 group-hover:bg-nwu-red/10 group-hover:border-nwu-red/30 transition">
+                            <Plus className="h-6 w-6 text-gray-500 dark:text-gray-400 group-hover:text-nwu-red transition" />
                         </div>
-                        <p className="text-sm font-semibold text-[#a8adc4] group-hover:text-[#f0f2ff] transition">Add New Room</p>
-                        <p className="text-xs text-[#6b7094] mt-1">Create a new classroom space</p>
+                        <p className="text-sm font-semibold text-[#a8adc4] group-hover:text-gray-900 dark:text-white transition">Add New Room</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Create a new classroom space</p>
                     </button>
                 )}
             </div>
