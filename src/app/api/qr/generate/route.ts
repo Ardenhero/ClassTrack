@@ -47,6 +47,63 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Room not found" }, { status: 404 });
         }
 
+        // Server-side duplicate guard: prevent QR generation if action already completed today
+        const todayStart = new Date().toISOString().split('T')[0];
+
+        if (action === 'check_in') {
+            // Block if student already has ANY attendance log for this class today
+            const { data: existingTimeIn } = await supabase
+                .from('attendance_logs')
+                .select('id')
+                .eq('student_id', student_id)
+                .eq('class_id', class_id)
+                .gte('timestamp', todayStart)
+                .limit(1)
+                .maybeSingle();
+
+            if (existingTimeIn) {
+                return NextResponse.json(
+                    { error: "You have already Timed In for this class today." },
+                    { status: 409 }
+                );
+            }
+        } else if (action === 'check_out') {
+            // Block if student has no open session (already timed out or never timed in)
+            const { data: openSession } = await supabase
+                .from('attendance_logs')
+                .select('id')
+                .eq('student_id', student_id)
+                .eq('class_id', class_id)
+                .is('time_out', null)
+                .gte('timestamp', todayStart)
+                .limit(1)
+                .maybeSingle();
+
+            if (!openSession) {
+                // Check if they have any log at all today (timed out vs never timed in)
+                const { data: anyLog } = await supabase
+                    .from('attendance_logs')
+                    .select('id')
+                    .eq('student_id', student_id)
+                    .eq('class_id', class_id)
+                    .gte('timestamp', todayStart)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (anyLog) {
+                    return NextResponse.json(
+                        { error: "You have already Timed Out for this class today." },
+                        { status: 409 }
+                    );
+                } else {
+                    return NextResponse.json(
+                        { error: "You must Time In first before generating a Time Out QR." },
+                        { status: 400 }
+                    );
+                }
+            }
+        }
+
         // Generate TOTP nonce and encrypt payload
         const nonce = generateTOTP();
         const payload = {
