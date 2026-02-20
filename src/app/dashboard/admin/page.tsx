@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useProfile } from "@/context/ProfileContext";
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
 import { KioskHealthCard } from "@/components/KioskHealthCard";
-import { createClient } from "@/utils/supabase/client";
 import {
     Users, BookOpen, BarChart3, ChevronRight, Cpu, Building2,
-    DoorClosed, CheckCircle2
+    DoorClosed
 } from "lucide-react";
 import Link from "next/link";
 
@@ -77,26 +75,6 @@ const iconColor = {
 
 export default function AdminDashboardPage() {
     const { profile } = useProfile();
-    const [stats, setStats] = useState({ classes: 0, students: 0, attendanceRate: 0 });
-
-    const fetchStats = useCallback(async () => {
-        try {
-            const supabase = createClient();
-            const [classRes, studentRes] = await Promise.all([
-                supabase.from("classes").select("id", { count: "exact", head: true }),
-                supabase.from("students").select("id", { count: "exact", head: true }),
-            ]);
-            setStats({
-                classes: classRes.count ?? 0,
-                students: studentRes.count ?? 0,
-                attendanceRate: 91, // placeholder — real avg would need a separate query
-            });
-        } catch (err) {
-            console.error("[AdminDash] Stats error:", err);
-        }
-    }, []);
-
-    useEffect(() => { fetchStats(); }, [fetchStats]);
 
     return (
         <div style={{ background: t.bgBase, minHeight: "100vh", fontFamily: "'DM Sans', 'Inter', sans-serif", color: t.text1 }}>
@@ -177,31 +155,6 @@ export default function AdminDashboardPage() {
                 {/* Left Column */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-                    {/* Stats Row */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                        {[
-                            { label: "Total Classes", value: stats.classes, sub: "This semester", pct: Math.min(stats.classes * 1.5, 100) },
-                            { label: "Active Students", value: stats.students.toLocaleString(), sub: "Enrolled", pct: Math.min(stats.students / 15, 100) },
-                            { label: "Attendance Rate", value: stats.attendanceRate, sub: "7-day average", pct: stats.attendanceRate, suffix: "%" },
-                        ].map(s => (
-                            <div key={s.label} style={{
-                                background: t.bgCard, border: `1px solid ${t.border}`,
-                                borderRadius: 12, padding: 16, transition: "all 0.2s",
-                            }}>
-                                <div style={{ fontSize: 11, color: t.text3, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600, marginBottom: 8 }}>
-                                    {s.label}
-                                </div>
-                                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "'DM Mono', monospace", lineHeight: 1, marginBottom: 4 }}>
-                                    {s.value}<span style={{ fontSize: 14, color: t.text3 }}>{s.suffix || ""}</span>
-                                </div>
-                                <div style={{ fontSize: 11.5, color: t.text3 }}>{s.sub}</div>
-                                <div style={{ height: 3, background: "rgba(255,255,255,0.07)", borderRadius: 2, marginTop: 10, overflow: "hidden" }}>
-                                    <div style={{ height: "100%", borderRadius: 2, width: `${s.pct}%`, background: "linear-gradient(to right, #7c3aed, #a78bfa)" }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
                     {/* Quick Access Cards */}
                     <div>
                         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: t.text3, textTransform: "uppercase", marginBottom: 12 }}>
@@ -255,53 +208,6 @@ export default function AdminDashboardPage() {
 
                     {/* Kiosk Health */}
                     <KioskHealthCard />
-
-                    {/* System Status */}
-                    <div style={{
-                        background: t.bgCard, border: `1px solid ${t.border}`,
-                        borderRadius: 14, padding: 20,
-                    }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}>
-                                <CheckCircle2 style={{ width: 16, height: 16, color: t.text3 }} />
-                                System Status
-                            </div>
-                            <span style={{
-                                fontSize: 11, color: t.green,
-                                background: "rgba(34,197,94,0.1)",
-                                border: "1px solid rgba(34,197,94,0.25)",
-                                padding: "3px 9px", borderRadius: 5, fontWeight: 600,
-                            }}>
-                                Operational
-                            </span>
-                        </div>
-
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {[
-                                { name: "API Services", status: "99.9% uptime", color: t.green },
-                                { name: "Database", status: "Connected", color: t.green },
-                                { name: "Sensor Network", status: "Monitoring", color: t.amber },
-                            ].map(svc => (
-                                <div key={svc.name} style={{
-                                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                                    padding: "10px 12px", background: t.bgBase,
-                                    borderRadius: 8, border: `1px solid ${t.border}`,
-                                }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: t.text2 }}>
-                                        <div style={{
-                                            width: 7, height: 7, borderRadius: "50%",
-                                            background: svc.color,
-                                            boxShadow: `0 0 6px ${svc.color}`,
-                                        }} />
-                                        {svc.name}
-                                    </div>
-                                    <span style={{ fontSize: 11.5, color: t.text3, fontFamily: "'DM Mono', monospace" }}>
-                                        {svc.status}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </div>
 

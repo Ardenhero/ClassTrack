@@ -67,6 +67,7 @@ export default function StudentPortalPage() {
                 body: JSON.stringify({
                     student_id: student.id,
                     room_id: roomId,
+                    class_id: classId,
                 }),
             });
 
