@@ -24,19 +24,15 @@ export function generateTOTP(): string {
 }
 
 /**
- * Validate a TOTP nonce. Allows current window and 1 previous window (120s total tolerance).
+ * Validate a TOTP nonce. Only allows the current 60-second window (strict expiry).
  */
 export function validateTOTP(nonce: string): boolean {
     const currentStep = Math.floor(Date.now() / (TOTP_WINDOW_SECONDS * 1000));
 
-    for (let offset = 0; offset <= 1; offset++) {
-        const step = currentStep - offset;
-        const hmac = crypto.createHmac('sha256', QR_SECRET);
-        hmac.update(step.toString());
-        const expected = hmac.digest('hex').substring(0, 12);
-        if (expected === nonce) return true;
-    }
-    return false;
+    const hmac = crypto.createHmac('sha256', QR_SECRET);
+    hmac.update(currentStep.toString());
+    const expected = hmac.digest('hex').substring(0, 12);
+    return expected === nonce;
 }
 
 /**

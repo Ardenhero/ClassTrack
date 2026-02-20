@@ -114,8 +114,17 @@ export async function PUT(request: Request) {
             );
         }
 
-        // Validate TOTP nonce (must be within 120s window)
+        // Validate TOTP nonce (must be within current 60s window)
         if (!validateTOTP(decoded.nonce)) {
+            return NextResponse.json(
+                { error: "expired_qr", message: "QR code has expired. Generate a new one." },
+                { status: 410 }
+            );
+        }
+
+        // Secondary check: Direct timestamp age validation (belt + suspenders)
+        const qrAge = Date.now() - new Date(decoded.timestamp).getTime();
+        if (qrAge > 90_000) { // 90s hard ceiling (60s window + 30s grace for network delay)
             return NextResponse.json(
                 { error: "expired_qr", message: "QR code has expired. Generate a new one." },
                 { status: 410 }

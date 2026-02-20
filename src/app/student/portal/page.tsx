@@ -62,9 +62,10 @@ export default function StudentPortalPage() {
         if (!student) return;
 
         // Check generation limit (read from ref to avoid stale closure)
-        const currentCount = generationCountsRef.current[classId] || 0;
+        const countKey = `${classId}:${actionParam}`;
+        const currentCount = generationCountsRef.current[countKey] || 0;
         if (currentCount >= 3) {
-            setError("You have reached the maximum number of QR generations (3) for this class. Please contact your instructor.");
+            setError(`You have used all 3 QR generations for ${actionParam === 'check_in' ? 'Time In' : 'Time Out'} in this class. Please contact your instructor.`);
             setStep("error");
             return;
         }
@@ -105,8 +106,9 @@ export default function StudentPortalPage() {
             setCountdown(60);
             setStep("qr");
 
-            // Increment count for this class on success (mutate ref directly)
-            generationCountsRef.current[classId] = (generationCountsRef.current[classId] || 0) + 1;
+            // Increment count for this class+action on success (mutate ref directly)
+            const countKey = `${classId}:${actionParam}`;
+            generationCountsRef.current[countKey] = (generationCountsRef.current[countKey] || 0) + 1;
             forceRender(n => n + 1); // re-render to update badge
 
         } catch {
@@ -319,7 +321,7 @@ export default function StudentPortalPage() {
                         <div className="bg-white rounded-xl p-4 inline-block mb-4 border border-gray-100 shadow-sm relative">
                             {/* Generation Counter Badge */}
                             <div className="absolute -top-3 -right-3 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md z-10 border-2 border-white">
-                                {generationCountsRef.current[selectedClass || ""] || 1}/3
+                                {generationCountsRef.current[`${selectedClass || ""}:${action || "check_in"}`] || 1}/3
                             </div>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={qrDataUrl} alt="Attendance QR Code" className="w-64 h-64 mx-auto" />
