@@ -55,7 +55,7 @@ export default function StudentPortalPage() {
     };
 
     // Step 2: Generate QR code
-    const generateQR = useCallback(async (classId: string, roomId: string) => {
+    const generateQR = useCallback(async (classId: string, roomId: string, actionParam: string) => {
         if (!student) return;
         setStep("generating");
         setError(null);
@@ -69,7 +69,7 @@ export default function StudentPortalPage() {
                     student_id: student.id,
                     room_id: roomId,
                     class_id: classId,
-                    action: action,
+                    action: actionParam,
                 }),
             });
 
@@ -97,7 +97,7 @@ export default function StudentPortalPage() {
             setError("Failed to generate QR code. Please try again.");
             setStep("error");
         }
-    }, [student, action]);
+    }, [student]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -224,7 +224,7 @@ export default function StudentPortalPage() {
                             <button
                                 onClick={() => {
                                     setAction("check_in");
-                                    generateQR(selectedClass, selectedRoomId);
+                                    generateQR(selectedClass, selectedRoomId, "check_in");
                                 }}
                                 className="w-full flex items-center justify-between px-6 py-4 rounded-xl bg-green-50 hover:bg-green-100 border border-green-200 transition-all group shadow-sm text-left"
                             >
@@ -240,7 +240,7 @@ export default function StudentPortalPage() {
                             <button
                                 onClick={() => {
                                     setAction("check_out");
-                                    generateQR(selectedClass, selectedRoomId);
+                                    generateQR(selectedClass, selectedRoomId, "check_out");
                                 }}
                                 className="w-full flex items-center justify-between px-6 py-4 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 transition-all group shadow-sm text-left"
                             >
@@ -309,8 +309,8 @@ export default function StudentPortalPage() {
 
                         <button
                             onClick={() => {
-                                if (selectedClass && selectedRoomId) {
-                                    generateQR(selectedClass, selectedRoomId);
+                                if (selectedClass && selectedRoomId && action) {
+                                    generateQR(selectedClass, selectedRoomId, action);
                                 }
                             }}
                             className="mt-4 px-4 py-2 text-sm text-nwu-red hover:text-red-800 transition-colors"
