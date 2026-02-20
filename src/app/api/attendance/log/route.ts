@@ -361,6 +361,62 @@ export async function POST(request: Request) {
         // LEGACY PATH: Name-based attendance (manual/device)
         console.log(`[API] Log Attendance: ${student_name} -> ${className} (${classIdInput || 'No ID'}) [${rpcStatusInput}]`);
 
+        // DUPLICATE PREVENTION: Check before RPC call
+        if (classIdInput && student_name) {
+            const todayStart = new Date().toISOString().split('T')[0];
+
+            // Look up student by name to get student_id for the duplicate check
+            const { data: studentCheck } = await supabase
+                .from('students')
+                .select('id')
+                .or(`name.eq."${student_name}",full_name.eq."${student_name}"`)
+                .limit(1)
+                .maybeSingle();
+
+            if (studentCheck) {
+                if (attendance_type === 'Time In') {
+                    // Block duplicate Time In
+                    const { data: existingTimeIn } = await supabase
+                        .from('attendance_logs')
+                        .select('id')
+                        .eq('student_id', studentCheck.id)
+                        .eq('class_id', classIdInput)
+                        .gte('timestamp', todayStart)
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (existingTimeIn) {
+                        console.log(`[API] DUPLICATE Time In blocked (Legacy): Student=${studentCheck.id}, Class=${classIdInput}`);
+                        return NextResponse.json({
+                            error: "Already Timed In",
+                            student_name: student_name,
+                            duplicate: true
+                        }, { status: 409 });
+                    }
+                } else if (attendance_type === 'Time Out') {
+                    // Block duplicate Time Out (no open session = already timed out or never timed in)
+                    const { data: openSession } = await supabase
+                        .from('attendance_logs')
+                        .select('id')
+                        .eq('student_id', studentCheck.id)
+                        .eq('class_id', classIdInput)
+                        .is('time_out', null)
+                        .gte('timestamp', todayStart)
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (!openSession) {
+                        console.log(`[API] DUPLICATE Time Out blocked (Legacy): Student=${studentCheck.id}, Class=${classIdInput}`);
+                        return NextResponse.json({
+                            error: "Already Timed Out / No Time In",
+                            student_name: student_name,
+                            duplicate: true
+                        }, { status: 409 });
+                    }
+                }
+            }
+        }
+
         // Call the RPC function (Original working method)
         const { data: rpcData, error: rpcError } = await supabase.rpc('log_attendance', {
             email_input: email,
