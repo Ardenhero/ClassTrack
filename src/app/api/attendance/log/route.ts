@@ -512,11 +512,16 @@ export async function POST(request: Request) {
                         throw updateError;
                     }
                 } else {
-                    // STRICT SEQUENCE RULE: Reject Time Out if no Time In
-                    console.warn(`[API] Time Out Denied: No open session found for Student=${student.id}, Class=${classRef.id}`);
+                    // SEQUENCE RULE: Reject Time Out if no Time In OR Already Timed Out
+                    // We treat this as a duplicate scan so the UI handles it gracefully
+                    console.warn(`[API] Time Out Denied/Duplicate: No open session found for Student=${student.id}, Class=${classRef.id}`);
                     return NextResponse.json(
-                        { error: "Access Denied: You must Time In first." },
-                        { status: 400 }
+                        {
+                            error: "Already Timed Out / No Time In",
+                            student_name: student_name,
+                            duplicate: true
+                        },
+                        { status: 409 }
                     );
                 }
             } else {
