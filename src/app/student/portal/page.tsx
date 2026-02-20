@@ -16,6 +16,8 @@ export default function StudentPortalPage() {
     const [error, setError] = useState<string | null>(null);
     const [countdown, setCountdown] = useState(60);
     const [loading, setLoading] = useState(false);
+    // Track generation attempts per class ID
+    const [generationCounts, setGenerationCounts] = useState<Record<string, number>>({});
 
     // Countdown timer for QR expiration
     useEffect(() => {
@@ -57,6 +59,15 @@ export default function StudentPortalPage() {
     // Step 2: Generate QR code
     const generateQR = useCallback(async (classId: string, roomId: string, actionParam: string) => {
         if (!student) return;
+
+        // Check generation limit
+        const currentCount = generationCounts[classId] || 0;
+        if (currentCount >= 3) {
+            setError("You have reached the maximum number of QR generations (3) for this class today. Please contact your instructor.");
+            setStep("error");
+            return;
+        }
+
         setStep("generating");
         setError(null);
 
@@ -92,6 +103,12 @@ export default function StudentPortalPage() {
             setQrDataUrl(dataUrl);
             setCountdown(60);
             setStep("qr");
+
+            // Increment count for this class on success
+            setGenerationCounts(prev => ({
+                ...prev,
+                [classId]: (prev[classId] || 0) + 1
+            }));
 
         } catch {
             setError("Failed to generate QR code. Please try again.");
@@ -277,6 +294,16 @@ export default function StudentPortalPage() {
                 {/* Step 4: QR Display */}
                 {step === "qr" && qrDataUrl && (
                     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md text-center">
+                        {/* Class Context Header */}
+                        <div className="mb-4 pb-4 border-b border-gray-100">
+                            <p className="text-xs font-bold text-nwu-red uppercase tracking-wider mb-1">
+                                {action === "check_out" ? "Time Out For" : "Time In For"}
+                            </p>
+                            <h2 className="text-lg font-bold text-gray-900">
+                                {classes.find(c => c.id === selectedClass)?.name || "Current Class"}
+                            </h2>
+                        </div>
+
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <QrCode className="h-5 w-5 text-nwu-red" />
@@ -290,7 +317,11 @@ export default function StudentPortalPage() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-4 inline-block mb-4 border border-gray-100 shadow-sm">
+                        <div className="bg-white rounded-xl p-4 inline-block mb-4 border border-gray-100 shadow-sm relative">
+                            {/* Generation Counter Badge */}
+                            <div className="absolute -top-3 -right-3 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md z-10 border-2 border-white">
+                                {generationCounts[selectedClass || ""] || 1}/3
+                            </div>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={qrDataUrl} alt="Attendance QR Code" className="w-64 h-64 mx-auto" />
                         </div>

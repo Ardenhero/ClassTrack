@@ -22,6 +22,7 @@ export default function ScannerPage() {
     const [error, setError] = useState<string | null>(null);
     const [logging, setLogging] = useState(false);
     const [logged, setLogged] = useState(false);
+    const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
     const [useFrontCamera, setUseFrontCamera] = useState(false);
     const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
     const [selectedClass, setSelectedClass] = useState<string>("");
@@ -252,6 +253,14 @@ export default function ScannerPage() {
             const data = await res.json();
             if (res.ok && data.success) {
                 setLogged(true);
+            } else if (res.status === 409 || data.duplicate) {
+                // Handle duplicate explicitly
+                setResult(null);
+                setDuplicateWarning(`${data.student_name} is already recorded as ${result.action === 'check_out' ? 'Time Out' : 'Time In'} for this class.`);
+                setTimeout(() => {
+                    setDuplicateWarning(null);
+                    startScanning();
+                }, 3500);
             } else {
                 setError(data.error || "Failed to log attendance");
             }
@@ -365,8 +374,19 @@ export default function ScannerPage() {
                     </div>
                 )}
 
+                {/* Duplicate Warning */}
+                {duplicateWarning && (
+                    <div className="bg-yellow-50 rounded-2xl border border-yellow-200 p-6 flex flex-col items-center gap-3 shadow-sm test-center animate-in fade-in zoom-in duration-300">
+                        <AlertTriangle className="h-12 w-12 text-yellow-600 mb-2" />
+                        <h3 className="text-xl font-bold text-yellow-800">Already Scanned</h3>
+                        <p className="text-sm font-medium text-yellow-700 text-center">
+                            {duplicateWarning}
+                        </p>
+                    </div>
+                )}
+
                 {/* Result */}
-                {result && !logged && (
+                {result && !logged && !duplicateWarning && (
                     <div className="bg-white rounded-2xl border-2 border-green-500 p-6 space-y-4 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center border ${result.action === 'check_out' ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100'}`}>
