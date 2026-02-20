@@ -63,6 +63,12 @@ export default function ScannerPage() {
         setLogged(false);
 
         try {
+            // Browsers strictly require HTTPS (or localhost) for camera access.
+            if (window.isSecureContext === false) {
+                setError("Camera access requires a secure connection. Please access the site via HTTPS or localhost.");
+                return;
+            }
+
             // Attempt 1: Standard definition (ideal for QR scanning speed)
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: { ideal: 640 }, height: { ideal: 480 } }
