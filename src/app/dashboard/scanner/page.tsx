@@ -12,6 +12,7 @@ interface ScanResult {
     room_id: string;
     room_name: string;
     class_id: string;
+    action: string;
 }
 
 export default function ScannerPage() {
@@ -21,6 +22,7 @@ export default function ScannerPage() {
     const [error, setError] = useState<string | null>(null);
     const [logging, setLogging] = useState(false);
     const [logged, setLogged] = useState(false);
+    const [useFrontCamera, setUseFrontCamera] = useState(false);
     const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
     const [selectedClass, setSelectedClass] = useState<string>("");
     const [classesLoading, setClassesLoading] = useState(true);
@@ -29,6 +31,7 @@ export default function ScannerPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
+    const jsQrRef = useRef<typeof import('jsqr').default | null>(null);
 
     // Keep ref in sync with state
     useEffect(() => {
@@ -69,9 +72,13 @@ export default function ScannerPage() {
                 return;
             }
 
-            // Attempt 1: Standard definition (ideal for QR scanning speed)
+            // Attempt 1: Standard definition (ideal for QR scanning speed) with selected facing mode
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 640 }, height: { ideal: 480 } }
+                video: {
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                    facingMode: useFrontCamera ? "user" : "environment"
+                }
             });
             streamRef.current = stream;
 
@@ -85,9 +92,9 @@ export default function ScannerPage() {
             console.warn("Primary camera request failed, trying fallback:", err1);
 
             try {
-                // Attempt 2: Absolute minimum requirements (just "gimme a camera")
+                // Attempt 2: Absolute minimum requirements (just "gimme a camera") with selected facing mode
                 const fallbackStream = await navigator.mediaDevices.getUserMedia({
-                    video: true
+                    video: { facingMode: useFrontCamera ? "user" : "environment" }
                 });
                 streamRef.current = fallbackStream;
 
@@ -128,6 +135,13 @@ export default function ScannerPage() {
         setScanning(false);
     }, []);
 
+    // Load jsQR once
+    useEffect(() => {
+        import("jsqr").then((module) => {
+            jsQrRef.current = module.default;
+        }).catch(err => console.error("Failed to load jsQR:", err));
+    }, []);
+
     // Scan frames for QR codes
     const scanFrame = useCallback(async () => {
         if (!videoRef.current || !canvasRef.current) return;
@@ -148,19 +162,23 @@ export default function ScannerPage() {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
         try {
-            // Dynamic import jsQR
-            const jsQR = (await import("jsqr")).default;
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (jsQrRef.current) {
+                // Use the pre-loaded jsQR instance instead of importing on every frame (which causes massive lag)
+                const code = jsQrRef.current(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert", // Speed up scanning by not trying to invert brightness
+                });
 
-            if (code && code.data) {
-                // Found a QR code - verify it
-                await verifyQR(code.data);
-                return; // Stop scanning after finding code
+                if (code && code.data) {
+                    // Found a QR code - verify it
+                    await verifyQR(code.data);
+                    return; // Stop scanning after finding code
+                }
             }
         } catch {
-            // jsQR not available, try alternative decoder
+            // Silently catch scan errors per frame
         }
 
+        // Throttle slightly if needed, but requestAnimationFrame is generally fine if computation is light
         animationRef.current = requestAnimationFrame(scanFrame);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -220,7 +238,7 @@ export default function ScannerPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    attendance_type: "Time In",
+                    attendance_type: result.action === "check_out" ? "Time Out" : "Time In",
                     timestamp: new Date().toISOString(),
                     class_id: result.class_id,
                     instructor_id: profile.id,
@@ -325,28 +343,44 @@ export default function ScannerPage() {
 
                 {/* Scan Controls */}
                 {scanning && (
-                    <button
-                        onClick={stopScanning}
-                        className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-gray-200"
-                    >
-                        <X className="h-5 w-5" />
-                        Stop Scanning
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => {
+                                setUseFrontCamera(!useFrontCamera);
+                                stopScanning();
+                                setTimeout(startScanning, 300); // Restart with new camera
+                            }}
+                            className="flex-1 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-gray-200 shadow-sm"
+                        >
+                            <Camera className="h-5 w-5" />
+                            {useFrontCamera ? "Use Rear Cam" : "Use Front Cam"}
+                        </button>
+                        <button
+                            onClick={stopScanning}
+                            className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-gray-200 shadow-sm"
+                        >
+                            <X className="h-5 w-5" />
+                            Stop
+                        </button>
+                    </div>
                 )}
 
                 {/* Result */}
                 {result && !logged && (
                     <div className="bg-white rounded-2xl border-2 border-green-500 p-6 space-y-4 shadow-sm">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center border border-green-100">
-                                <UserCheck className="h-6 w-6 text-green-600" />
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center border ${result.action === 'check_out' ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100'}`}>
+                                <UserCheck className={`h-6 w-6 ${result.action === 'check_out' ? 'text-orange-600' : 'text-green-600'}`} />
                             </div>
                             <div>
                                 <p className="text-lg font-bold text-gray-900">
                                     {result.student_name}
                                 </p>
-                                <p className="text-sm text-gray-600">
-                                    {result.room_name} • QR Verified ✓
+                                <p className="text-sm font-semibold flex items-center gap-1">
+                                    <span className={result.action === 'check_out' ? 'text-orange-600' : 'text-green-600'}>
+                                        {result.action === 'check_out' ? 'Time Out' : 'Time In'}
+                                    </span>
+                                    <span className="text-gray-400">• QR Verified</span>
                                 </p>
                             </div>
                         </div>

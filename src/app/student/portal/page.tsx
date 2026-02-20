@@ -6,11 +6,12 @@ import { QrCode, Clock, AlertTriangle, CheckCircle2, Loader2, Search, ShieldChec
 // Student Portal — PWA-ready page for QR fallback attendance
 export default function StudentPortalPage() {
     const [sin, setSin] = useState("");
-    const [step, setStep] = useState<"login" | "select" | "generating" | "qr" | "error">("login");
+    const [step, setStep] = useState<"login" | "select" | "action" | "generating" | "qr" | "error">("login");
     const [student, setStudent] = useState<{ id: number; name: string } | null>(null);
     const [classes, setClasses] = useState<{ id: string; name: string; room_id: string | null; room_name: string | null; start_time: string; end_time: string }[]>([]);
     const [selectedClass, setSelectedClass] = useState<string | null>(null);
     const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+    const [action, setAction] = useState<"check_in" | "check_out" | null>(null);
     const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [countdown, setCountdown] = useState(60);
@@ -68,6 +69,7 @@ export default function StudentPortalPage() {
                     student_id: student.id,
                     room_id: roomId,
                     class_id: classId,
+                    action: action,
                 }),
             });
 
@@ -95,7 +97,7 @@ export default function StudentPortalPage() {
             setError("Failed to generate QR code. Please try again.");
             setStep("error");
         }
-    }, [student]);
+    }, [student, action]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -169,7 +171,7 @@ export default function StudentPortalPage() {
                                             setSelectedClass(cls.id);
                                             setSelectedRoomId(cls.room_id);
                                             if (cls.room_id) {
-                                                generateQR(cls.id, cls.room_id);
+                                                setStep("action");
                                             } else {
                                                 setError("This class has no room assigned. Contact your instructor.");
                                                 setStep("error");
@@ -201,6 +203,62 @@ export default function StudentPortalPage() {
                             className="w-full mt-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
                         >
                             ← Different Student
+                        </button>
+                    </div>
+                )}
+
+                {/* Step 2.5: Select Action */}
+                {step === "action" && selectedClass && selectedRoomId && (
+                    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-md">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
+                                <Clock className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-gray-900 font-semibold">Attendance Action</p>
+                                <p className="text-xs text-gray-500">What are you scanning for?</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => {
+                                    setAction("check_in");
+                                    generateQR(selectedClass, selectedRoomId);
+                                }}
+                                className="w-full flex items-center justify-between px-6 py-4 rounded-xl bg-green-50 hover:bg-green-100 border border-green-200 transition-all group shadow-sm text-left"
+                            >
+                                <div>
+                                    <p className="font-bold text-green-700">Time In</p>
+                                    <p className="text-xs text-green-600 mt-1.5">Record your arrival for this class</p>
+                                </div>
+                                <div className="h-8 w-8 rounded-full bg-green-200 flex items-center justify-center group-hover:bg-green-300 transition-colors">
+                                    <span className="text-green-800 font-bold">→</span>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setAction("check_out");
+                                    generateQR(selectedClass, selectedRoomId);
+                                }}
+                                className="w-full flex items-center justify-between px-6 py-4 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 transition-all group shadow-sm text-left"
+                            >
+                                <div>
+                                    <p className="font-bold text-orange-700">Time Out</p>
+                                    <p className="text-xs text-orange-600 mt-1.5">Record your departure from class</p>
+                                </div>
+                                <div className="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center group-hover:bg-orange-300 transition-colors">
+                                    <span className="text-orange-800 font-bold">→</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => { setStep("select"); setAction(null); }}
+                            className="w-full mt-6 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+                        >
+                            ← Back to Classes
                         </button>
                     </div>
                 )}
