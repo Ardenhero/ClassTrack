@@ -28,8 +28,7 @@ import {
     KeyRound,
     ChevronLeft,
     Cpu,
-    QrCode,
-    DoorClosed
+    QrCode
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -52,7 +51,6 @@ const adminNavigation = [
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
     { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Rooms", href: "/dashboard/admin/rooms", icon: DoorClosed },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },

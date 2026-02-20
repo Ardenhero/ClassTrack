@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/qr/generate — Generate an encrypted, geofenced QR code payload.
- * Body: { student_id: number, room_id: string }
+ * Body: { student_id: number, room_id: string, class_id: string }
  * Returns the encrypted payload string that becomes the QR content.
  */
 export async function POST(request: Request) {
@@ -16,11 +16,11 @@ export async function POST(request: Request) {
     );
 
     try {
-        const { student_id, room_id } = await request.json();
+        const { student_id, room_id, class_id } = await request.json();
 
-        if (!student_id || !room_id) {
+        if (!student_id || !room_id || !class_id) {
             return NextResponse.json(
-                { error: "student_id and room_id are required" },
+                { error: "student_id, room_id, and class_id are required" },
                 { status: 400 }
             );
         }
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
             student_name: student.name,
             room_id: room_id,
             room_name: room.name,
+            class_id: class_id,
             nonce,
             timestamp: new Date().toISOString(),
         };
@@ -99,6 +100,7 @@ export async function PUT(request: Request) {
             student_name: string;
             room_id: string;
             room_name: string;
+            class_id: string;
             nonce: string;
             timestamp: string;
         } | null;
@@ -115,6 +117,14 @@ export async function PUT(request: Request) {
             return NextResponse.json(
                 { error: "expired_qr", message: "QR code has expired. Generate a new one." },
                 { status: 410 }
+            );
+        }
+
+        // Validate that the QR code is for the class the instructor selected
+        if (decoded.class_id && decoded.class_id !== class_id) {
+            return NextResponse.json(
+                { error: "class_mismatch", message: "This QR code is for a different class. Please ensure both you and the student have selected the correct class." },
+                { status: 400 }
             );
         }
 
