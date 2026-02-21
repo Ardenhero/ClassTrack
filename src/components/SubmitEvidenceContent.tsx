@@ -167,7 +167,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     <select
                                         value={selectedInstructor}
                                         onChange={(e) => handleInstructorChange(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-nwu-red focus:border-nwu-red"
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 text-sm focus:ring-nwu-red focus:border-nwu-red"
                                     >
                                         <option value="">Choose your instructor...</option>
                                         {instructors.map((inst) => (
