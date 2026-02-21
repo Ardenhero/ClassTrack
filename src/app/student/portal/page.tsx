@@ -134,7 +134,7 @@ function StudentAttendance({ sin }: { sin: string }) {
                 {stats.classes.length === 0 ? (
                     <p className="text-sm text-gray-500 italic p-6 text-center bg-gray-50 rounded-xl border border-gray-100">No classes found.</p>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
                         {stats.classes.map(cls => (
                             <div key={cls.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex justify-between items-start mb-3">
