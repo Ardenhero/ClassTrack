@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import { Fingerprint, AlertTriangle, RefreshCw, Loader2, ArrowRightLeft } from "lucide-react";
+import { Fingerprint, AlertTriangle, RefreshCw, Loader2, Copy } from "lucide-react";
 import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface SlotData {
@@ -90,7 +90,8 @@ export function AdminBiometricMatrix() {
             }
 
             // 4. Get students ONLY within my scope AND on this specific device
-            const { data: allOccupiedStudents, error } = await supabase
+            // Check both students.device_id (primary) and fingerprint_device_links (copies)
+            const { data: primaryStudents, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
                 .not("fingerprint_slot_id", "is", null)
@@ -98,6 +99,23 @@ export function AdminBiometricMatrix() {
                 .eq("device_id", deviceId) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
+
+            // Also fetch students linked via fingerprint_device_links (copies)
+            const { data: linkedStudents } = await supabase
+                .from("fingerprint_device_links")
+                .select("student_id, fingerprint_slot_id, students!inner(id, name, instructor_id)")
+                .eq("device_serial", deviceId);
+
+            // Merge: build a combined list, deduplicating by student id
+            const studentMap = new Map<string, { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }>();
+            primaryStudents?.forEach(s => studentMap.set(s.id, s));
+            linkedStudents?.forEach((link: { student_id: number; fingerprint_slot_id: number; students: { id: string; name: string; instructor_id: string } }) => {
+                const s = link.students;
+                if (s && currentAccountScope.includes(s.instructor_id) && !studentMap.has(s.id)) {
+                    studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id });
+                }
+            });
+            const allOccupiedStudents = Array.from(studentMap.values());
 
             // 5. Get recent orphan scans from audit logs
             let orphanQuery = supabase
@@ -179,9 +197,9 @@ export function AdminBiometricMatrix() {
         }
     };
 
-    const moveSlotToRoom = async (slot: SlotData) => {
+    const copySlotToRoom = async (slot: SlotData) => {
         if (!slot.student_id || !moveTargetRoom) return;
-        if (!confirm(`Move ${slot.student_name}'s fingerprint to the selected room? The fingerprint template will be reassigned to that room's kiosk.`)) return;
+        if (!confirm(`Copy ${slot.student_name}'s fingerprint template to the selected room? The original assignment will be kept.`)) return;
 
         setMoving(true);
         const supabase = createClient();
@@ -200,19 +218,22 @@ export function AdminBiometricMatrix() {
                 return;
             }
 
+            // Insert a copy link (not move — keeps original device_id intact)
             const { error } = await supabase
-                .from("students")
-                .update({ device_id: targetKiosk.device_serial })
-                .eq("id", slot.student_id);
+                .from("fingerprint_device_links")
+                .upsert({
+                    student_id: slot.student_id,
+                    device_serial: targetKiosk.device_serial,
+                    fingerprint_slot_id: slot.slot_id,
+                }, { onConflict: 'student_id,device_serial' });
 
             if (error) throw error;
 
             setMoveTargetRoom("");
-            await loadMatrix();
-            setSelectedSlot(null);
+            alert(`✓ Fingerprint template copied to the selected room's kiosk.`);
         } catch (err) {
-            console.error("Failed to move fingerprint:", err);
-            alert("Failed to move fingerprint template. Please try again.");
+            console.error("Failed to copy fingerprint:", err);
+            alert("Failed to copy fingerprint template. Please try again.");
         } finally {
             setMoving(false);
         }
@@ -380,11 +401,11 @@ export function AdminBiometricMatrix() {
                                     <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>
                                 )}
 
-                                {/* Move to Room — fingerprint template reassignment */}
+                                {/* Copy to Room — fingerprint template duplication */}
                                 {selectedSlot.status === 'occupied' && rooms.length > 1 && (
                                     <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                                         <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
-                                            <ArrowRightLeft className="h-3 w-3" /> Move to Another Room
+                                            <Copy className="h-3 w-3" /> Copy to Another Room
                                         </p>
                                         <div className="flex items-center gap-2">
                                             <select
@@ -398,14 +419,14 @@ export function AdminBiometricMatrix() {
                                                 ))}
                                             </select>
                                             <button
-                                                onClick={() => moveSlotToRoom(selectedSlot)}
+                                                onClick={() => copySlotToRoom(selectedSlot)}
                                                 disabled={!moveTargetRoom || moving}
                                                 className="px-3 py-1.5 text-xs font-bold bg-blue-500/10 text-blue-600 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {moving ? 'Moving...' : 'Move'}
+                                                {moving ? 'Copying...' : 'Copy'}
                                             </button>
                                         </div>
-                                        <p className="text-[10px] text-gray-400 mt-1">Reassigns the fingerprint template to the target room&apos;s kiosk without re-enrolling.</p>
+                                        <p className="text-[10px] text-gray-400 mt-1">Copies the fingerprint link to the target room&apos;s kiosk. Original stays intact.</p>
                                     </div>
                                 )}
                             </div>
