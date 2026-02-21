@@ -38,7 +38,7 @@ export function AdminNav() {
 
 
     return (
-        <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+        <div className="flex flex-wrap gap-1 glass-panel px-1.5 py-1.5 rounded-2xl mb-8 w-fit bg-dark-bg/60">
             {visibleTabs.map((tab) => {
                 const isActive = pathname === tab.href;
                 return (
@@ -46,13 +46,13 @@ export function AdminNav() {
                         key={tab.name}
                         href={tab.href}
                         className={cn(
-                            "flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                            "flex items-center px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300",
                             isActive
-                                ? "bg-white text-nwu-red shadow-sm"
-                                : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+                                ? "bg-nu-500 text-white shadow-glow-red"
+                                : "text-gray-400 hover:text-white hover:bg-white/10"
                         )}
                     >
-                        <tab.icon className="mr-2 h-4 w-4" />
+                        <tab.icon className={cn("mr-2 h-4 w-4", isActive ? "animate-pulse" : "")} />
                         {tab.name}
                     </Link>
                 );
