@@ -102,29 +102,73 @@ export async function POST(request: Request) {
 /**
  * GET /api/kiosk/heartbeat — Get all kiosk device statuses
  * Used by the Admin Dashboard to display device health.
- * Marks devices as offline if last_heartbeat > 2 minutes ago.
+ * Marks devices as offline if last_heartbeat > 3 minutes ago.
  */
-export async function GET() {
-    const supabase = createClient(
+export async function GET(request: Request) {
+    // Note: We need the caller's session to scope by department for System Admins.
+    const userClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Check auth from cookie/header context
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+        // If Bearer token provided (useful for direct API calls), set it
+        const token = authHeader.replace('Bearer ', '');
+        await userClient.auth.setSession({ access_token: token, refresh_token: '' });
+    }
+
+    const { data: { user } } = await userClient.auth.getUser();
+
+    // The service role is used strictly for the system-level updates/bypassing RLS
+    const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    let isSuperAdmin = false;
+    let deptId = null;
+
+    if (user) {
+        const { data: profile } = await adminClient
+            .from('instructors')
+            .select('is_super_admin, department_id')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+
+        isSuperAdmin = !!profile?.is_super_admin;
+        deptId = profile?.department_id;
+    } else {
+        // Unauthenticated calls (if any) shouldn't be allowed to browse the kiosk list
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
         // First, mark stale devices as offline (heartbeat older than 3 minutes)
         const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-        await supabase
+        await adminClient
             .from('kiosk_devices')
             .update({ is_online: false })
             .eq('is_online', true)
             .lt('last_heartbeat', threeMinutesAgo);
 
         // Fetch all devices with room info
-        const { data: devices, error } = await supabase
+        let query = adminClient
             .from('kiosk_devices')
             .select('*, rooms(name, building)')
             .order('is_online', { ascending: false })
             .order('last_heartbeat', { ascending: false });
+
+        // Scoping logic: System Admins only see kiosks assigned to their department
+        if (!isSuperAdmin) {
+            if (!deptId) {
+                return NextResponse.json({ devices: [] }); // No dept = no visible kiosks
+            }
+            query = query.eq('department_id', deptId);
+        }
+
+        const { data: devices, error } = await query;
 
         if (error) throw error;
 

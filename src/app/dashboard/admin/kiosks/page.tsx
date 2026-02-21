@@ -49,12 +49,13 @@ export default function KioskInventoryPage() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+    const isAdmin = profile?.role === 'admin' || profile?.is_super_admin;
     const isSuperAdmin = profile?.is_super_admin;
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            // Use service role via API to bypass RLS for super admin
+            // fetch automatically scoped devices via the session
             const [kioskRes, deptRes, roomRes] = await Promise.all([
                 fetch('/api/kiosk/heartbeat'),
                 supabase.from('departments').select('id, name').order('name'),
@@ -73,10 +74,10 @@ export default function KioskInventoryPage() {
     }, [supabase]);
 
     useEffect(() => {
-        if (isSuperAdmin) loadData();
-    }, [isSuperAdmin, loadData]);
+        if (isAdmin) loadData();
+    }, [isAdmin, loadData]);
 
-    if (!isSuperAdmin) {
+    if (!isAdmin) {
         return (
             <div className="flex h-full items-center justify-center p-8">
                 <p className="text-gray-500 dark:text-gray-400">You do not have permission to view this page.</p>
@@ -289,16 +290,22 @@ export default function KioskInventoryPage() {
                                         <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
                                             <Building2 className="h-3 w-3" /> Department
                                         </div>
-                                        <select
-                                            value={kiosk.department_id || ""}
-                                            onChange={(e) => handleDeptChange(kiosk.device_serial, e.target.value)}
-                                            className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition text-gray-900 dark:text-white"
-                                        >
-                                            <option value="">Unassigned</option>
-                                            {departments.map(d => (
-                                                <option key={d.id} value={d.id}>{d.name}</option>
-                                            ))}
-                                        </select>
+                                        {isSuperAdmin ? (
+                                            <select
+                                                value={kiosk.department_id || ""}
+                                                onChange={(e) => handleDeptChange(kiosk.device_serial, e.target.value)}
+                                                className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition text-gray-900 dark:text-white"
+                                            >
+                                                <option value="">Unassigned</option>
+                                                {departments.map(d => (
+                                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div className="w-full text-xs px-2 py-1.5 text-gray-900 dark:text-white truncate">
+                                                {departments.find(d => d.id === kiosk.department_id)?.name || "Unassigned"}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Room Binding */}
@@ -325,30 +332,32 @@ export default function KioskInventoryPage() {
                                     <div className="lg:w-1/6 flex items-center gap-2 lg:justify-end">
                                         {isLoading ? (
                                             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                                        ) : isPending ? (
-                                            <>
+                                        ) : isSuperAdmin ? (
+                                            isPending ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleApprove(kiosk.device_serial, kiosk.department_id)}
+                                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500/20 transition border border-green-500/20"
+                                                    >
+                                                        <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleReject(kiosk.device_serial)}
+                                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition border border-red-500/20"
+                                                    >
+                                                        <XCircle className="h-3.5 w-3.5" /> Reject
+                                                    </button>
+                                                </>
+                                            ) : (
                                                 <button
-                                                    onClick={() => handleApprove(kiosk.device_serial, kiosk.department_id)}
-                                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500/20 transition border border-green-500/20"
+                                                    onClick={() => handleDelete(kiosk.device_serial)}
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 transition rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                    title="Delete device"
                                                 >
-                                                    <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+                                                    <Trash2 className="h-4 w-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleReject(kiosk.device_serial)}
-                                                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition border border-red-500/20"
-                                                >
-                                                    <XCircle className="h-3.5 w-3.5" /> Reject
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleDelete(kiosk.device_serial)}
-                                                className="p-1.5 text-gray-400 hover:text-red-500 transition rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                title="Delete device"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
-                                        )}
+                                            )
+                                        ) : null}
                                     </div>
                                 </div>
 
