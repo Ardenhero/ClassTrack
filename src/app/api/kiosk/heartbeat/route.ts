@@ -35,25 +35,45 @@ export async function POST(request: Request) {
 
         const { device_serial, firmware_version, ip_address } = result.data;
 
-        // Upsert: create device if new, update heartbeat if existing
-        // NOTE: room_id is NOT included here — it's managed by the admin UI only.
-        // Including it would cause the ESP32 heartbeat to overwrite admin-set room bindings.
-        const { error } = await supabase
+        // Instead of upsert (which replaces missing columns with defaults like room_id=null),
+        // we manually check if it exists and perform an explicit update or insert.
+        const { data: existingDevice } = await supabase
             .from('kiosk_devices')
-            .upsert(
-                {
-                    device_serial,
-                    firmware_version: firmware_version || null,
-                    ip_address: ip_address || null,
-                    last_heartbeat: new Date().toISOString(),
-                    is_online: true,
-                },
-                { onConflict: 'device_serial' }
-            );
+            .select('device_serial')
+            .eq('device_serial', device_serial)
+            .maybeSingle();
 
-        if (error) {
-            console.error("[Heartbeat] Upsert error:", error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        const payload = {
+            firmware_version: firmware_version || null,
+            ip_address: ip_address || null,
+            last_heartbeat: new Date().toISOString(),
+            is_online: true,
+        };
+
+        if (existingDevice) {
+            // Update existing device (only touches specified columns, keeping room_id safe)
+            const { error } = await supabase
+                .from('kiosk_devices')
+                .update(payload)
+                .eq('device_serial', device_serial);
+
+            if (error) {
+                console.error("[Heartbeat] Update error:", error);
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+        } else {
+            // Insert new device
+            const { error } = await supabase
+                .from('kiosk_devices')
+                .insert({
+                    device_serial,
+                    ...payload,
+                });
+
+            if (error) {
+                console.error("[Heartbeat] Insert error:", error);
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
         }
 
         // Check for pending commands
