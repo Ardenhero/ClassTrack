@@ -7,14 +7,17 @@ import { cn } from "@/utils/cn";
 import { useProfile } from "@/context/ProfileContext";
 
 const tabs = [
-    { name: "Overview", href: "/dashboard/admin", icon: ShieldAlert, superAdminOnly: false, hideForSuperAdmin: false },
-    { name: "Rooms", href: "/dashboard/admin/rooms", icon: Building2, superAdminOnly: false, hideForSuperAdmin: false },
-    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor, superAdminOnly: true, hideForSuperAdmin: false },
-    { name: "Provisioning", href: "/dashboard/admin/provisioning", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
-    { name: "Departments", href: "/dashboard/admin/departments", icon: Building2, superAdminOnly: false, hideForSuperAdmin: false },
-    { name: "Devices", href: "/dashboard/admin/devices", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
+    // Regular Admin Tabs
+    { name: "Overview", href: "/dashboard/admin", icon: ShieldAlert, superAdminOnly: false, hideForSuperAdmin: true },
+    { name: "Rooms", href: "/dashboard/admin/rooms", icon: Building2, superAdminOnly: false, hideForSuperAdmin: true },
+    { name: "Departments", href: "/dashboard/admin/departments", icon: Building2, superAdminOnly: false, hideForSuperAdmin: true },
     { name: "Instructors", href: "/dashboard/admin/instructors", icon: Users, superAdminOnly: false, hideForSuperAdmin: true },
-    { name: "Reset PIN", href: "/dashboard/admin/security", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: true },
+
+    // Super Admin "Admin Management" Tabs
+    { name: "Provisioning", href: "/dashboard/admin/provisioning", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
+    { name: "Devices", href: "/dashboard/admin/devices", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
+    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor, superAdminOnly: true, hideForSuperAdmin: false },
+    { name: "Security", href: "/dashboard/admin/security", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Approvals", href: "/dashboard/admin/approvals", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert, superAdminOnly: true, hideForSuperAdmin: false },
 ];

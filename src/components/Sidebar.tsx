@@ -19,17 +19,13 @@ import {
     Info,
     ShieldCheck,
     Building2,
-    ShieldAlert,
     ChevronDown,
     ChevronRight,
     Search,
     FileCheck,
     BarChart3,
-    KeyRound,
     ChevronLeft,
-    Cpu,
-    QrCode,
-    Monitor
+    QrCode
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -61,13 +57,9 @@ const adminNavigation = [
 const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
-    { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
-    { name: "Devices", href: "/dashboard/admin/devices", icon: Cpu },
-    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
     { name: "System Info", href: "/about", icon: Info },
 ];
 

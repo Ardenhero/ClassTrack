@@ -9,6 +9,7 @@ export async function provisionAdmin(formData: {
     name: string;
     departmentId: string;
     password: string;
+    isSuperAdmin?: boolean;
 }) {
     // 1. Authorization Check (Only Super Admin)
     const supabase = createClient();
@@ -50,8 +51,8 @@ export async function provisionAdmin(formData: {
             owner_id: authData.user.id,
             name: formData.name,
             role: 'admin',
-            department_id: formData.departmentId || null,
-            is_super_admin: false,
+            department_id: formData.isSuperAdmin ? null : (formData.departmentId || null),
+            is_super_admin: formData.isSuperAdmin || false,
             is_visible_on_kiosk: false
         });
 
