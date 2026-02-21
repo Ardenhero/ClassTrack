@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { revalidatePath } from "next/cache";
+
 
 export async function createRoom(formData: FormData) {
     const userClient = createClient();
@@ -25,7 +25,7 @@ export async function createRoom(formData: FormData) {
         console.error("Error creating room:", error);
         return { success: false, error: error.message };
     }
-    revalidatePath("/dashboard/admin/rooms");
+
     return { success: true };
 }
 
@@ -40,7 +40,7 @@ export async function updateRoomDetails(roomId: string, name: string, building: 
         console.error("Error updating room:", error);
         return { success: false, error: error.message };
     }
-    revalidatePath("/dashboard/admin/rooms");
+
     return { success: true };
 }
 
@@ -55,6 +55,6 @@ export async function assignDeviceToRoom(deviceId: string, roomId: string | null
         console.error("Error assigning device to room:", error);
         return { success: false, error: error.message };
     }
-    revalidatePath("/dashboard/admin/rooms");
+
     return { success: true };
 }
