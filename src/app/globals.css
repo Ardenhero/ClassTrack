@@ -10,14 +10,18 @@
 
 @layer base {
   body {
+    @apply bg-gray-50 text-gray-900;
+    /* Clean text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
     background-color: theme('colors.dark.bg');
     color: theme('colors.gray.300');
     /* Subtle radial gradient to give depth to the dark background */
     background-image: radial-gradient(circle at 50% 0%, #1a1a24 0%, #0a0a0f 70%);
     background-attachment: fixed;
-    /* Clean text rendering for dark mode */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -25,7 +29,7 @@
 
   /* Core Glassmorphism Surface Base */
   .glass-panel {
-    @apply bg-dark-surface/60 backdrop-blur-xl border border-white/5 shadow-lg;
+    @apply bg-white border border-gray-200 shadow-md dark:bg-dark-surface/60 dark:backdrop-blur-xl dark:border-white/5 dark:shadow-lg;
   }
 
   /* Interactive Glass Card with Lift & Glow */
@@ -34,28 +38,28 @@
   }
 
   .glass-card:hover {
-    @apply -translate-y-2 border-white/10 shadow-glass-lift;
+    @apply -translate-y-2 border-gray-300 shadow-xl dark:border-white/10 dark:shadow-glass-lift;
   }
 
-  /* Hover Gradient Border Effect (using pseudo-element) */
-  .glass-card::before {
+  /* Hover Gradient Border Effect (using pseudo-element) for dark mode only */
+  .dark .glass-card::before {
     content: "";
     @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
     background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(176, 42, 42, 0.06), transparent 40%);
   }
 
-  .glass-card:hover::before {
+  .dark .glass-card:hover::before {
     @apply opacity-100;
   }
 
   /* Inputs */
   .glass-input {
-    @apply w-full bg-dark-bg/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nu-500/50 focus:border-nu-500 focus:shadow-glow-red;
+    @apply w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nu-500/50 focus:border-nu-500 focus:shadow-glow-red dark:bg-dark-bg/50 dark:border-white/10 dark:text-white dark:placeholder-gray-500;
   }
 
   /* Gradient Text */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-nu-400 via-nu-200 to-nu-400 animate-gradient-x;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-nu-600 via-nu-500 to-nu-600 dark:from-nu-400 dark:via-nu-200 dark:from-nu-400 animate-gradient-x;
   }
 }
 
