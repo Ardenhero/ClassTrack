@@ -71,7 +71,8 @@ export default function KioskInventoryPage() {
         } finally {
             setLoading(false);
         }
-    }, [supabase]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (isAdmin) loadData();
