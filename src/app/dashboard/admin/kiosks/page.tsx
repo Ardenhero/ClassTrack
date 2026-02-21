@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import {
     Monitor, CheckCircle2, XCircle, Clock, Wifi, WifiOff,
-    DoorClosed, Tag, Trash2, Loader2, Users
+    DoorClosed, Tag, Trash2, Loader2, Users, Save
 } from "lucide-react";
 import {
     approveKiosk, rejectKiosk, assignKioskToAdmin,
@@ -50,6 +50,8 @@ export default function KioskInventoryPage() {
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [pendingRoomBindings, setPendingRoomBindings] = useState<Record<string, string>>({});
+    const [savedRoomBindings, setSavedRoomBindings] = useState<Record<string, boolean>>({});
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -108,11 +110,18 @@ export default function KioskInventoryPage() {
         setActionLoading(null);
     };
 
-    const handleRoomBind = async (serial: string, roomId: string) => {
+    const handleRoomBind = async (serial: string) => {
+        const roomId = pendingRoomBindings[serial] ?? "";
         setActionLoading(serial);
         const res = await bindKioskToRoom(serial, roomId || null);
         if (res.error) alert(`Error: ${res.error}`);
-        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, room_id: roomId || null } : k));
+        else {
+            setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, room_id: roomId || null } : k));
+            // Clear pending and show success briefly
+            setPendingRoomBindings(prev => { const n = { ...prev }; delete n[serial]; return n; });
+            setSavedRoomBindings(prev => ({ ...prev, [serial]: true }));
+            setTimeout(() => setSavedRoomBindings(prev => { const n = { ...prev }; delete n[serial]; return n; }), 2000);
+        }
         setActionLoading(null);
     };
 
@@ -301,23 +310,38 @@ export default function KioskInventoryPage() {
 
                                         {/* Room Binding — System Admins only */}
                                         {!isSuperAdmin && (
-                                            <div className="lg:w-1/6">
+                                            <div className="lg:w-1/4">
                                                 <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
                                                     <DoorClosed className="h-3 w-3" /> Room
                                                 </div>
-                                                <select
-                                                    value={kiosk.room_id || ""}
-                                                    onChange={(e) => handleRoomBind(kiosk.device_serial, e.target.value)}
-                                                    disabled={!isApproved}
-                                                    className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
-                                                >
-                                                    <option value="">Unbound</option>
-                                                    {rooms
-                                                        .filter(r => r.department_id === profile?.department_id)
-                                                        .map(r => (
-                                                            <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
-                                                        ))}
-                                                </select>
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        value={pendingRoomBindings[kiosk.device_serial] ?? kiosk.room_id ?? ""}
+                                                        onChange={(e) => setPendingRoomBindings(prev => ({ ...prev, [kiosk.device_serial]: e.target.value }))}
+                                                        disabled={!isApproved}
+                                                        className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
+                                                    >
+                                                        <option value="">Unbound</option>
+                                                        {rooms
+                                                            .filter(r => r.department_id === profile?.department_id)
+                                                            .map(r => (
+                                                                <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
+                                                            ))}
+                                                    </select>
+                                                    {(pendingRoomBindings[kiosk.device_serial] !== undefined && pendingRoomBindings[kiosk.device_serial] !== (kiosk.room_id ?? "")) ? (
+                                                        <button
+                                                            onClick={() => handleRoomBind(kiosk.device_serial)}
+                                                            disabled={isLoading}
+                                                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-blue-500/10 text-blue-600 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 shrink-0"
+                                                        >
+                                                            <Save className="h-3.5 w-3.5" /> Save
+                                                        </button>
+                                                    ) : savedRoomBindings[kiosk.device_serial] ? (
+                                                        <span className="flex items-center gap-1 text-xs text-green-500 font-bold shrink-0">
+                                                            <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         )}
 
