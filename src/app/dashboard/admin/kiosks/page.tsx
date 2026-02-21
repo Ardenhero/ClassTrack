@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import {
     Monitor, CheckCircle2, XCircle, Clock, Wifi, WifiOff,
-    DoorClosed, Tag, Trash2, Loader2, RefreshCw, Users
+    DoorClosed, Tag, Trash2, Loader2, Users
 } from "lucide-react";
 import {
     approveKiosk, rejectKiosk, assignKioskToAdmin,
@@ -57,7 +57,7 @@ export default function KioskInventoryPage() {
             const [kioskRes, adminsRes, roomRes] = await Promise.all([
                 fetch('/api/kiosk/heartbeat'),
                 supabase.from('instructors').select('name, auth_user_id').eq('role', 'admin').order('name'),
-                supabase.from('rooms').select('id, name, building').order('name'),
+                supabase.from('rooms').select('id, name, building, department_id').order('name'),
             ]);
 
             const kioskData = await kioskRes.json();
@@ -214,166 +214,160 @@ export default function KioskInventoryPage() {
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Approve, assign, and bind ESP32 kiosks to rooms</p>
                 </div>
-                <button
-                    onClick={loadData}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition font-medium"
-                >
-                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </button>
             </div>
 
             {/* Kiosk List */}
-            {loading && kiosks.length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-            ) : kiosks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400 text-sm">
-                    No kiosks registered yet. Connect an ESP32 and it will appear here automatically.
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {kiosks.map(kiosk => {
-                        const isLoading = actionLoading === kiosk.device_serial;
-                        const status = kiosk.status || 'pending';
-                        const isPending = status === 'pending';
-                        const isApproved = status === 'approved';
+            {
+                loading && kiosks.length === 0 ? (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </div>
+                ) : kiosks.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400 text-sm">
+                        No kiosks registered yet. Connect an ESP32 and it will appear here automatically.
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {kiosks.map(kiosk => {
+                            const isLoading = actionLoading === kiosk.device_serial;
+                            const status = kiosk.status || 'pending';
+                            const isPending = status === 'pending';
+                            const isApproved = status === 'approved';
 
-                        return (
-                            <div
-                                key={kiosk.device_serial}
-                                className={`bg-white dark:bg-gray-800 rounded-xl border p-5 transition-all
+                            return (
+                                <div
+                                    key={kiosk.device_serial}
+                                    className={`bg-white dark:bg-gray-800 rounded-xl border p-5 transition-all
                                     ${isPending ? 'border-yellow-300 dark:border-yellow-700 ring-1 ring-yellow-200 dark:ring-yellow-800' :
-                                        'border-gray-200 dark:border-gray-700'}`}
-                            >
-                                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                                    {/* Identity */}
-                                    <div className="flex items-center gap-3 lg:w-1/4 min-w-0">
-                                        <div className={`w-3 h-3 rounded-full shrink-0 ${kiosk.is_online ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white truncate font-mono">
-                                                {kiosk.device_serial}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${statusColor(status)}`}>
-                                                    {status}
-                                                </span>
-                                                {kiosk.is_online ? (
-                                                    <span className="flex items-center gap-1 text-[10px] text-green-500"><Wifi className="h-3 w-3" />Online</span>
+                                            'border-gray-200 dark:border-gray-700'}`}
+                                >
+                                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                                        {/* Identity */}
+                                        <div className="flex items-center gap-3 lg:w-1/4 min-w-0">
+                                            <div className={`w-3 h-3 rounded-full shrink-0 ${kiosk.is_online ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white truncate font-mono">
+                                                    {kiosk.device_serial}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${statusColor(status)}`}>
+                                                        {status}
+                                                    </span>
+                                                    {kiosk.is_online ? (
+                                                        <span className="flex items-center gap-1 text-[10px] text-green-500"><Wifi className="h-3 w-3" />Online</span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1 text-[10px] text-gray-400"><WifiOff className="h-3 w-3" />{timeAgo(kiosk.last_heartbeat)}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Label */}
+                                        <div className="lg:w-1/6">
+                                            <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                                <Tag className="h-3 w-3" /> Label
+                                            </div>
+                                            <input
+                                                type="text"
+                                                defaultValue={kiosk.label || ""}
+                                                placeholder="e.g. STC 102 Kiosk"
+                                                onBlur={(e) => {
+                                                    if (e.target.value !== (kiosk.label || "")) {
+                                                        handleLabelSave(kiosk.device_serial, e.target.value);
+                                                    }
+                                                }}
+                                                className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none transition text-gray-900 dark:text-white"
+                                            />
+                                        </div>
+
+                                        {/* Assigned Admin */}
+                                        {isSuperAdmin && (
+                                            <div className="lg:w-1/6">
+                                                <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                                    <Users className="h-3 w-3" /> Assigned Admin
+                                                </div>
+                                                <select
+                                                    value={kiosk.assigned_admin_id || ""}
+                                                    onChange={(e) => handleAdminAssign(kiosk.device_serial, e.target.value)}
+                                                    className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition text-gray-900 dark:text-white"
+                                                >
+                                                    <option value="">Unassigned</option>
+                                                    {systemAdmins.map(admin => (
+                                                        <option key={admin.auth_user_id} value={admin.auth_user_id}>{admin.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Room Binding — System Admins only */}
+                                        {!isSuperAdmin && (
+                                            <div className="lg:w-1/6">
+                                                <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                                    <DoorClosed className="h-3 w-3" /> Room
+                                                </div>
+                                                <select
+                                                    value={kiosk.room_id || ""}
+                                                    onChange={(e) => handleRoomBind(kiosk.device_serial, e.target.value)}
+                                                    disabled={!isApproved}
+                                                    className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
+                                                >
+                                                    <option value="">Unbound</option>
+                                                    {rooms
+                                                        .filter(r => r.department_id === profile?.department_id)
+                                                        .map(r => (
+                                                            <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
+                                                        ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Actions */}
+                                        {isSuperAdmin && (
+                                            <div className="lg:w-1/6 flex items-center gap-2 lg:justify-end">
+                                                {isLoading ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                                ) : isPending ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleApprove(kiosk.device_serial, kiosk.assigned_admin_id)}
+                                                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500/20 transition border border-green-500/20"
+                                                        >
+                                                            <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleReject(kiosk.device_serial)}
+                                                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition border border-red-500/20"
+                                                        >
+                                                            <XCircle className="h-3.5 w-3.5" /> Reject
+                                                        </button>
+                                                    </>
                                                 ) : (
-                                                    <span className="flex items-center gap-1 text-[10px] text-gray-400"><WifiOff className="h-3 w-3" />{timeAgo(kiosk.last_heartbeat)}</span>
+                                                    <button
+                                                        onClick={() => handleDelete(kiosk.device_serial)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 transition rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                        title="Delete device"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
 
-                                    {/* Label */}
-                                    <div className="lg:w-1/6">
-                                        <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
-                                            <Tag className="h-3 w-3" /> Label
-                                        </div>
-                                        <input
-                                            type="text"
-                                            defaultValue={kiosk.label || ""}
-                                            placeholder="e.g. STC 102 Kiosk"
-                                            onBlur={(e) => {
-                                                if (e.target.value !== (kiosk.label || "")) {
-                                                    handleLabelSave(kiosk.device_serial, e.target.value);
-                                                }
-                                            }}
-                                            className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none transition text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-
-                                    {/* Assigned Admin */}
-                                    {isSuperAdmin && (
-                                        <div className="lg:w-1/6">
-                                            <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
-                                                <Users className="h-3 w-3" /> Assigned Admin
-                                            </div>
-                                            <select
-                                                value={kiosk.assigned_admin_id || ""}
-                                                onChange={(e) => handleAdminAssign(kiosk.device_serial, e.target.value)}
-                                                className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition text-gray-900 dark:text-white"
-                                            >
-                                                <option value="">Unassigned</option>
-                                                {systemAdmins.map(admin => (
-                                                    <option key={admin.auth_user_id} value={admin.auth_user_id}>{admin.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    {/* Room Binding — System Admins only */}
-                                    {!isSuperAdmin && (
-                                        <div className="lg:w-1/6">
-                                            <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
-                                                <DoorClosed className="h-3 w-3" /> Room
-                                            </div>
-                                            <select
-                                                value={kiosk.room_id || ""}
-                                                onChange={(e) => handleRoomBind(kiosk.device_serial, e.target.value)}
-                                                disabled={!isApproved}
-                                                className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
-                                            >
-                                                <option value="">Unbound</option>
-                                                {rooms
-                                                    .filter(r => r.department_id === profile?.department_id)
-                                                    .map(r => (
-                                                        <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
-                                                    ))}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    {/* Actions */}
-                                    {isSuperAdmin && (
-                                        <div className="lg:w-1/6 flex items-center gap-2 lg:justify-end">
-                                            {isLoading ? (
-                                                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                                            ) : isPending ? (
-                                                <>
-                                                    <button
-                                                        onClick={() => handleApprove(kiosk.device_serial, kiosk.assigned_admin_id)}
-                                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500/20 transition border border-green-500/20"
-                                                    >
-                                                        <CheckCircle2 className="h-3.5 w-3.5" /> Approve
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleReject(kiosk.device_serial)}
-                                                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition border border-red-500/20"
-                                                    >
-                                                        <XCircle className="h-3.5 w-3.5" /> Reject
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleDelete(kiosk.device_serial)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 transition rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                    title="Delete device"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            )}
+                                    {/* Meta row */}
+                                    {kiosk.firmware_version && (
+                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4 text-[10px] text-gray-400">
+                                            <span>FW: {kiosk.firmware_version}</span>
+                                            {kiosk.ip_address && <span>IP: {kiosk.ip_address}</span>}
+                                            {kiosk.approved_at && <span>Approved: {new Date(kiosk.approved_at).toLocaleDateString()}</span>}
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Meta row */}
-                                {kiosk.firmware_version && (
-                                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-4 text-[10px] text-gray-400">
-                                        <span>FW: {kiosk.firmware_version}</span>
-                                        {kiosk.ip_address && <span>IP: {kiosk.ip_address}</span>}
-                                        {kiosk.approved_at && <span>Approved: {new Date(kiosk.approved_at).toLocaleDateString()}</span>}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
+                            );
+                        })}
+                    </div>
+                )
+            }
+        </div >
     );
 }

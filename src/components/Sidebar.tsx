@@ -60,6 +60,7 @@ const superAdminNavigation = [
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
+    { name: "Settings", href: "/settings", icon: Settings },
     { name: "System Info", href: "/about", icon: Info },
 ];
 

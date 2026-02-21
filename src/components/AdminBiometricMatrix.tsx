@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import { Fingerprint, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { Fingerprint, AlertTriangle, RefreshCw, Loader2, ArrowRightLeft } from "lucide-react";
 import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface SlotData {
@@ -22,6 +22,8 @@ export function AdminBiometricMatrix() {
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
     const [unlinking, setUnlinking] = useState(false);
+    const [moveTargetRoom, setMoveTargetRoom] = useState<string>("");
+    const [moving, setMoving] = useState(false);
 
     const loadMatrix = useCallback(async () => {
         setLoading(true);
@@ -62,17 +64,17 @@ export function AdminBiometricMatrix() {
 
             const activeRoomId = selectedRoomId || (roomsData?.[0]?.id ?? null);
 
-            // 3. Find the kiosk device for this room
-            let deviceId = null;
+            // 3. Find the kiosk device for this room (from kiosk_devices table)
+            let deviceId: string | null = null;
             if (activeRoomId) {
                 const { data: kioskReq } = await supabase
-                    .from("iot_devices")
-                    .select("id")
-                    .eq("type", "KIOSK")
+                    .from("kiosk_devices")
+                    .select("device_serial")
                     .eq("room_id", activeRoomId)
+                    .eq("status", "approved")
                     .maybeSingle();
                 if (kioskReq) {
-                    deviceId = kioskReq.id;
+                    deviceId = kioskReq.device_serial;
                 }
             }
 
@@ -169,6 +171,45 @@ export function AdminBiometricMatrix() {
             alert("Failed to unlink fingerprint. Please try again.");
         } finally {
             setUnlinking(false);
+        }
+    };
+
+    const moveSlotToRoom = async (slot: SlotData) => {
+        if (!slot.student_id || !moveTargetRoom) return;
+        if (!confirm(`Move ${slot.student_name}'s fingerprint to the selected room? The fingerprint template will be reassigned to that room's kiosk.`)) return;
+
+        setMoving(true);
+        const supabase = createClient();
+
+        try {
+            // Find the kiosk device_serial for the target room
+            const { data: targetKiosk } = await supabase
+                .from("kiosk_devices")
+                .select("device_serial")
+                .eq("room_id", moveTargetRoom)
+                .eq("status", "approved")
+                .maybeSingle();
+
+            if (!targetKiosk) {
+                alert("Target room has no approved kiosk bound. Please bind a kiosk first.");
+                return;
+            }
+
+            const { error } = await supabase
+                .from("students")
+                .update({ device_id: targetKiosk.device_serial })
+                .eq("id", slot.student_id);
+
+            if (error) throw error;
+
+            setMoveTargetRoom("");
+            await loadMatrix();
+            setSelectedSlot(null);
+        } catch (err) {
+            console.error("Failed to move fingerprint:", err);
+            alert("Failed to move fingerprint template. Please try again.");
+        } finally {
+            setMoving(false);
         }
     };
 
@@ -302,13 +343,15 @@ export function AdminBiometricMatrix() {
                                     </span>
 
                                     {selectedSlot.status === 'occupied' && (
-                                        <button
-                                            onClick={() => unlinkSlot(selectedSlot)}
-                                            disabled={unlinking}
-                                            className="text-xs text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
-                                        >
-                                            {unlinking ? 'Unlinking...' : 'Unlink Fingerprint'}
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => unlinkSlot(selectedSlot)}
+                                                disabled={unlinking}
+                                                className="text-xs text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
+                                            >
+                                                {unlinking ? 'Unlinking...' : 'Unlink'}
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
 
@@ -330,6 +373,35 @@ export function AdminBiometricMatrix() {
                                     </p>
                                 ) : (
                                     <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>
+                                )}
+
+                                {/* Move to Room — fingerprint template reassignment */}
+                                {selectedSlot.status === 'occupied' && rooms.length > 1 && (
+                                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
+                                            <ArrowRightLeft className="h-3 w-3" /> Move to Another Room
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                value={moveTargetRoom}
+                                                onChange={(e) => setMoveTargetRoom(e.target.value)}
+                                                className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none text-gray-900 dark:text-white"
+                                            >
+                                                <option value="">Select room...</option>
+                                                {rooms.filter(r => r.id !== selectedRoomId).map(r => (
+                                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                onClick={() => moveSlotToRoom(selectedSlot)}
+                                                disabled={!moveTargetRoom || moving}
+                                                className="px-3 py-1.5 text-xs font-bold bg-blue-500/10 text-blue-600 rounded-lg hover:bg-blue-500/20 transition border border-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {moving ? 'Moving...' : 'Move'}
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-1">Reassigns the fingerprint template to the target room&apos;s kiosk without re-enrolling.</p>
+                                    </div>
                                 )}
                             </div>
                         ) : (
