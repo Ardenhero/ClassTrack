@@ -180,18 +180,20 @@ export default function KioskInventoryPage() {
                         </div>
                     </div>
                 )}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-green-400" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">{approved}</p>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-semibold">{bound} bound</span>
+                {isSuperAdmin && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-5 w-5 text-green-400" />
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Approved</p>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">{approved}</p>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-semibold">{bound} bound</span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Approved</p>
+                        </div>
                     </div>
-                </div>
+                )}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
                         <Wifi className="h-5 w-5 text-purple-400" />
@@ -304,25 +306,27 @@ export default function KioskInventoryPage() {
                                         </div>
                                     )}
 
-                                    {/* Room Binding */}
-                                    <div className="lg:w-1/6">
-                                        <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
-                                            <DoorClosed className="h-3 w-3" /> Room
+                                    {/* Room Binding — System Admins only */}
+                                    {!isSuperAdmin && (
+                                        <div className="lg:w-1/6">
+                                            <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                                <DoorClosed className="h-3 w-3" /> Room
+                                            </div>
+                                            <select
+                                                value={kiosk.room_id || ""}
+                                                onChange={(e) => handleRoomBind(kiosk.device_serial, e.target.value)}
+                                                disabled={!isApproved}
+                                                className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
+                                            >
+                                                <option value="">Unbound</option>
+                                                {rooms
+                                                    .filter(r => r.department_id === profile?.department_id)
+                                                    .map(r => (
+                                                        <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
+                                                    ))}
+                                            </select>
                                         </div>
-                                        <select
-                                            value={kiosk.room_id || ""}
-                                            onChange={(e) => handleRoomBind(kiosk.device_serial, e.target.value)}
-                                            disabled={!isApproved}
-                                            className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
-                                        >
-                                            <option value="">Unbound</option>
-                                            {rooms
-                                                .filter(r => isSuperAdmin || r.department_id === profile?.department_id)
-                                                .map(r => (
-                                                    <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
-                                                ))}
-                                        </select>
-                                    </div>
+                                    )}
 
                                     {/* Actions */}
                                     {isSuperAdmin && (
