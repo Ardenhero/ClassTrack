@@ -63,46 +63,12 @@ export default function RoomsManagementPage() {
             if (roomsError) throw roomsError;
             setRooms(roomsData || []);
 
-            let query = supabase
+            const { data: devicesData, error: devicesError } = await supabase
                 .from("iot_devices")
                 .select("id, name, type, room_id")
                 .order("name");
-
-            // For System Admins, scope iot_devices by department
-            if (!profile?.is_super_admin) {
-                // Find rooms belonging to this department, then get devices in those rooms
-                const deptRoomIds = (roomsData || []).map((r: { id: string }) => r.id);
-                if (deptRoomIds.length > 0) {
-                    query = query.in("room_id", deptRoomIds); // plus unassigned...
-                    // actually, standard IoT devices don't have department_id, so the scoping 
-                    // is tricky for unassigned devices. We'll fetch all and filter in memory if needed.
-                }
-            }
-
-            const { data: devicesData, error: devicesError } = await query;
             if (devicesError) throw devicesError;
-
-            // Also fetch Approved Kiosks to allow binding them to rooms
-            let kioskQuery = supabase
-                .from("kiosk_devices")
-                .select("device_serial, label, room_id")
-                .eq("status", "approved");
-
-            if (!profile?.is_super_admin && profile?.department_id) {
-                kioskQuery = kioskQuery.eq("department_id", profile.department_id);
-            }
-
-            const { data: kioskData, error: kioskError } = await kioskQuery;
-            if (kioskError) console.error("Error fetching kiosks:", kioskError);
-
-            const formattedKiosks = (kioskData || []).map((k: { device_serial: string; label: string | null; room_id: string | null }) => ({
-                id: k.device_serial,
-                name: k.label || k.device_serial,
-                type: 'KIOSK',
-                room_id: k.room_id
-            }));
-
-            setDevices([...(devicesData || []), ...formattedKiosks]);
+            setDevices(devicesData || []);
         } catch (err) {
             console.error("Failed to load rooms/devices:", err);
         } finally {
@@ -156,12 +122,12 @@ export default function RoomsManagementPage() {
         loadData();
     };
 
-    const handleDeviceAssignment = async (deviceId: string, roomId: string | null, type?: string) => {
+    const handleDeviceAssignment = async (deviceId: string, roomId: string | null) => {
         try {
             // Optimistic UI update
             setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, room_id: roomId } : d));
 
-            const res = await assignDeviceToRoom(deviceId, roomId, type);
+            const res = await assignDeviceToRoom(deviceId, roomId);
             if (res && res.error) {
                 alert(`Failed to assign device: ${res.error}`);
                 loadData();
@@ -180,7 +146,7 @@ export default function RoomsManagementPage() {
         // Unassign all devices from this room first
         const roomDevices = devices.filter(d => d.room_id === roomId);
         for (const device of roomDevices) {
-            await assignDeviceToRoom(device.id, null, device.type);
+            await assignDeviceToRoom(device.id, null);
         }
         // Delete room
         await supabase.from("rooms").delete().eq("id", roomId);
@@ -415,7 +381,7 @@ export default function RoomsManagementPage() {
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => handleDeviceAssignment(device.id, null, device.type)}
+                                                onClick={() => handleDeviceAssignment(device.id, null)}
                                                 className="text-[10px] text-red-400 hover:text-red-300 opacity-0 group-hover/device:opacity-100 transition px-1 shrink-0"
                                             >
                                                 Remove
@@ -433,17 +399,14 @@ export default function RoomsManagementPage() {
                                 <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.05)]">
                                     <select
                                         onChange={(e) => {
-                                            if (e.target.value) {
-                                                const [selectedId, selectedType] = e.target.value.split("::");
-                                                handleDeviceAssignment(selectedId, room.id, selectedType);
-                                            }
+                                            if (e.target.value) handleDeviceAssignment(e.target.value, room.id);
                                         }}
                                         value=""
                                         className="w-full text-xs p-2 bg-transparent border border-dashed border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 outline-none hover:border-gray-300 dark:border-gray-600 hover:text-[#a8adc4] cursor-pointer transition"
                                     >
                                         <option value="" disabled>+ Assign existing device</option>
                                         {unassignedDevices.map(device => (
-                                            <option key={device.id} value={`${device.id}::${device.type}`} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                            <option key={device.id} value={device.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                                                 {device.type === 'KIOSK' ? '[KIOSK] ' : ''}{device.name}
                                             </option>
                                         ))}

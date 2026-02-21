@@ -17,7 +17,7 @@ async function requireSuperAdmin() {
     return { user, profile, isSuperAdmin: !!profile?.is_super_admin };
 }
 
-export async function approveKiosk(deviceSerial: string, departmentId: string | null) {
+export async function approveKiosk(deviceSerial: string, assignedAdminId: string | null) {
     const { user, isSuperAdmin } = await requireSuperAdmin();
     if (!isSuperAdmin) return { success: false, error: "Forbidden: Super Admin only" };
 
@@ -26,7 +26,7 @@ export async function approveKiosk(deviceSerial: string, departmentId: string | 
         .from('kiosk_devices')
         .update({
             status: 'approved',
-            department_id: departmentId,
+            assigned_admin_id: assignedAdminId,
             approved_at: new Date().toISOString(),
             approved_by: user.id,
         })
@@ -56,14 +56,14 @@ export async function rejectKiosk(deviceSerial: string) {
     return { success: true };
 }
 
-export async function assignKioskDepartment(deviceSerial: string, departmentId: string | null) {
+export async function assignKioskToAdmin(deviceSerial: string, assignedAdminId: string | null) {
     const { isSuperAdmin } = await requireSuperAdmin();
     if (!isSuperAdmin) return { success: false, error: "Forbidden: Super Admin only" };
 
     const supabase = createAdminClient();
     const { error } = await supabase
         .from('kiosk_devices')
-        .update({ department_id: departmentId })
+        .update({ assigned_admin_id: assignedAdminId })
         .eq('device_serial', deviceSerial);
 
     if (error) return { success: false, error: error.message };
@@ -71,21 +71,21 @@ export async function assignKioskDepartment(deviceSerial: string, departmentId: 
 }
 
 export async function bindKioskToRoom(deviceSerial: string, roomId: string | null) {
-    const { isSuperAdmin, profile } = await requireSuperAdmin();
+    const { isSuperAdmin, user } = await requireSuperAdmin();
 
     const supabase = createAdminClient();
 
-    // Super Admins can bind any kiosk. Dept Admins can only bind kiosks in their department.
+    // Super Admins can bind any kiosk. Dept Admins can only bind kiosks assigned to them.
     if (!isSuperAdmin) {
-        // Check department match
+        // Check admin assignment match
         const { data: kiosk } = await supabase
             .from('kiosk_devices')
-            .select('department_id')
+            .select('assigned_admin_id')
             .eq('device_serial', deviceSerial)
             .single();
 
-        if (!kiosk || kiosk.department_id !== profile?.department_id) {
-            return { success: false, error: "Cannot bind kiosk from another department" };
+        if (!kiosk || kiosk.assigned_admin_id !== user.id) {
+            return { success: false, error: "Cannot bind a kiosk not assigned to you" };
         }
     }
 

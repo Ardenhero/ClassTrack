@@ -5,17 +5,17 @@ import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import {
     Monitor, CheckCircle2, XCircle, Clock, Wifi, WifiOff,
-    Building2, DoorClosed, Tag, Trash2, Loader2, RefreshCw
+    Building2, DoorClosed, Tag, Trash2, Loader2, RefreshCw, Users
 } from "lucide-react";
 import {
-    approveKiosk, rejectKiosk, assignKioskDepartment,
+    approveKiosk, rejectKiosk, assignKioskToAdmin,
     bindKioskToRoom, updateKioskLabel, deleteKiosk
 } from "./actions";
 
 interface KioskDevice {
     device_serial: string;
     status: string | null;
-    department_id: string | null;
+    assigned_admin_id: string | null;
     room_id: string | null;
     label: string | null;
     is_online: boolean;
@@ -24,12 +24,11 @@ interface KioskDevice {
     ip_address: string | null;
     approved_at: string | null;
     rooms?: { name: string; building: string | null } | null;
-    departments?: { name: string } | null;
 }
 
-interface Department {
-    id: string;
+interface SystemAdmin {
     name: string;
+    auth_user_id: string;
 }
 
 interface Room {
@@ -43,28 +42,27 @@ export default function KioskInventoryPage() {
     const { profile } = useProfile();
     const supabase = createClient();
 
+    const isAdmin = profile?.role === 'admin' || profile?.is_super_admin;
+    const isSuperAdmin = profile?.is_super_admin;
+
     const [kiosks, setKiosks] = useState<KioskDevice[]>([]);
-    const [departments, setDepartments] = useState<Department[]>([]);
+    const [systemAdmins, setSystemAdmins] = useState<SystemAdmin[]>([]);
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const isAdmin = profile?.role === 'admin' || profile?.is_super_admin;
-    const isSuperAdmin = profile?.is_super_admin;
-
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            // fetch automatically scoped devices via the session
-            const [kioskRes, deptRes, roomRes] = await Promise.all([
+            const [kioskRes, adminsRes, roomRes] = await Promise.all([
                 fetch('/api/kiosk/heartbeat'),
-                supabase.from('departments').select('id, name').order('name'),
-                supabase.from('rooms').select('id, name, building, department_id').order('name'),
+                supabase.from('instructors').select('name, auth_user_id').eq('role', 'admin').order('name'),
+                supabase.from('rooms').select('id, name, building').order('name'),
             ]);
 
             const kioskData = await kioskRes.json();
             setKiosks(kioskData.devices || []);
-            setDepartments(deptRes.data || []);
+            setSystemAdmins(adminsRes.data || []);
             setRooms(roomRes.data || []);
         } catch (err) {
             console.error("Failed to load kiosk data:", err);
@@ -85,11 +83,14 @@ export default function KioskInventoryPage() {
         );
     }
 
-    const handleApprove = async (serial: string, deptId: string | null) => {
+    // @ts-ignore actions.ts renamed it
+    import { assignKioskToAdmin } from "./actions";
+
+    const handleApprove = async (serial: string, adminId: string | null) => {
         setActionLoading(serial);
-        const res = await approveKiosk(serial, deptId);
+        const res = await approveKiosk(serial, adminId);
         if (res.error) alert(`Error: ${res.error}`);
-        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, status: 'approved', department_id: deptId } : k));
+        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, status: 'approved', assigned_admin_id: adminId } : k));
         setActionLoading(null);
     };
 
@@ -102,11 +103,11 @@ export default function KioskInventoryPage() {
         setActionLoading(null);
     };
 
-    const handleDeptChange = async (serial: string, deptId: string) => {
+    const handleAdminAssign = async (serial: string, adminId: string) => {
         setActionLoading(serial);
-        const res = await assignKioskDepartment(serial, deptId || null);
+        const res = await assignKioskToAdmin(serial, adminId || null);
         if (res.error) alert(`Error: ${res.error}`);
-        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, department_id: deptId || null } : k));
+        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, assigned_admin_id: adminId || null } : k));
         setActionLoading(null);
     };
 
@@ -171,15 +172,17 @@ export default function KioskInventoryPage() {
                         <p className="text-xs text-gray-500 dark:text-gray-400">Total Kiosks</p>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center shrink-0">
-                        <Clock className="h-5 w-5 text-yellow-400" />
+                {isSuperAdmin && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center shrink-0">
+                            <Clock className="h-5 w-5 text-yellow-400" />
+                        </div>
+                        <div>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{pending}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Pending Approval</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{pending}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Pending Approval</p>
-                    </div>
-                </div>
+                )}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
                         <CheckCircle2 className="h-5 w-5 text-green-400" />
@@ -285,28 +288,24 @@ export default function KioskInventoryPage() {
                                         />
                                     </div>
 
-                                    {/* Department */}
-                                    <div className="lg:w-1/6">
-                                        <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
-                                            <Building2 className="h-3 w-3" /> Department
-                                        </div>
-                                        {isSuperAdmin ? (
+                                    {/* Assigned Admin */}
+                                    {isSuperAdmin && (
+                                        <div className="lg:w-1/6">
+                                            <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                                <Users className="h-3 w-3" /> Assigned Admin
+                                            </div>
                                             <select
-                                                value={kiosk.department_id || ""}
-                                                onChange={(e) => handleDeptChange(kiosk.device_serial, e.target.value)}
+                                                value={kiosk.assigned_admin_id || ""}
+                                                onChange={(e) => handleAdminAssign(kiosk.device_serial, e.target.value)}
                                                 className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none cursor-pointer transition text-gray-900 dark:text-white"
                                             >
                                                 <option value="">Unassigned</option>
-                                                {departments.map(d => (
-                                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                                {systemAdmins.map(admin => (
+                                                    <option key={admin.auth_user_id} value={admin.auth_user_id}>{admin.name}</option>
                                                 ))}
                                             </select>
-                                        ) : (
-                                            <div className="w-full text-xs px-2 py-1.5 text-gray-900 dark:text-white truncate">
-                                                {departments.find(d => d.id === kiosk.department_id)?.name || "Unassigned"}
-                                            </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
 
                                     {/* Room Binding */}
                                     <div className="lg:w-1/6">
@@ -321,7 +320,7 @@ export default function KioskInventoryPage() {
                                         >
                                             <option value="">Unbound</option>
                                             {rooms
-                                                .filter(r => !kiosk.department_id || r.department_id === kiosk.department_id || !r.department_id)
+                                                .filter(r => isSuperAdmin || r.department_id === profile?.department_id)
                                                 .map(r => (
                                                     <option key={r.id} value={r.id}>{r.name}{r.building ? ` (${r.building})` : ''}</option>
                                                 ))}
@@ -329,14 +328,14 @@ export default function KioskInventoryPage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="lg:w-1/6 flex items-center gap-2 lg:justify-end">
-                                        {isLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                                        ) : isSuperAdmin ? (
-                                            isPending ? (
+                                    {isSuperAdmin && (
+                                        <div className="lg:w-1/6 flex items-center gap-2 lg:justify-end">
+                                            {isLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                            ) : isPending ? (
                                                 <>
                                                     <button
-                                                        onClick={() => handleApprove(kiosk.device_serial, kiosk.department_id)}
+                                                        onClick={() => handleApprove(kiosk.device_serial, kiosk.assigned_admin_id)}
                                                         className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-green-500/10 text-green-600 rounded-lg hover:bg-green-500/20 transition border border-green-500/20"
                                                     >
                                                         <CheckCircle2 className="h-3.5 w-3.5" /> Approve
@@ -356,9 +355,9 @@ export default function KioskInventoryPage() {
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
-                                            )
-                                        ) : null}
-                                    </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Meta row */}
