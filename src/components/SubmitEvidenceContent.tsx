@@ -28,6 +28,7 @@ type Step = "lookup" | "form" | "success";
 
 export function SubmitEvidenceContent({ sin }: { sin: string }) {
     const [step, setStep] = useState<Step>("form");
+    const [loadingData, setLoadingData] = useState(true);
 
     const [student, setStudent] = useState<StudentInfo | null>(null);
     const [allClasses, setAllClasses] = useState<ClassInfo[]>([]);
@@ -50,6 +51,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
     const handleLookup = async (sinToLookup: string) => {
         try {
+            setLoadingData(true);
             const res = await fetch(`/api/evidence/public-upload?sin=${encodeURIComponent(sinToLookup.trim())}`);
             const data = await res.json();
 
@@ -68,6 +70,8 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
             }
         } catch {
             // connection error handled silently
+        } finally {
+            setLoadingData(false);
         }
     };
 
@@ -154,8 +158,16 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
         <div className="flex flex-col h-full p-2">
             <div className="flex-grow flex items-center justify-center">
                 <div className="w-full">
+                    {/* Wait for initial data load */}
+                    {loadingData && (
+                        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-gray-100">
+                            <Loader2 className="h-8 w-8 text-nwu-red animate-spin" />
+                            <p className="text-sm font-medium text-gray-500 mt-4">Loading form data...</p>
+                        </div>
+                    )}
+
                     {/* Step 2: Upload Form */}
-                    {step === "form" && student && (
+                    {step === "form" && student && !loadingData && (
                         <div className="bg-white rounded-xl shadow-xl border-t-4 border-nwu-gold overflow-hidden">
                             <div className="p-6 space-y-5">
                                 {/* Instructor Selection (FIRST) */}
@@ -167,7 +179,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     <select
                                         value={selectedInstructor}
                                         onChange={(e) => handleInstructorChange(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 text-sm focus:ring-nwu-red focus:border-nwu-red"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                     >
                                         <option value="">Choose your instructor...</option>
                                         {instructors.map((inst) => (
@@ -241,7 +253,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                             type="date"
                                             value={currentDate}
                                             onChange={(e) => setCurrentDate(e.target.value)}
-                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-nwu-red focus:border-nwu-red"
+                                            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                         />
                                         <button onClick={addDate} disabled={!currentDate} className="px-3 py-2 bg-nwu-red text-white rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 transition-colors shadow-sm">
                                             <Plus className="h-4 w-4" />
@@ -299,7 +311,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                         onChange={(e) => setDescription(e.target.value)}
                                         rows={2}
                                         placeholder="e.g. Medical certificate for illness on Feb 10"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-nwu-red focus:border-nwu-red shadow-sm"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm resize-none focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                     />
                                 </div>
 
