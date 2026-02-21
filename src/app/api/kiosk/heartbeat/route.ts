@@ -72,10 +72,22 @@ export async function POST(request: Request) {
                 .eq('device_serial', device_serial);
         }
 
+        // Fetch provisioning status
+        const { data: deviceStatus } = await supabase
+            .from('kiosk_devices')
+            .select('status, room_id, label')
+            .eq('device_serial', device_serial)
+            .single();
+
         return NextResponse.json({
             success: true,
             timestamp: new Date().toISOString(),
             pending_command: pendingCommand,
+            provisioning: {
+                status: deviceStatus?.status || 'pending',
+                room_id: deviceStatus?.room_id || null,
+                label: deviceStatus?.label || null,
+            },
         });
 
     } catch (err) {

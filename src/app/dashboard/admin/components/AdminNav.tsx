@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Users, UserCheck, ShieldAlert, KeyRound } from "lucide-react";
+import { Building2, Users, UserCheck, ShieldAlert, KeyRound, Monitor } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useProfile } from "@/context/ProfileContext";
 
 const tabs = [
     { name: "Overview", href: "/dashboard/admin", icon: ShieldAlert, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Rooms", href: "/dashboard/admin/rooms", icon: Building2, superAdminOnly: false, hideForSuperAdmin: false },
+    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Provisioning", href: "/dashboard/admin/provisioning", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Devices", href: "/dashboard/admin/devices", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
