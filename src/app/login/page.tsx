@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, QrCode, FileText } from "lucide-react";
+import { Loader2, QrCode } from "lucide-react";
 import Image from "next/image";
 import { login, signup } from "./actions";
 

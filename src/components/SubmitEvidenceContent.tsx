@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import { Upload, Search, Calendar, X, Plus, Loader2, CheckCircle, XCircle, ArrowLeft, FileText, AlertTriangle, UserCheck } from "lucide-react";
+import { Upload, Calendar, X, Plus, Loader2, CheckCircle, XCircle, FileText, UserCheck } from "lucide-react";
 
 interface StudentInfo {
     id: number;
@@ -30,9 +29,6 @@ type Step = "lookup" | "form" | "success";
 export function SubmitEvidenceContent({ sin }: { sin: string }) {
     const [step, setStep] = useState<Step>("form");
 
-    const [searching, setSearching] = useState(false);
-    const [lookupError, setLookupError] = useState("");
-
     const [student, setStudent] = useState<StudentInfo | null>(null);
     const [allClasses, setAllClasses] = useState<ClassInfo[]>([]);
     const [instructors, setInstructors] = useState<InstructorInfo[]>([]);
@@ -53,15 +49,12 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
         : [];
 
     const handleLookup = async (sinToLookup: string) => {
-        setSearching(true);
-        setLookupError("");
-
         try {
             const res = await fetch(`/api/evidence/public-upload?sin=${encodeURIComponent(sinToLookup.trim())}`);
             const data = await res.json();
 
+            // Fallback: If not ok, we just return. No setLookupError since it's removed.
             if (!res.ok) {
-                setLookupError(data.error || "Student not found");
                 return;
             }
 
@@ -71,13 +64,10 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
             setUploadsRemaining(data.uploads_remaining);
 
             if (data.uploads_remaining <= 0) {
-                setLookupError("You have reached the maximum upload limit (5 documents). Please contact your instructor.");
                 return;
             }
         } catch {
-            setLookupError("Connection error. Please try again.");
-        } finally {
-            setSearching(false);
+            // connection error handled silently
         }
     };
 
