@@ -37,7 +37,8 @@ export default function AdminManagementPage() {
         email: "",
         name: "",
         departmentId: "",
-        password: Math.random().toString(36).slice(-10)
+        password: Math.random().toString(36).slice(-10),
+        isSuperAdmin: false
     });
 
     const [confirmModal, setConfirmModal] = useState<{
@@ -90,7 +91,8 @@ export default function AdminManagementPage() {
                     email: "",
                     name: "",
                     departmentId: "",
-                    password: Math.random().toString(36).slice(-10)
+                    password: Math.random().toString(36).slice(-10),
+                    isSuperAdmin: false
                 });
                 fetchAdmins();
             }
@@ -326,22 +328,36 @@ export default function AdminManagementPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Department</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Department Scope</label>
                                 <div className="relative">
                                     <Building2 className="absolute left-3 top-3.5 h-4 w-4 text-gray-400" />
                                     <select
-                                        required
-                                        value={formData.departmentId}
+                                        required={!formData.isSuperAdmin}
+                                        disabled={formData.isSuperAdmin}
+                                        value={formData.isSuperAdmin ? "" : formData.departmentId}
                                         onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm appearance-none"
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 focus:ring-2 focus:ring-nwu-red/10 focus:border-nwu-red outline-none transition-all dark:bg-gray-900 text-sm appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <option value="">Select Department...</option>
+                                        <option value="">{formData.isSuperAdmin ? "Global (All Departments)" : "Select Department..."}</option>
                                         {departments.map((dept) => (
                                             <option key={dept.id} value={dept.id}>{dept.name}</option>
                                         ))}
                                     </select>
                                 </div>
                             </div>
+
+                            <label className="flex items-start space-x-3 p-3 mt-4 rounded-xl border border-red-200 bg-red-50/50 cursor-pointer hover:bg-red-50 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.isSuperAdmin}
+                                    onChange={(e) => setFormData({ ...formData, isSuperAdmin: e.target.checked, departmentId: "" })}
+                                    className="mt-0.5 rounded border-red-300 text-nwu-red focus:ring-nwu-red"
+                                />
+                                <div>
+                                    <p className="text-sm font-bold text-nwu-red">Super Admin Privileges</p>
+                                    <p className="text-[10px] text-gray-600 mt-0.5 leading-tight">Grants unfettered access to all university data, user accounts, and infrastructure controls. Use with caution.</p>
+                                </div>
+                            </label>
 
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Temp Password</label>
