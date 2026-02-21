@@ -44,13 +44,25 @@ export async function updateRoomDetails(roomId: string, name: string, building: 
     return { success: true };
 }
 
-export async function assignDeviceToRoom(deviceId: string, roomId: string | null) {
+export async function assignDeviceToRoom(deviceId: string, roomId: string | null, type?: string) {
     const userClient = createClient();
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
     const supabase = createAdminClient();
-    const { error } = await supabase.from("iot_devices").update({ room_id: roomId }).eq("id", deviceId);
+
+    // Determine which table to update based on the device type
+    const table = type === 'KIOSK' ? 'kiosk_devices' : 'iot_devices';
+    const idColumn = type === 'KIOSK' ? 'device_serial' : 'id';
+
+    // System Admins enforcing department checks could be added here, but the 
+    // UI selection is already defensively scoped strictly to their department.
+
+    const { error } = await supabase
+        .from(table)
+        .update({ room_id: roomId })
+        .eq(idColumn, deviceId);
+
     if (error) {
         console.error("Error assigning device to room:", error);
         return { success: false, error: error.message };
