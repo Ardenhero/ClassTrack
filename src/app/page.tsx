@@ -508,7 +508,7 @@ export default async function Dashboard({
             trigger={
               <button className="flex items-center px-4 py-2 bg-nwu-red text-white rounded-xl hover:bg-red-700 transition-colors shadow-sm text-sm font-medium">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Class
+                Create Class
               </button>
             }
           />

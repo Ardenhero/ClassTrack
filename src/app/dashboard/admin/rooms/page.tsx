@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import { DoorClosed, Plus, Edit2, Trash2, Save, Loader2, Search, Wifi, AlertTriangle, Activity, X } from "lucide-react";
+import { DoorClosed, Plus, Edit2, Trash2, Save, Loader2, Wifi, AlertTriangle, Activity, X } from "lucide-react";
 import { createRoom, updateRoomDetails, assignDeviceToRoom } from "./actions";
 
 interface Room {
@@ -42,7 +42,7 @@ export default function RoomsManagementPage() {
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
     const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
+
 
     const [newRoomName, setNewRoomName] = useState("");
     const [newRoomBuilding, setNewRoomBuilding] = useState("");
@@ -97,7 +97,12 @@ export default function RoomsManagementPage() {
         fd.append("building", newRoomBuilding);
         if (profile?.department_id) fd.append("department_id", profile.department_id);
 
-        await createRoom(fd);
+        const res = await createRoom(fd);
+        if (res && res.error) {
+            alert(`Failed to create room: ${res.error}`);
+            return;
+        }
+
         setNewRoomName("");
         setNewRoomBuilding("");
         setIsCreating(false);
@@ -118,7 +123,11 @@ export default function RoomsManagementPage() {
     };
 
     const handleDeviceAssignment = async (deviceId: string, roomId: string | null) => {
-        await assignDeviceToRoom(deviceId, roomId);
+        const res = await assignDeviceToRoom(deviceId, roomId);
+        if (res && res.error) {
+            alert(`Failed to assign device: ${res.error}`);
+            return;
+        }
         loadData();
     };
 
@@ -148,13 +157,10 @@ export default function RoomsManagementPage() {
     const maintenanceRooms = rooms.filter(r => r.status === "maintenance").length;
 
     // Filter rooms by search
-    const filteredRooms = rooms.filter(r =>
-        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (r.building && r.building.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredRooms = rooms;
 
     return (
-        <div className=" p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
+        <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
             {/* Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
@@ -204,7 +210,7 @@ export default function RoomsManagementPage() {
                 </div>
             </div>
 
-            {/* Header + Search + Add */}
+            {/* Header + Add */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
@@ -214,23 +220,13 @@ export default function RoomsManagementPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage physical classrooms and assign IoT devices</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:flex-initial">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search rooms..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full md:w-56 pl-9 pr-3 py-2 text-sm rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
-                        />
-                    </div>
                     {canCreateRooms && (
                         <button
                             onClick={() => setIsCreating(!isCreating)}
-                            className="bg-nwu-red hover:bg-red-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition text-sm font-semibold whitespace-nowrap"
+                            className="bg-nwu-red hover:bg-red-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition text-sm font-semibold whitespace-nowrap shadow-sm"
                         >
                             <Plus className="h-4 w-4" />
-                            Add Room
+                            Create Room
                         </button>
                     )}
                 </div>
@@ -281,7 +277,7 @@ export default function RoomsManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredRooms.length === 0 && !isCreating ? (
                     <div className="col-span-full border-2 border-dashed border-gray-200 dark:border-gray-700 p-10 text-center rounded-xl text-gray-500 dark:text-gray-400">
-                        {searchQuery ? "No rooms match your search." : "No rooms created yet. Click \"Add Room\" to get started."}
+                        No rooms created yet. Click &quot;Create Room&quot; to get started.
                     </div>
                 ) : filteredRooms.map(room => {
                     const roomDevices = devices.filter(d => d.room_id === room.id);
@@ -420,7 +416,7 @@ export default function RoomsManagementPage() {
                         <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center mb-3 group-hover:bg-nwu-red/10 group-hover:border-nwu-red/30 transition">
                             <Plus className="h-6 w-6 text-gray-500 dark:text-gray-400 group-hover:text-nwu-red transition" />
                         </div>
-                        <p className="text-sm font-semibold text-[#a8adc4] group-hover:text-gray-900 dark:text-white transition">Add New Room</p>
+                        <p className="text-sm font-semibold text-[#a8adc4] group-hover:text-gray-900 dark:text-white transition">Create Room</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Create a new classroom space</p>
                     </button>
                 )}
