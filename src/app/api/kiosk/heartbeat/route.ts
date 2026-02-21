@@ -104,43 +104,31 @@ export async function POST(request: Request) {
  * Used by the Admin Dashboard to display device health.
  * Marks devices as offline if last_heartbeat > 2 minutes ago.
  */
-export async function GET(request: Request) {
-    // Note: We need the caller's session to scope by admin for System Admins.
-    const userClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Check auth from cookie/header context
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-        // If Bearer token provided (useful for direct API calls), set it
-        const token = authHeader.replace('Bearer ', '');
-        await userClient.auth.setSession({ access_token: token, refresh_token: '' });
-    }
+export async function GET() {
+    // Use the cookie-based SSR client to read the caller's session
+    const { createClient: createSSRClient } = await import("@/utils/supabase/server");
+    const userClient = createSSRClient();
 
     const { data: { user } } = await userClient.auth.getUser();
 
-    // The service role is used strictly for the system-level updates/bypassing RLS
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // The service role client bypasses RLS for admin-level queries
     const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    let isSuperAdmin = false;
+    // Check if the caller is a Super Admin
+    const { data: profile } = await adminClient
+        .from('instructors')
+        .select('is_super_admin')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
 
-    if (user) {
-        const { data: profile } = await adminClient
-            .from('instructors')
-            .select('is_super_admin')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-
-        isSuperAdmin = !!profile?.is_super_admin;
-    } else {
-        // Unauthenticated calls (if any) shouldn't be allowed to browse the kiosk list
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const isSuperAdmin = !!profile?.is_super_admin;
 
     try {
         // First, mark stale devices as offline (heartbeat older than 3 minutes)
