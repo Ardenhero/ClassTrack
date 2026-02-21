@@ -158,7 +158,7 @@ export default function KioskInventoryPage() {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
+        <div className="flex-1 overflow-y-auto space-y-6 animate-in fade-in duration-500">
             {/* Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
@@ -205,7 +205,7 @@ export default function KioskInventoryPage() {
                 <div>
                     <h1 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                         <Monitor className="h-5 w-5 text-nwu-red" />
-                        Device Inventory
+                        ESP32 Kiosk Management
                     </h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Approve, assign, and bind ESP32 kiosks to rooms</p>
                 </div>
