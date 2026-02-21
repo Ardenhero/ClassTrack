@@ -27,9 +27,8 @@ interface ClassInfo {
 
 type Step = "lookup" | "form" | "success";
 
-export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
-    const [step, setStep] = useState<Step>(initialSin ? "form" : "lookup");
-    const [sin, setSin] = useState(initialSin || "");
+export function SubmitEvidenceContent({ sin }: { sin: string }) {
+    const [step, setStep] = useState<Step>("form");
 
     const [searching, setSearching] = useState(false);
     const [lookupError, setLookupError] = useState("");
@@ -53,8 +52,7 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
         ? allClasses.filter((c) => String(c.instructor_id) === selectedInstructor)
         : [];
 
-    const handleLookup = async (sinToLookup: string = sin) => {
-        if (!sinToLookup.trim()) return;
+    const handleLookup = async (sinToLookup: string) => {
         setSearching(true);
         setLookupError("");
 
@@ -64,7 +62,6 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
 
             if (!res.ok) {
                 setLookupError(data.error || "Student not found");
-                if (initialSin) setStep("lookup"); // Fallback if initial SIN lookup fails
                 return;
             }
 
@@ -75,27 +72,22 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
 
             if (data.uploads_remaining <= 0) {
                 setLookupError("You have reached the maximum upload limit (5 documents). Please contact your instructor.");
-                if (initialSin) setStep("lookup");
                 return;
             }
-
-            // Set step form
-            setStep("form");
         } catch {
             setLookupError("Connection error. Please try again.");
-            if (initialSin) setStep("lookup");
         } finally {
             setSearching(false);
         }
     };
 
-    // Auto-lookup if initialSin is provided
+    // Auto-lookup since sin is always provided by the Portal
     useEffect(() => {
-        if (initialSin && !student) {
-            handleLookup(initialSin);
+        if (sin && !student) {
+            handleLookup(sin);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialSin]);
+    }, [sin]);
 
     const handleInstructorChange = (instructorId: string) => {
         setSelectedInstructor(instructorId);
@@ -156,8 +148,7 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
     };
 
     const resetForm = () => {
-        setStep("lookup");
-        setSin("");
+        setStep("form");
         setStudent(null);
         setAllClasses([]);
         setInstructors([]);
@@ -170,95 +161,12 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            {/* University Header */}
-            <header className="bg-nwu-red w-full py-4 px-4 shadow-md">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex-shrink-0">
-                        <Image src="/branding/nwu_seal.png" alt="Northwestern University Seal" width={80} height={80} className="h-16 w-16 md:h-20 md:w-20 object-contain rounded-full border-2 border-white bg-white" />
-                    </div>
-                    <div className="flex-grow text-center px-4">
-                        <h1 className="text-white font-serif font-bold text-xl md:text-3xl tracking-wide uppercase drop-shadow-sm">Northwestern University</h1>
-                        <p className="text-nwu-gold text-xs md:text-sm font-medium tracking-wider uppercase mt-1">Laoag City, Philippines</p>
-                    </div>
-                    <div className="flex-shrink-0">
-                        <Image src="/branding/icpep_logo.png" alt="ICPEP Logo" width={80} height={80} className="h-16 w-16 md:h-20 md:w-20 object-contain rounded-full border-2 border-white bg-white/10" />
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-grow flex items-center justify-center p-4">
+        <div className="flex flex-col h-full p-2">
+            <div className="flex-grow flex items-center justify-center">
                 <div className="max-w-lg w-full">
-
-                    {/* Step 1: SIN Lookup */}
-                    {step === "lookup" && (
-                        <div className="bg-white rounded-xl shadow-xl border-t-4 border-nwu-gold p-8 space-y-6">
-                            <div className="text-center">
-                                <div className="mx-auto h-14 w-14 bg-nwu-red/10 rounded-full flex items-center justify-center mb-4">
-                                    <FileText className="h-7 w-7 text-nwu-red" />
-                                </div>
-                                <h2 className="text-2xl font-extrabold text-gray-900">Submit an Excuse Letter</h2>
-                                <p className="mt-2 text-sm text-gray-500">Enter your Student ID Number to get started</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Student ID Number (SIN)</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={sin}
-                                        onChange={(e) => setSin(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleLookup()}
-                                        placeholder="e.g. 2024-00123"
-                                        className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-nwu-red focus:border-nwu-red text-sm"
-                                    />
-                                    <button
-                                        onClick={() => handleLookup()}
-                                        disabled={!sin.trim() || searching}
-                                        className="px-4 py-2.5 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 transition-colors flex items-center gap-2"
-                                    >
-                                        {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                                        Search
-                                    </button>
-                                </div>
-                            </div>
-
-                            {lookupError && (
-                                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-                                    <XCircle className="h-4 w-4 shrink-0" />
-                                    {lookupError}
-                                </div>
-                            )}
-
-                            <div className="text-center pt-2 border-t border-gray-200">
-                                <a href="/login" className="text-sm text-gray-500 hover:text-nwu-red transition-colors flex items-center justify-center gap-1">
-                                    <ArrowLeft className="h-3.5 w-3.5" />
-                                    Back to Login
-                                </a>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Step 2: Upload Form */}
                     {step === "form" && student && (
                         <div className="bg-white rounded-xl shadow-xl border-t-4 border-nwu-gold overflow-hidden">
-                            {/* Student Info Banner */}
-                            <div className="bg-gradient-to-r from-nwu-red to-[#5e0d0e] p-5 text-white">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
-                                        {student.name[0]}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg">{student.name}</h3>
-                                        <p className="text-red-200 text-xs">{student.sin} • {student.year_level}</p>
-                                    </div>
-                                </div>
-                                <div className="mt-3 bg-white/10 rounded-lg px-3 py-2 text-xs flex items-center gap-2">
-                                    <AlertTriangle className="h-3.5 w-3.5 text-nwu-gold" />
-                                    <span>Uploads remaining: <strong>{uploadsRemaining - files.length}/{uploadsRemaining}</strong></span>
-                                </div>
-                            </div>
-
                             <div className="p-6 space-y-5">
                                 {/* Instructor Selection (FIRST) */}
                                 <div>
@@ -294,7 +202,7 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                                     ) : filteredClasses.length === 0 ? (
                                         <p className="text-xs text-amber-600 mt-1">No classes found for this instructor.</p>
                                     ) : (
-                                        <div className="space-y-2 max-h-48 overflow-y-auto p-1">
+                                        <div className="space-y-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
                                             {filteredClasses.map((c) => (
                                                 <label
                                                     key={c.id}
@@ -329,7 +237,7 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                                         </div>
                                     )}
                                     {selectedInstructor && (selectedClass.split(',').filter(Boolean).length > 0) && (
-                                        <p className="text-xs text-gray-500 mt-2 text-right">
+                                        <p className="text-xs text-gray-500 mt-2 text-right font-medium">
                                             {selectedClass.split(',').filter(Boolean).length} class(es) selected
                                         </p>
                                     )}
@@ -345,18 +253,18 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                                             onChange={(e) => setCurrentDate(e.target.value)}
                                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-nwu-red focus:border-nwu-red"
                                         />
-                                        <button onClick={addDate} disabled={!currentDate} className="px-3 py-2 bg-nwu-red text-white rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 transition-colors">
+                                        <button onClick={addDate} disabled={!currentDate} className="px-3 py-2 bg-nwu-red text-white rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 transition-colors shadow-sm">
                                             <Plus className="h-4 w-4" />
                                         </button>
                                     </div>
                                     {dates.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {dates.map((d) => (
-                                                <span key={d} className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-nwu-red rounded-md text-xs font-medium">
-                                                    <Calendar className="h-3 w-3" />
+                                                <span key={d} className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-nwu-red border border-red-100 rounded-md text-xs font-medium">
+                                                    <Calendar className="h-3.5 w-3.5" />
                                                     {d}
-                                                    <button onClick={() => setDates(dates.filter((x) => x !== d))} className="hover:text-red-900 ml-0.5">
-                                                        <X className="h-3 w-3" />
+                                                    <button onClick={() => setDates(dates.filter((x) => x !== d))} className="hover:text-red-900 ml-1 transition-colors">
+                                                        <X className="h-3.5 w-3.5" />
                                                     </button>
                                                 </span>
                                             ))}
@@ -374,17 +282,17 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                                         accept=".jpg,.jpeg,.png"
                                         multiple
                                         onChange={handleFileSelect}
-                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-nwu-red hover:file:bg-red-100"
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-nwu-red hover:file:bg-red-100 transition-colors"
                                     />
                                     {files.length > 0 && (
                                         <div className="mt-2 space-y-1">
                                             {files.map((f, i) => (
-                                                <div key={i} className="flex items-center justify-between px-3 py-1.5 bg-gray-50 rounded-lg text-sm">
-                                                    <span className="flex items-center gap-2 text-gray-700 truncate">
-                                                        <FileText className="h-3.5 w-3.5 text-gray-400" />
-                                                        {f.name} <span className="text-gray-400">({(f.size / 1024 / 1024).toFixed(1)}MB)</span>
+                                                <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                                    <span className="flex items-center gap-2 text-gray-700 truncate font-medium">
+                                                        <FileText className="h-4 w-4 text-gray-400" />
+                                                        {f.name} <span className="text-gray-400 font-normal">({(f.size / 1024 / 1024).toFixed(1)}MB)</span>
                                                     </span>
-                                                    <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500">
+                                                    <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500 transition-colors">
                                                         <X className="h-4 w-4" />
                                                     </button>
                                                 </div>
@@ -401,13 +309,13 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                                         onChange={(e) => setDescription(e.target.value)}
                                         rows={2}
                                         placeholder="e.g. Medical certificate for illness on Feb 10"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-nwu-red focus:border-nwu-red"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                     />
                                 </div>
 
                                 {/* Messages */}
                                 {uploadMessage && (
-                                    <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${uploadMessage.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
+                                    <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${uploadMessage.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
                                         {uploadMessage.type === "error" ? <XCircle className="h-4 w-4 shrink-0" /> : <CheckCircle className="h-4 w-4 shrink-0" />}
                                         {uploadMessage.text}
                                     </div>
@@ -415,16 +323,12 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-3">
-                                    <button onClick={resetForm} className="px-4 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                                        <ArrowLeft className="h-4 w-4 inline mr-1" />
-                                        Back
-                                    </button>
                                     <button
                                         onClick={handleSubmit}
-                                        disabled={!selectedClass || (dates.length === 0 && !currentDate) || files.length === 0 || uploading}
-                                        className="flex-1 py-2.5 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm"
+                                        disabled={!selectedClass || dates.length === 0 || files.length === 0 || uploading}
+                                        className="flex-1 py-3 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2 text-sm"
                                     >
-                                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                        {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
                                         Submit Excuse Letter
                                     </button>
                                 </div>
@@ -435,7 +339,7 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                     {/* Step 3: Success */}
                     {step === "success" && (
                         <div className="bg-white rounded-xl shadow-xl border-t-4 border-green-500 p-8 text-center space-y-6">
-                            <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                            <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center shadow-inner">
                                 <CheckCircle className="h-8 w-8 text-green-600" />
                             </div>
                             <div>
@@ -445,28 +349,20 @@ export function SubmitEvidenceContent({ initialSin }: { initialSin?: string }) {
                                     Your instructor will be notified and can approve or reject the submission.
                                 </p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
-                                <p className="text-gray-600">Documents submitted: <strong className="text-gray-900">{files.length}</strong></p>
-                                <p className="text-gray-600">Remaining uploads: <strong className="text-gray-900">{uploadsRemaining}</strong></p>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 text-sm space-y-2 text-left shadow-sm">
+                                <p className="text-gray-600 flex justify-between"><span>Documents submitted:</span> <strong className="text-gray-900 text-base">{files.length}</strong></p>
+                                <p className="text-gray-600 flex justify-between"><span>Remaining uploads:</span> <strong className="text-gray-900 text-base">{uploadsRemaining}</strong></p>
                             </div>
-                            <div className="flex gap-3 justify-center">
-                                <button onClick={resetForm} className="px-5 py-2.5 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] transition-colors text-sm">
+                            <div className="pt-2">
+                                <button onClick={resetForm} className="w-full py-3 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] shadow-sm transition-all text-sm">
                                     Submit Another
                                 </button>
-                                <a href="/login" className="px-5 py-2.5 border border-gray-300 text-gray-600 font-medium rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                                    Back to Login
-                                </a>
                             </div>
                         </div>
                     )}
 
                 </div>
             </div>
-
-            {/* Footer */}
-            <footer className="py-4 text-center text-xs text-gray-400">
-                &copy; {new Date().getFullYear()} Northwestern University Attendance System. All rights reserved.
-            </footer>
         </div>
     );
 }
