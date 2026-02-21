@@ -1,7 +1,6 @@
 "use client";
 
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
-import { KioskHealthCard } from "@/components/KioskHealthCard";
 import { BookOpen, BarChart3, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
