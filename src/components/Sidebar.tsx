@@ -97,8 +97,8 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
 
     return (
         <>
-            <div className="flex glass-panel !border-l-0 !border-t-0 !border-b-0 h-full w-full flex-col shadow-2xl relative z-40 bg-dark-bg/90">
-                <div className="flex h-20 items-center justify-between px-4 border-b border-white/5 shrink-0 bg-dark-surface/50 backdrop-blur-md transition-all overflow-hidden relative">
+            <div className="flex bg-nwu-red h-full w-full flex-col text-white shadow-xl relative z-40">
+                <div className="flex h-20 items-center justify-between px-4 border-b border-nwu-red/50 shrink-0 bg-[#5e0d0e] transition-all overflow-hidden relative">
                     <div className={cn("flex items-center space-x-3 transition-all duration-200 overflow-hidden whitespace-nowrap", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
                         <Image
                             src="/branding/nwu_seal.png"
@@ -109,7 +109,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                         />
                         <div className="overflow-hidden">
                             <span className="block text-sm font-bold font-serif tracking-wider text-white">NORTHWESTERN</span>
-                            <span className="block text-xs text-nu-400 font-medium tracking-widest">UNIVERSITY</span>
+                            <span className="block text-xs text-nwu-gold font-medium tracking-widest">UNIVERSITY</span>
                         </div>
                     </div>
 
@@ -129,7 +129,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
 
                     <button
                         onClick={toggleCollapse}
-                        className="p-1 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors z-10"
+                        className="p-1 rounded-md hover:bg-white/10 text-white/50 hover:text-white transition-colors z-10"
                     >
                         {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
                     </button>
@@ -148,18 +148,18 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                         href={item.href}
                                         onClick={onLinkClick}
                                         className={cn(
-                                            "group relative flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 overflow-hidden whitespace-nowrap",
+                                            "group relative flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 overflow-hidden whitespace-nowrap",
                                             isActive
-                                                ? "bg-nu-500/10 text-nu-400"
-                                                : "text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:translate-x-1"
+                                                ? "bg-white/10 text-white shadow-sm"
+                                                : "text-white/80 hover:bg-[#5e0d0e] hover:text-white"
                                         )}
                                         title={isCollapsed ? item.name : undefined}
                                     >
                                         {isActive && !isCollapsed && (
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2/3 w-1 rounded-r-full bg-nu-500 shadow-[0_0_10px_theme(colors.nu.500)]" />
+                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-nwu-gold shadow-[0_0_8px_theme(colors.nwu.gold)] rounded-r-sm" />
                                         )}
-                                        <item.icon className="mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                                        <span className={cn("transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
+                                        <item.icon className={cn("mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110", isActive ? "text-nwu-gold" : "text-white/70 group-hover:text-white")} />
+                                        <span className={cn("transition-all duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
                                             {item.name}
                                         </span>
                                     </Link>
@@ -217,25 +217,25 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                 href={item.href}
                                 onClick={onLinkClick}
                                 className={cn(
-                                    "group relative flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 overflow-hidden",
+                                    "group relative flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 overflow-hidden",
                                     isActive
-                                        ? "bg-nu-500/10 text-nu-400"
-                                        : "text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:translate-x-1",
+                                        ? "bg-white/10 text-white shadow-sm"
+                                        : "text-white/80 hover:bg-[#5e0d0e] hover:text-white",
                                     isCollapsed && "justify-center px-2"
                                 )}
                                 title={isCollapsed ? item.name : undefined}
                             >
                                 {isActive && !isCollapsed && (
-                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2/3 w-1 rounded-r-full bg-nu-500 shadow-[0_0_10px_theme(colors.nu.500)]" />
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-nwu-gold shadow-[0_0_8px_theme(colors.nwu.gold)] rounded-r-sm" />
                                 )}
-                                <item.icon className={cn("h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110", isCollapsed ? "mr-0" : "mr-3")} />
-                                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden transition-opacity duration-200">{item.name}</span>}
+                                <item.icon className={cn("flex-shrink-0 h-5 w-5 transition-transform duration-200 group-hover:scale-110", isCollapsed ? "mr-0" : "mr-3", isActive ? "text-nwu-gold" : "text-white/70 group-hover:text-white")} />
+                                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden transition-all duration-200">{item.name}</span>}
                             </Link>
                         );
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-nwu-red/50 shrink-0 space-y-4 bg-[#5e0d0e]/50">
+                <div className="p-4 border-t border-nwu-red/50 shrink-0 space-y-4 bg-[#5e0d0e]">
                     <Link href="/profile" className="flex items-center hover:bg-[#5e0d0e] p-2 rounded-lg transition-colors group">
                         <div className="h-8 w-8 rounded-full bg-nwu-gold flex items-center justify-center text-xs text-nwu-red font-bold">
                             {isSwitching ? "..." : (profile?.name?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />)}
@@ -266,7 +266,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                         <button
                             type="submit"
                             className={cn(
-                                "flex w-full items-center px-4 py-2 text-sm font-medium text-gray-400 hover:bg-red-900/30 hover:text-red-400 rounded-md transition-colors",
+                                "flex w-full items-center px-4 py-2 text-sm font-medium text-white/50 hover:bg-black/20 hover:text-white rounded-md transition-colors",
                                 isCollapsed && "justify-center px-2"
                             )}
                             title={isCollapsed ? "Sign Out" : undefined}
