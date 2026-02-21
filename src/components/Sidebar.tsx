@@ -97,19 +97,19 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
 
     return (
         <>
-            <div className="flex bg-nwu-red h-full w-full flex-col text-white shadow-xl">
-                <div className="flex h-20 items-center justify-between px-4 border-b border-nwu-red/50 shrink-0 bg-[#5e0d0e] transition-all overflow-hidden relative">
+            <div className="flex glass-panel !border-l-0 !border-t-0 !border-b-0 h-full w-full flex-col shadow-2xl relative z-40 bg-dark-bg/90">
+                <div className="flex h-20 items-center justify-between px-4 border-b border-white/5 shrink-0 bg-dark-surface/50 backdrop-blur-md transition-all overflow-hidden relative">
                     <div className={cn("flex items-center space-x-3 transition-all duration-200 overflow-hidden whitespace-nowrap", isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto")}>
                         <Image
                             src="/branding/nwu_seal.png"
                             alt="NWU Seal"
                             width={40}
                             height={40}
-                            className="h-10 w-10 object-contain rounded-full border border-white/20 bg-white flex-shrink-0"
+                            className="h-10 w-10 object-contain rounded-full border border-white/20 bg-white/10 flex-shrink-0 backdrop-blur-sm"
                         />
                         <div className="overflow-hidden">
-                            <span className="block text-sm font-bold font-serif tracking-wider">NORTHWESTERN</span>
-                            <span className="block text-xs text-nwu-gold font-medium tracking-widest">UNIVERSITY</span>
+                            <span className="block text-sm font-bold font-serif tracking-wider text-white">NORTHWESTERN</span>
+                            <span className="block text-xs text-nu-400 font-medium tracking-widest">UNIVERSITY</span>
                         </div>
                     </div>
 
@@ -123,13 +123,13 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                             alt="NWU Seal"
                             width={32}
                             height={32}
-                            className="h-8 w-8 object-contain rounded-full border border-white/20 bg-white"
+                            className="h-8 w-8 object-contain rounded-full border border-white/10 bg-white/5"
                         />
                     </div>
 
                     <button
                         onClick={toggleCollapse}
-                        className="p-1 rounded-md hover:bg-white/10 text-white/50 hover:text-white transition-colors z-10"
+                        className="p-1 rounded-md hover:bg-white/10 text-gray-500 hover:text-white transition-colors z-10"
                     >
                         {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
                     </button>
@@ -137,6 +137,8 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
 
                 <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+
                         // Handle the gap where Global Directory should be for Super Admin
                         if (isSuperAdmin && item.name === 'Departments') {
                             return (
@@ -146,14 +148,17 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                         href={item.href}
                                         onClick={onLinkClick}
                                         className={cn(
-                                            "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 overflow-hidden whitespace-nowrap",
-                                            pathname === item.href
-                                                ? "bg-white text-nwu-red shadow-md font-bold"
-                                                : "text-white/80 hover:bg-[#5e0d0e] hover:text-white"
+                                            "group relative flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 overflow-hidden whitespace-nowrap",
+                                            isActive
+                                                ? "bg-nu-500/10 text-nu-400"
+                                                : "text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:translate-x-1"
                                         )}
                                         title={isCollapsed ? item.name : undefined}
                                     >
-                                        <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                                        {isActive && !isCollapsed && (
+                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2/3 w-1 rounded-r-full bg-nu-500 shadow-[0_0_10px_theme(colors.nu.500)]" />
+                                        )}
+                                        <item.icon className="mr-3 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
                                         <span className={cn("transition-opacity duration-200", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
                                             {item.name}
                                         </span>
@@ -206,24 +211,25 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                 </div>
                             );
                         }
-
-                        const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.name}
                                 href={item.href}
                                 onClick={onLinkClick}
                                 className={cn(
-                                    "flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 relative group",
+                                    "group relative flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 overflow-hidden",
                                     isActive
-                                        ? "bg-white text-nwu-red shadow-md font-bold"
-                                        : "text-white/80 hover:bg-[#5e0d0e] hover:text-white",
+                                        ? "bg-nu-500/10 text-nu-400"
+                                        : "text-gray-400 hover:bg-white/5 hover:text-gray-200 hover:translate-x-1",
                                     isCollapsed && "justify-center px-2"
                                 )}
                                 title={isCollapsed ? item.name : undefined}
                             >
-                                <item.icon className={cn("h-5 w-5 flex-shrink-0", isCollapsed ? "mr-0" : "mr-3")} />
-                                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
+                                {isActive && !isCollapsed && (
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2/3 w-1 rounded-r-full bg-nu-500 shadow-[0_0_10px_theme(colors.nu.500)]" />
+                                )}
+                                <item.icon className={cn("h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110", isCollapsed ? "mr-0" : "mr-3")} />
+                                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden transition-opacity duration-200">{item.name}</span>}
                             </Link>
                         );
                     })}

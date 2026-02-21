@@ -173,49 +173,49 @@ export default function RoomsManagementPage() {
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
             {/* Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+                <div className="glass-card p-4 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
                         <DoorClosed className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalRooms}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Total Rooms</p>
+                        <p className="text-2xl font-bold text-white">{totalRooms}</p>
+                        <p className="text-xs text-gray-400">Total Rooms</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
+                <div className="glass-card p-4 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
                         <Wifi className="h-5 w-5 text-green-400" />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalAssignedDevices}</p>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-semibold">Online</span>
+                            <p className="text-2xl font-bold text-white">{totalAssignedDevices}</p>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-green-500/30 bg-green-500/10 text-green-400 font-semibold shadow-[0_0_10px_rgba(34,197,94,0.2)]">Online</span>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Active Devices</p>
+                        <p className="text-xs text-gray-400">Active Devices</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center shrink-0">
+                <div className="glass-card p-4 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
                         <AlertTriangle className="h-5 w-5 text-yellow-400" />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2">
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{maintenanceRooms}</p>
-                            {maintenanceRooms > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-semibold">Attention</span>}
+                            <p className="text-2xl font-bold text-white">{maintenanceRooms}</p>
+                            {maintenanceRooms > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-semibold shadow-[0_0_10px_rgba(234,179,8,0.2)] animate-pulse">Attention</span>}
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Needs Maintenance</p>
+                        <p className="text-xs text-gray-400">Needs Maintenance</p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                <div className="glass-card p-4 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
                         <Activity className="h-5 w-5 text-purple-400" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{devices.length}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Total Devices</p>
+                        <p className="text-2xl font-bold text-white">{devices.length}</p>
+                        <p className="text-xs text-gray-400">Total Devices</p>
                     </div>
                 </div>
             </div>
@@ -223,17 +223,17 @@ export default function RoomsManagementPage() {
             {/* Header + Add */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                        <DoorClosed className="h-5 w-5 text-nwu-red" />
+                    <h1 className="text-xl font-bold flex items-center gap-2 text-white drop-shadow-md">
+                        <DoorClosed className="h-5 w-5 text-nu-400 drop-shadow-[0_0_8px_rgba(176,42,42,0.8)]" />
                         Room Management
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage physical classrooms and assign IoT devices</p>
+                    <p className="text-sm text-gray-400 mt-0.5">Manage physical classrooms and assign IoT devices</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     {canCreateRooms && (
                         <button
                             onClick={() => setIsCreating(!isCreating)}
-                            className="bg-nwu-red hover:bg-red-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition text-sm font-semibold whitespace-nowrap shadow-sm"
+                            className="bg-nu-500 hover:bg-nu-400 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 text-sm font-semibold whitespace-nowrap shadow-glow-red hover:scale-105"
                         >
                             <Plus className="h-4 w-4" />
                             Create Room
@@ -244,40 +244,40 @@ export default function RoomsManagementPage() {
 
             {/* Create Room Modal */}
             {isCreating && (
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-xl">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-gray-900 dark:text-white">Create New Room</h3>
-                        <button onClick={() => setIsCreating(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-white transition">
+                <div className="glass-panel p-6 rounded-2xl shadow-2xl relative overflow-hidden">
+                    <div className="flex justify-between items-center mb-5 relative z-10">
+                        <h3 className="font-bold text-white text-lg">Create New Room</h3>
+                        <button onClick={() => setIsCreating(false)} className="text-gray-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-lg">
                             <X className="h-4 w-4" />
                         </button>
                     </div>
-                    <form onSubmit={handleCreateRoom} className="space-y-4">
+                    <form onSubmit={handleCreateRoom} className="space-y-4 relative z-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-[#a8adc4] mb-1">Room Name *</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Room Name <span className="text-red-400">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     value={newRoomName}
                                     onChange={(e) => setNewRoomName(e.target.value)}
                                     placeholder="e.g. STC 102"
-                                    className="w-full bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                    className="glass-input"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-[#a8adc4] mb-1">Building</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Building</label>
                                 <input
                                     type="text"
                                     value={newRoomBuilding}
                                     onChange={(e) => setNewRoomBuilding(e.target.value)}
                                     placeholder="e.g. CEAT"
-                                    className="w-full bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white placeholder-[#6b7094] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                    className="glass-input"
                                 />
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 text-sm text-[#a8adc4] hover:bg-[#242840] rounded-lg transition">Cancel</button>
-                            <button type="submit" className="px-4 py-2 text-sm bg-nwu-red hover:bg-red-800 text-white rounded-lg font-semibold transition">Create Room</button>
+                        <div className="flex justify-end gap-3 pt-4 border-t border-white/5 mt-4">
+                            <button type="button" onClick={() => setIsCreating(false)} className="px-5 py-2 text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-200">Cancel</button>
+                            <button type="submit" className="px-5 py-2 text-sm bg-nu-500 hover:bg-nu-400 text-white rounded-xl font-semibold transition-all duration-300 shadow-glow-red hover:scale-105">Create Room</button>
                         </div>
                     </form>
                 </div>
@@ -286,22 +286,22 @@ export default function RoomsManagementPage() {
             {/* Room Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredRooms.length === 0 && !isCreating ? (
-                    <div className="col-span-full border-2 border-dashed border-gray-200 dark:border-gray-700 p-10 text-center rounded-xl text-gray-500 dark:text-gray-400">
-                        No rooms created yet. Click &quot;Create Room&quot; to get started.
+                    <div className="col-span-full border-2 border-dashed border-white/20 p-10 text-center rounded-2xl text-gray-500 bg-white/5 backdrop-blur-sm">
+                        No rooms created yet. Click <span className="text-white">Create Room</span> to get started.
                     </div>
                 ) : filteredRooms.map(room => {
                     const roomDevices = devices.filter(d => d.room_id === room.id);
                     const unassignedDevices = devices.filter(d => d.room_id === null);
                     const statusLabel = room.status === "maintenance" ? "Maintenance" : "Active";
                     const statusColor = room.status === "maintenance"
-                        ? "bg-yellow-500/20 text-yellow-400"
-                        : "bg-green-500/20 text-green-400";
+                        ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30"
+                        : "bg-green-500/10 text-green-400 border border-green-500/30";
                     const deptName = room.departments?.name || room.building || "—";
                     const MAX_VISIBLE_DEVICES = 2;
                     const hiddenCount = Math.max(0, roomDevices.length - MAX_VISIBLE_DEVICES);
 
                     return (
-                        <div key={room.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+                        <div key={room.id} className="glass-card flex flex-col group">
                             {/* Card Header */}
                             <div className="p-5 pb-3">
                                 <div className="flex justify-between items-start">
@@ -311,25 +311,26 @@ export default function RoomsManagementPage() {
                                                 <input
                                                     value={editName}
                                                     onChange={(e) => setEditName(e.target.value)}
-                                                    className="w-full text-lg font-bold bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                                    className="w-full text-lg font-bold glass-input py-1.5"
+                                                    autoFocus
                                                 />
                                                 <input
                                                     value={editBuilding}
                                                     onChange={(e) => setEditBuilding(e.target.value)}
                                                     placeholder="Building"
-                                                    className="w-full text-sm bg-[#12151f] border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-[#a8adc4] outline-none focus:ring-1 focus:ring-nwu-red/50"
+                                                    className="w-full text-sm glass-input py-1.5 text-gray-400"
                                                 />
                                             </div>
                                         ) : (
                                             <>
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white truncate">{room.name}</h3>
-                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${statusColor}`}>
+                                                    <h3 className="font-bold text-lg text-white truncate drop-shadow-sm">{room.name}</h3>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${statusColor}`}>
                                                         {statusLabel}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
-                                                    <DoorClosed className="h-3 w-3" />
+                                                <p className="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
+                                                    <DoorClosed className="h-3.5 w-3.5 opacity-70" />
                                                     {deptName}
                                                 </p>
                                             </>
@@ -339,19 +340,19 @@ export default function RoomsManagementPage() {
                                     <div className="flex items-center gap-1 ml-2 shrink-0">
                                         {editingRoomId === room.id ? (
                                             <>
-                                                <button onClick={saveEdit} className="p-1.5 text-green-400 hover:bg-green-500/10 rounded transition" title="Save">
+                                                <button onClick={saveEdit} className="p-1.5 text-green-400 hover:bg-green-500/20 rounded-lg transition-colors border border-transparent hover:border-green-500/30 shadow-sm" title="Save">
                                                     <Save className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={() => setEditingRoomId(null)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-[#242840] rounded transition" title="Cancel">
+                                                <button onClick={() => setEditingRoomId(null)} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Cancel">
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </>
                                         ) : (
                                             <>
-                                                <button onClick={() => startEditing(room)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded transition opacity-0 group-hover:opacity-100" title="Edit">
+                                                <button onClick={() => startEditing(room)} className="p-1.5 text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition opacity-0 group-hover:opacity-100" title="Edit">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteRoom(room.id)} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded transition opacity-0 group-hover:opacity-100" title="Delete">
+                                                <button onClick={() => handleDeleteRoom(room.id)} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition opacity-0 group-hover:opacity-100" title="Delete">
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </>
@@ -361,52 +362,52 @@ export default function RoomsManagementPage() {
                             </div>
 
                             {/* Devices Section */}
-                            <div className="px-5 pb-5 flex-1 flex flex-col">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h4 className="text-[11px] font-bold text-[#a8adc4] uppercase tracking-wider">Assigned Devices</h4>
-                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{roomDevices.length} device{roomDevices.length !== 1 ? "s" : ""}</span>
+                            <div className="px-5 pb-5 flex-1 flex flex-col relative z-10">
+                                <div className="flex items-center justify-between mb-3 mt-1">
+                                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Assigned Devices</h4>
+                                    <span className="text-[10px] text-gray-400 font-medium bg-white/5 px-2 py-0.5 rounded-full">{roomDevices.length}</span>
                                 </div>
 
                                 <div className="space-y-2 flex-1">
                                     {roomDevices.length === 0 && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 italic py-2">No devices assigned.</p>
+                                        <p className="text-xs text-gray-600 italic py-2">No devices assigned.</p>
                                     )}
                                     {roomDevices.slice(0, MAX_VISIBLE_DEVICES).map(device => (
-                                        <div key={device.id} className="flex items-center justify-between bg-[#12151f] p-2.5 rounded-lg border border-[rgba(255,255,255,0.05)] group/device">
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                <span className={`w-2 h-2 rounded-full shrink-0 ${getDeviceDot(device.name)}`} />
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{device.name}</p>
-                                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">ID: {device.id.substring(0, 8).toUpperCase()}</p>
+                                        <div key={device.id} className="flex items-center justify-between bg-dark-bg/50 p-2.5 rounded-xl border border-white/5 group/device hover:bg-white/5 transition-colors">
+                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <span className={`w-2 h-2 rounded-full shrink-0 shadow-[0_0_5px_currentColor] ${getDeviceDot(device.name)}`} />
+                                                <div className="min-w-0 pr-2">
+                                                    <p className="text-sm font-medium text-gray-300 truncate">{device.name}</p>
+                                                    <p className="text-[10px] text-gray-500 font-mono">ID: {device.id.substring(0, 8).toUpperCase()}</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => handleDeviceAssignment(device.id, null)}
-                                                className="text-[10px] text-red-400 hover:text-red-300 opacity-0 group-hover/device:opacity-100 transition px-1 shrink-0"
+                                                className="text-[10px] font-semibold text-red-500/70 hover:text-red-400 hover:bg-red-500/10 px-2 py-1 rounded transition-colors opacity-0 group-hover/device:opacity-100 shrink-0"
                                             >
                                                 Remove
                                             </button>
                                         </div>
                                     ))}
                                     {hiddenCount > 0 && (
-                                        <div className="text-center py-1.5 rounded-lg bg-[#12151f] border border-[rgba(255,255,255,0.05)]">
-                                            <p className="text-[11px] text-gray-500 dark:text-gray-400">+ {hiddenCount} more device{hiddenCount !== 1 ? "s" : ""}</p>
+                                        <div className="text-center py-1.5 rounded-xl bg-dark-bg/30 border border-white/5">
+                                            <p className="text-[10px] font-medium text-gray-500">+ {hiddenCount} more device{hiddenCount !== 1 ? "s" : ""}</p>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Assign Device Button */}
-                                <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.05)]">
+                                {/* Assign Device Dropdown */}
+                                <div className="mt-4 pt-4 border-t border-white/5">
                                     <select
                                         onChange={(e) => {
                                             if (e.target.value) handleDeviceAssignment(e.target.value, room.id);
                                         }}
                                         value=""
-                                        className="w-full text-xs p-2 bg-transparent border border-dashed border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 outline-none hover:border-gray-300 dark:border-gray-600 hover:text-[#a8adc4] cursor-pointer transition"
+                                        className="w-full text-xs p-2 bg-transparent border border-dashed border-white/10 rounded-xl text-gray-500 outline-none hover:border-white/30 hover:text-gray-300 hover:bg-white/5 cursor-pointer transition-all duration-200"
                                     >
-                                        <option value="" disabled>+ Assign existing device</option>
+                                        <option value="" disabled className="bg-dark-surface text-gray-400">+ Assign existing device</option>
                                         {unassignedDevices.map(device => (
-                                            <option key={device.id} value={device.id} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                            <option key={device.id} value={device.id} className="bg-dark-surface text-gray-200">
                                                 {device.type === 'KIOSK' ? '[KIOSK] ' : ''}{device.name}
                                             </option>
                                         ))}
@@ -421,13 +422,13 @@ export default function RoomsManagementPage() {
                 {canCreateRooms && !isCreating && (
                     <button
                         onClick={() => setIsCreating(true)}
-                        className="bg-[#12151f] rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center py-12 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-white dark:bg-gray-800/50 transition-all cursor-pointer group min-h-[200px]"
+                        className="glass-card border-dashed hover:border-white/30 flex flex-col items-center justify-center py-12 cursor-pointer group min-h-[200px]"
                     >
-                        <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center mb-3 group-hover:bg-nwu-red/10 group-hover:border-nwu-red/30 transition">
-                            <Plus className="h-6 w-6 text-gray-500 dark:text-gray-400 group-hover:text-nwu-red transition" />
+                        <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-3 group-hover:bg-nu-500/10 group-hover:border-nu-500/30 group-hover:scale-110 group-hover:shadow-glow-red transition-all duration-300">
+                            <Plus className="h-6 w-6 text-gray-500 group-hover:text-nu-400 transition-colors" />
                         </div>
-                        <p className="text-sm font-semibold text-[#a8adc4] group-hover:text-gray-900 dark:text-white transition">Create Room</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Create a new classroom space</p>
+                        <p className="text-sm font-semibold text-gray-400 group-hover:text-white transition-colors">Create Room</p>
+                        <p className="text-xs text-gray-500 mt-1 opacity-70">Add a new physical space</p>
                     </button>
                 )}
             </div>
