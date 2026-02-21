@@ -28,7 +28,8 @@ import {
     KeyRound,
     ChevronLeft,
     Cpu,
-    QrCode
+    QrCode,
+    Monitor
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
@@ -63,6 +64,7 @@ const superAdminNavigation = [
     { name: "Security", href: "/dashboard/admin/security", icon: KeyRound },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
     { name: "Devices", href: "/dashboard/admin/devices", icon: Cpu },
+    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
