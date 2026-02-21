@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import {
     Monitor, CheckCircle2, XCircle, Clock, Wifi, WifiOff,
-    Building2, DoorClosed, Tag, Trash2, Loader2, RefreshCw, Users
+    DoorClosed, Tag, Trash2, Loader2, RefreshCw, Users
 } from "lucide-react";
 import {
     approveKiosk, rejectKiosk, assignKioskToAdmin,
@@ -82,9 +82,6 @@ export default function KioskInventoryPage() {
             </div>
         );
     }
-
-    // @ts-ignore actions.ts renamed it
-    import { assignKioskToAdmin } from "./actions";
 
     const handleApprove = async (serial: string, adminId: string | null) => {
         setActionLoading(serial);
