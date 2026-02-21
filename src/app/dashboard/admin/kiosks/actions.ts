@@ -70,6 +70,8 @@ export async function assignKioskToAdmin(deviceSerial: string, assignedAdminId: 
     return { success: true };
 }
 
+import { revalidatePath } from 'next/cache';
+
 export async function bindKioskToRoom(deviceSerial: string, roomId: string | null) {
     const { isSuperAdmin, user } = await requireSuperAdmin();
 
@@ -95,6 +97,7 @@ export async function bindKioskToRoom(deviceSerial: string, roomId: string | nul
         .eq('device_serial', deviceSerial);
 
     if (error) return { success: false, error: error.message };
+    revalidatePath('/dashboard/admin/kiosks');
     return { success: true };
 }
 
