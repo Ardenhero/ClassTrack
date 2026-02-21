@@ -78,19 +78,24 @@ export function AdminBiometricMatrix() {
                 }
             }
 
-            // 4. Get students ONLY within my scope
-            let studentsQuery = supabase
+            // If no kiosk is bound to this room, show empty matrix
+            if (!deviceId) {
+                const emptyMatrix: SlotData[] = [];
+                for (let i = 1; i <= 127; i++) {
+                    emptyMatrix.push({ slot_id: i, status: "empty" });
+                }
+                setSlots(emptyMatrix);
+                setLoading(false);
+                return;
+            }
+
+            // 4. Get students ONLY within my scope AND on this specific device
+            const { data: allOccupiedStudents, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id")
                 .not("fingerprint_slot_id", "is", null)
-                .in("instructor_id", currentAccountScope);
-
-            // Scope down to device if one is assigned
-            if (deviceId) {
-                studentsQuery = studentsQuery.eq("device_id", deviceId);
-            }
-
-            const { data: allOccupiedStudents, error } = await studentsQuery as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
+                .in("instructor_id", currentAccountScope)
+                .eq("device_id", deviceId) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
