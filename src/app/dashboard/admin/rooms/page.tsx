@@ -160,7 +160,7 @@ export default function RoomsManagementPage() {
     const filteredRooms = rooms;
 
     return (
-        <div className="flex-1 overflow-y-auto bg-gray-50/50 p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 animate-in fade-in duration-500">
             {/* Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
