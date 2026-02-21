@@ -123,12 +123,22 @@ export default function RoomsManagementPage() {
     };
 
     const handleDeviceAssignment = async (deviceId: string, roomId: string | null) => {
-        const res = await assignDeviceToRoom(deviceId, roomId);
-        if (res && res.error) {
-            alert(`Failed to assign device: ${res.error}`);
-            return;
+        try {
+            // Optimistic UI update
+            setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, room_id: roomId } : d));
+
+            const res = await assignDeviceToRoom(deviceId, roomId);
+            if (res && res.error) {
+                alert(`Failed to assign device: ${res.error}`);
+                loadData();
+                return;
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            alert(`Exception assigning device: ${errorMessage}`);
+            console.error(err);
+            loadData();
         }
-        loadData();
     };
 
     const handleDeleteRoom = async (roomId: string) => {
