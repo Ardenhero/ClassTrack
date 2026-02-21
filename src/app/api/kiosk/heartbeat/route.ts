@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const { device_serial, firmware_version, ip_address, room_id } = result.data;
+        const { device_serial, firmware_version, ip_address } = result.data;
 
         // Upsert: create device if new, update heartbeat if existing
         // NOTE: room_id is NOT included here — it's managed by the admin UI only.
