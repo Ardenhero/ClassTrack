@@ -149,7 +149,6 @@ export async function middleware(request: NextRequest) {
         "/login",
         "/auth",
         "/pending-approval",
-        "/submit-evidence",
         "/api/attendance",
         "/api/sync",
         "/api/health",
@@ -162,6 +161,7 @@ export async function middleware(request: NextRequest) {
         "/api/fingerprint",
         "/api/iot",
         "/student/portal",
+        "/api/student/attendance",
         "/api/qr",
     ];
 

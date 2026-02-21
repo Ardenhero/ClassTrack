@@ -290,20 +290,12 @@ export default function StudentPortalPage() {
     }, [student]);
 
     const handleLogout = () => {
-        setStep("login");
-        setStudent(null);
-        setSin("");
-        setActiveTab("qr");
-        setQrStep("select");
-        setAction(null);
-        setSelectedClass(null);
-        setSelectedRoomId(null);
-        setError(null);
+        window.location.href = "/login";
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 md:p-8">
+            <div className="w-full max-w-3xl">
 
                 {/* Global Error Banner */}
                 {error && step === "dashboard" && (
@@ -606,7 +598,7 @@ export default function StudentPortalPage() {
                         {activeTab === "excuse" && (
                             <div className="animate-in slide-in-from-bottom-4 fade-in duration-300">
                                 {/* We embed the extracted content here */}
-                                <SubmitEvidenceContent initialSin={sin} />
+                                <SubmitEvidenceContent sin={sin} />
                             </div>
                         )}
 

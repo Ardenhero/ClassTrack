@@ -1,8 +1,11 @@
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-    const supabase = createClient();
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { searchParams } = new URL(request.url);
     const sin = searchParams.get('sin');
 
@@ -29,13 +32,13 @@ export async function GET(request: Request) {
             .from('enrollments')
             .select(`
                 class_id,
-                classes(id, subject_name, section, year_level)
+                classes(id, name, year_level)
             `)
             .eq('student_id', studentId);
 
         if (enrollmentError) {
             console.error('Enrollment fetch error:', enrollmentError);
-            return NextResponse.json({ error: 'Failed to fetch enrolled classes' }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to fetch enrolled classes', details: enrollmentError }, { status: 500 });
         }
 
         const enrolledClasses = enrollmentData.flatMap(e => {
@@ -45,13 +48,13 @@ export async function GET(request: Request) {
 
         // 3. Fetch all attendance records for the student
         const { data: attendanceData, error: attendanceError } = await supabase
-            .from('attendance')
+            .from('attendance_logs')
             .select('class_id, status')
             .eq('student_id', studentId);
 
         if (attendanceError) {
             console.error('Attendance fetch error:', attendanceError);
-            return NextResponse.json({ error: 'Failed to fetch attendance records' }, { status: 500 });
+            return NextResponse.json({ error: 'Failed to fetch attendance records', details: attendanceError }, { status: 500 });
         }
 
         // 4. Calculate stats per class
@@ -68,8 +71,8 @@ export async function GET(request: Request) {
 
             return {
                 id: cls?.id,
-                subject_name: cls?.subject_name,
-                section: cls?.section,
+                subject_name: cls?.name,
+                section: "",
                 year_level: cls?.year_level,
                 present,
                 late,
