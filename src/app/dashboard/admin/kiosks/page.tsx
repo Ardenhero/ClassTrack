@@ -57,7 +57,7 @@ export default function KioskInventoryPage() {
         setLoading(true);
         try {
             const [kioskRes, adminsRes, roomRes] = await Promise.all([
-                fetch('/api/kiosk/heartbeat', { cache: 'no-store' }),
+                fetch(`/api/kiosk/heartbeat?t=${Date.now()}`, { cache: 'no-store' }),
                 supabase.from('instructors').select('name, auth_user_id').eq('role', 'admin').order('name'),
                 supabase.from('rooms').select('id, name, building, department_id').order('name'),
             ]);
