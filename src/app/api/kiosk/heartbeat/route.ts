@@ -102,10 +102,10 @@ export async function POST(request: Request) {
 /**
  * GET /api/kiosk/heartbeat — Get all kiosk device statuses
  * Used by the Admin Dashboard to display device health.
- * Marks devices as offline if last_heartbeat > 3 minutes ago.
+ * Marks devices as offline if last_heartbeat > 2 minutes ago.
  */
 export async function GET(request: Request) {
-    // Note: We need the caller's session to scope by department for System Admins.
+    // Note: We need the caller's session to scope by admin for System Admins.
     const userClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -128,17 +128,15 @@ export async function GET(request: Request) {
     );
 
     let isSuperAdmin = false;
-    let deptId = null;
 
     if (user) {
         const { data: profile } = await adminClient
             .from('instructors')
-            .select('is_super_admin, department_id')
+            .select('is_super_admin')
             .eq('auth_user_id', user.id)
             .maybeSingle();
 
         isSuperAdmin = !!profile?.is_super_admin;
-        deptId = profile?.department_id;
     } else {
         // Unauthenticated calls (if any) shouldn't be allowed to browse the kiosk list
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -158,14 +156,11 @@ export async function GET(request: Request) {
             .from('kiosk_devices')
             .select('*, rooms(name, building)')
             .order('is_online', { ascending: false })
-            .order('last_heartbeat', { ascending: false });
+            .order('label');
 
-        // Scoping logic: System Admins only see kiosks assigned to their department
+        // Scoping logic: System Admins only see kiosks assigned directly to them
         if (!isSuperAdmin) {
-            if (!deptId) {
-                return NextResponse.json({ devices: [] }); // No dept = no visible kiosks
-            }
-            query = query.eq('department_id', deptId);
+            query = query.eq('assigned_admin_id', user.id);
         }
 
         const { data: devices, error } = await query;

@@ -16,7 +16,7 @@ const tabs = [
     // Super Admin "Admin Management" Tabs
     { name: "Provisioning", href: "/dashboard/admin/provisioning", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Devices", href: "/dashboard/admin/devices", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
-    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor, superAdminOnly: false, hideForSuperAdmin: false },
+    { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Security", href: "/dashboard/admin/security", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: ShieldAlert, superAdminOnly: true, hideForSuperAdmin: false },
 ];
