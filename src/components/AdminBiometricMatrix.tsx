@@ -79,35 +79,31 @@ export function AdminBiometricMatrix() {
             // 4. Get students ONLY within my scope AND the specific device
             // This ensures we never see "Restricted" slots from other accounts, 
             // and we only see slots for the active room's device.
-            let studentsQuery = supabase
-                .from("students")
-                .select("id, name, fingerprint_slot_id, instructor_id")
-                .not("fingerprint_slot_id", "is", null)
-                .in("instructor_id", currentAccountScope);
-
-            // Scope down to device if one is assigned
-            if (deviceId) {
-                studentsQuery = studentsQuery.eq("device_id", deviceId);
-            }
-
-            const { data: allOccupiedStudents, error } = await studentsQuery as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
-
-            if (error) throw error;
-
-            // 5. Get recent orphan scans from audit logs (filtered by my identity, ideally by device_id too)
-            let orphanQuery = supabase
-                .from("biometric_audit_logs")
-                .select("fingerprint_slot_id")
-                .eq("event_type", "ORPHAN_SCAN")
-                .contains("metadata", { instructor_id: profile?.id });
+            let allOccupiedStudents: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] = [];
+            let orphans: { fingerprint_slot_id: number }[] = [];
 
             if (deviceId) {
-                orphanQuery = orphanQuery.eq("device_id", deviceId);
-            }
+                const { data: studentsData, error } = await supabase
+                    .from("students")
+                    .select("id, name, fingerprint_slot_id, instructor_id")
+                    .not("fingerprint_slot_id", "is", null)
+                    .in("instructor_id", currentAccountScope)
+                    .eq("device_id", deviceId) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null, error: PostgrestError | null };
 
-            const { data: orphans } = await orphanQuery
-                .order("timestamp", { ascending: false })
-                .limit(50);
+                if (error) throw error;
+                allOccupiedStudents = studentsData || [];
+
+                const { data: orphansData } = await supabase
+                    .from("biometric_audit_logs")
+                    .select("fingerprint_slot_id")
+                    .eq("event_type", "ORPHAN_SCAN")
+                    .contains("metadata", { instructor_id: profile?.id })
+                    .eq("device_id", deviceId)
+                    .order("timestamp", { ascending: false })
+                    .limit(50);
+
+                orphans = orphansData || [];
+            }
 
             // 4. Build the 1-127 Matrix
             const matrix: SlotData[] = [];
