@@ -25,51 +25,37 @@ const quickCards = [
 export default function AdminDashboardPage() {
     return (
         <div className="space-y-6">
-            {/* ── Dashboard Grid ───────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-                {/* Left Column (Wider) */}
-                <div className="lg:col-span-2 space-y-6">
-
-                    {/* Quick Access Cards */}
-                    <div>
-                        <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-4">
-                            Quick Access
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {quickCards.map(card => {
-                                const Icon = card.icon;
-                                return (
-                                    <Link key={card.title} href={card.href}
-                                        className="group block bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-md transition-all duration-200"
-                                    >
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${card.color}`}>
-                                                <Icon className="w-5 h-5" />
-                                            </div>
-                                            <div className="w-8 h-8 rounded-md bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-gray-600 group-hover:bg-gray-100 transition-colors">
-                                                <ChevronRight className="w-4 h-4" />
-                                            </div>
-                                        </div>
-                                        <div className="text-sm font-semibold text-gray-900 mb-1">{card.title}</div>
-                                        <div className="text-sm text-gray-500 leading-relaxed">{card.desc}</div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Sensor Memory Map */}
-                    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                        <AdminBiometricMatrix />
-                    </div>
+            {/* Quick Access Cards */}
+            <div>
+                <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-4">
+                    Quick Access
                 </div>
-
-                {/* Right Column (Narrower) */}
-                <div className="lg:col-span-1 space-y-6">
-                    {/* Kiosk Health */}
-                    <KioskHealthCard />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {quickCards.map(card => {
+                        const Icon = card.icon;
+                        return (
+                            <Link key={card.title} href={card.href}
+                                className="group block bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-md transition-all duration-200"
+                            >
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${card.color}`}>
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-md bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-gray-600 group-hover:bg-gray-100 transition-colors">
+                                        <ChevronRight className="w-4 h-4" />
+                                    </div>
+                                </div>
+                                <div className="text-sm font-semibold text-gray-900 mb-1">{card.title}</div>
+                                <div className="text-sm text-gray-500 leading-relaxed">{card.desc}</div>
+                            </Link>
+                        );
+                    })}
                 </div>
+            </div>
+
+            {/* Sensor Memory Map */}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <AdminBiometricMatrix />
             </div>
         </div>
     );
