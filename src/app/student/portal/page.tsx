@@ -440,7 +440,9 @@ export default function StudentPortalPage() {
                                                             <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500 font-medium">
                                                                 <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-md">
                                                                     <Clock className="h-3 w-3" />
-                                                                    {cls.start_time?.slice(0, 5)} – {cls.end_time?.slice(0, 5)}
+                                                                    {new Date(`1970-01-01T${cls.start_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' })}
+                                                                    {" – "}
+                                                                    {new Date(`1970-01-01T${cls.end_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' })}
                                                                 </span>
                                                                 {cls.room_name && (
                                                                     <span className="flex items-center gap-1 text-gray-400">

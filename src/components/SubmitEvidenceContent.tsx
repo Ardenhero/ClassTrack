@@ -153,7 +153,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
     return (
         <div className="flex flex-col h-full p-2">
             <div className="flex-grow flex items-center justify-center">
-                <div className="max-w-lg w-full">
+                <div className="w-full">
                     {/* Step 2: Upload Form */}
                     {step === "form" && student && (
                         <div className="bg-white rounded-xl shadow-xl border-t-4 border-nwu-gold overflow-hidden">
