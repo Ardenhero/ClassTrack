@@ -183,11 +183,13 @@ export default function KioskInventoryPage() {
                     <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
                         <CheckCircle2 className="h-5 w-5 text-green-400" />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{approved}</p>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-semibold">{bound} bound</span>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">{approved}</p>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-semibold">{bound} bound</span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Approved</p>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">Approved</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-start gap-3">
                     <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
