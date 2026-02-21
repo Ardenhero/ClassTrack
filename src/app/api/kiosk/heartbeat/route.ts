@@ -36,6 +36,8 @@ export async function POST(request: Request) {
         const { device_serial, firmware_version, ip_address, room_id } = result.data;
 
         // Upsert: create device if new, update heartbeat if existing
+        // NOTE: room_id is NOT included here — it's managed by the admin UI only.
+        // Including it would cause the ESP32 heartbeat to overwrite admin-set room bindings.
         const { error } = await supabase
             .from('kiosk_devices')
             .upsert(
@@ -43,7 +45,6 @@ export async function POST(request: Request) {
                     device_serial,
                     firmware_version: firmware_version || null,
                     ip_address: ip_address || null,
-                    room_id: room_id || null,
                     last_heartbeat: new Date().toISOString(),
                     is_online: true,
                 },
