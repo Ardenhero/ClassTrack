@@ -123,7 +123,7 @@ export default function AdminManagementPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto py-8 px-4 font-sans">
+        <div className="font-sans">
             <div className="flex flex-col lg:flex-row gap-8">
 
                 {/* Left Side: Admin List */}
