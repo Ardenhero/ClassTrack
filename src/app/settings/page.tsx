@@ -13,9 +13,9 @@ export default async function SettingsPage() {
 
             <div className="space-y-8">
                 {/* Appearance Section */}
-                <section className="glass-card p-6">
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Appearance</h2>
-                    <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center justify-between">
                         <div>
                             <p className="font-medium text-gray-700 dark:text-gray-300">Theme Mode</p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Toggle between light and dark themes</p>
@@ -26,9 +26,9 @@ export default async function SettingsPage() {
 
 
 
-                <section className="glass-card p-6">
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Hardware Info</h2>
-                    <div className="flex items-center space-x-4 relative z-10">
+                    <div className="flex items-center space-x-4">
                         <div className="h-12 w-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                             <Fingerprint className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                         </div>

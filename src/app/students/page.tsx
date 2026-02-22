@@ -97,7 +97,7 @@ export default async function StudentsPage({
             </div>
 
             {(!students || students.length === 0) && !errorMsg && (
-                <div className="p-12 text-center text-gray-500 dark:text-gray-400 glass-panel rounded-2xl border-dashed">
+                <div className="p-12 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                     No students found.
                 </div>
             )}

@@ -295,21 +295,19 @@ export default function ScannerPage() {
                 </div>
 
                 {/* Class Selector */}
-                <div className="glass-card p-4">
-                    <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2 relative z-10">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                    <label className="block text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">
                         Active Class
                     </label>
-                    <div className="relative z-10">
-                        <select
-                            value={selectedClass}
-                            onChange={(e) => setSelectedClass(e.target.value)}
-                            className="glass-input"
-                        >
-                            {classes.map(c => (
-                                <option key={c.id} value={c.id} className="text-gray-900">{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <select
+                        value={selectedClass}
+                        onChange={(e) => setSelectedClass(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm font-medium focus:ring-red-500 focus:border-red-500"
+                    >
+                        {classes.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Camera View */}
@@ -323,14 +321,14 @@ export default function ScannerPage() {
                     <canvas ref={canvasRef} className="hidden" />
 
                     {!scanning && !result && !error && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-900">
-                            <div className="w-20 h-20 rounded-full bg-red-50 dark:bg-red-900/10 flex items-center justify-center">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50">
+                            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
                                 <Camera className="h-10 w-10 text-nwu-red" />
                             </div>
                             <button
                                 onClick={startScanning}
                                 disabled={!selectedClass || classesLoading}
-                                className="px-6 py-3 bg-nwu-red hover:bg-red-800 disabled:bg-gray-400 disabled:dark:bg-gray-600 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-sm"
+                                className="px-6 py-3 bg-nwu-red hover:bg-red-800 disabled:bg-gray-400 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-sm"
                             >
                                 {classesLoading ? <><Loader2 className="h-5 w-5 animate-spin" /> Loading Classes...</> : "Start Scanning"}
                             </button>
@@ -361,14 +359,14 @@ export default function ScannerPage() {
                                 stopScanning();
                                 setTimeout(startScanning, 300); // Restart with new camera
                             }}
-                            className="flex-1 py-3 glass-panel hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-gray-200 shadow-sm"
                         >
                             <Camera className="h-5 w-5" />
                             {useFrontCamera ? "Use Rear Cam" : "Use Front Cam"}
                         </button>
                         <button
                             onClick={stopScanning}
-                            className="flex-1 py-3 glass-panel bg-gray-50/50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-gray-200 shadow-sm"
                         >
                             <X className="h-5 w-5" />
                             Stop
@@ -389,13 +387,13 @@ export default function ScannerPage() {
 
                 {/* Result */}
                 {result && !logged && !duplicateWarning && (
-                    <div className="glass-card !border-2 !border-green-500 p-6 space-y-4">
-                        <div className="flex items-center gap-3 relative z-10">
+                    <div className="bg-white rounded-2xl border-2 border-green-500 p-6 space-y-4 shadow-sm">
+                        <div className="flex items-center gap-3">
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center border ${result.action === 'check_out' ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100'}`}>
                                 <UserCheck className={`h-6 w-6 ${result.action === 'check_out' ? 'text-orange-600' : 'text-green-600'}`} />
                             </div>
                             <div>
-                                <p className="text-lg font-bold text-gray-900 dark:text-white">
+                                <p className="text-lg font-bold text-gray-900">
                                     {result.student_name}
                                 </p>
                                 <p className="text-sm font-semibold flex items-center gap-1">
@@ -407,7 +405,7 @@ export default function ScannerPage() {
                             </div>
                         </div>
 
-                        <div className="flex gap-3 relative z-10">
+                        <div className="flex gap-3">
                             <button
                                 onClick={logAttendance}
                                 disabled={logging}
@@ -418,7 +416,7 @@ export default function ScannerPage() {
                             </button>
                             <button
                                 onClick={() => { setResult(null); startScanning(); }}
-                                className="px-4 py-3 glass-panel hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 rounded-xl font-semibold transition-all"
+                                className="px-4 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-all"
                             >
                                 Skip
                             </button>

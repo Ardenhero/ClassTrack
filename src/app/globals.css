@@ -3,68 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #d1d5db;
-  /* gray-300 */
+  --background: #FFFFFF;
+  --foreground: #2D2F31;
+  /* Deep Indigo for text */
 }
 
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900;
-    /* Clean text rendering */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  .dark body {
-    background-color: theme('colors.dark.bg');
-    color: theme('colors.gray.300');
-    /* Subtle radial gradient to give depth to the dark background */
-    background-image: radial-gradient(circle at 50% 0%, #1a1a24 0%, #0a0a0f 70%);
-    background-attachment: fixed;
+/* Optional Dark Mode overrides if requested later, but for now stick to "Udemy" look which is light */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1C1D1F;
+    /* Darker Indigo/Gray */
+    --foreground: #FFFFFF;
   }
 }
 
-@layer components {
-
-  /* Core Glassmorphism Surface Base */
-  .glass-panel {
-    @apply bg-white border border-gray-200 shadow-md dark:bg-dark-surface/60 dark:backdrop-blur-xl dark:border-white/5 dark:shadow-lg;
-  }
-
-  /* Interactive Glass Card with Lift & Glow */
-  .glass-card {
-    @apply glass-panel rounded-2xl transition-all duration-300 relative overflow-hidden;
-  }
-
-  .glass-card:hover {
-    @apply -translate-y-2 border-gray-300 shadow-xl dark:border-white/10 dark:shadow-glass-lift;
-  }
-
-  /* Hover Gradient Border Effect (using pseudo-element) for dark mode only */
-  .dark .glass-card::before {
-    content: "";
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
-    background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(176, 42, 42, 0.06), transparent 40%);
-  }
-
-  .dark .glass-card:hover::before {
-    @apply opacity-100;
-  }
-
-  /* Inputs */
-  .glass-input {
-    @apply w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nu-500/50 focus:border-nu-500 focus:shadow-glow-red dark:bg-dark-bg/50 dark:border-white/10 dark:text-white dark:placeholder-gray-500;
-  }
-
-  /* Gradient Text */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-nu-600 via-nu-500 to-nu-600 dark:from-nu-400 dark:via-nu-200 dark:from-nu-400 animate-gradient-x;
-  }
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter), sans-serif;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+@keyframes snowfall {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+.animate-snowfall {
+  animation: snowfall 2s linear infinite;
 }

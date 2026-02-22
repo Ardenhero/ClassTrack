@@ -106,65 +106,65 @@ export default async function InstructorsPage() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8">
             {/* Add Instructor Form */}
-            <div className="glass-panel p-6 rounded-2xl relative overflow-hidden">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-white drop-shadow-md mb-6">
-                    <Plus className="h-5 w-5 text-nu-400 drop-shadow-[0_0_8px_rgba(176,42,42,0.8)]" />
+            <div className="bg-white rounded-2xl shadow-md border p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Plus className="h-5 w-5 text-nwu-red" />
                     Add Instructor
                 </h2>
-                <form action={addInstructor} className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
+                <form action={addInstructor} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs font-semibold text-gray-400 mb-1.5">Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                         <input
                             name="name"
                             required
-                            className="glass-input"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm"
                             placeholder="Instructor name"
                         />
                     </div>
                     {isSuperAdmin && (
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">Department</label>
-                            <select name="department_id" className="glass-input">
-                                <option value="" className="bg-dark-surface text-gray-400">No Department</option>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                            <select name="department_id" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
+                                <option value="">No Department</option>
                                 {departments?.map((d) => (
-                                    <option key={d.id} value={d.id} className="bg-dark-surface text-white">{d.name} ({d.code})</option>
+                                    <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
                                 ))}
                             </select>
                         </div>
                     )}
                     {!isSuperAdmin && (
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">Department</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                             <input
                                 type="text"
                                 disabled
                                 value={currentUserDeptName || "Your Department"}
-                                className="glass-input opacity-70 cursor-not-allowed"
+                                className="w-full px-3 py-2 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg text-sm cursor-not-allowed"
                             />
                             {/* Hidden input to actually submit the ID */}
                             <input type="hidden" name="department_id" value={currentUserDeptId || ""} />
                         </div>
                     )}
                     <div>
-                        <label className="block text-xs font-semibold text-gray-400 mb-1.5">PIN Code (optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">PIN Code (optional)</label>
                         <input
                             name="pin_code"
-                            className="glass-input"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm"
                             placeholder="Optional PIN"
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-gray-400 mb-1.5">Role</label>
-                        <select name="role" className="glass-input">
-                            <option value="instructor" className="bg-dark-surface text-white">Instructor</option>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <select name="role" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nwu-red focus:border-transparent transition-all text-sm">
+                            <option value="instructor">Instructor</option>
                         </select>
                     </div>
-                    <div className="md:col-span-2 pt-2 border-t border-white/5 mt-2">
+                    <div className="md:col-span-2">
                         <button
                             type="submit"
-                            className="w-full md:w-auto px-6 py-2.5 bg-nu-500 hover:bg-nu-400 text-white text-sm font-bold rounded-xl transition-all duration-300 shadow-glow-red hover:scale-105"
+                            className="w-full md:w-auto px-6 py-2 bg-nwu-red text-white text-sm font-bold rounded-lg hover:bg-[#5e0d0e] transition-colors shadow-md"
                         >
                             Add Instructor
                         </button>
@@ -173,77 +173,71 @@ export default async function InstructorsPage() {
             </div>
 
             {/* Instructors List */}
-            <div className="glass-card p-6">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-white drop-shadow-md mb-6 relative z-10">
-                    <Users className="h-5 w-5 text-nu-400 drop-shadow-[0_0_8px_rgba(176,42,42,0.8)]" />
-                    Instructors <span className="text-sm font-normal text-gray-400">({instructors?.length || 0})</span>
+            <div className="bg-white rounded-2xl shadow-md border p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-nwu-red" />
+                    Instructors ({instructors?.length || 0})
                 </h2>
-                <div className="divide-y divide-white/5 relative z-10">
+                <div className="divide-y">
                     {instructors?.map((inst) => (
-                        <div key={inst.id} className="flex flex-col md:flex-row md:items-center justify-between py-4 group gap-4 md:gap-0 hover:bg-white/5 rounded-xl px-2 transition-colors -mx-2">
+                        <div key={inst.id} className="flex items-center justify-between py-4 group">
                             <div className="flex items-center space-x-4">
-                                <div className="h-10 w-10 rounded-full bg-dark-bg/50 border border-white/10 flex items-center justify-center text-gray-300 font-bold text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]">
+                                <div className="h-10 w-10 rounded-full bg-nwu-red/10 flex items-center justify-center text-nwu-red font-bold text-sm">
                                     {inst.name[0]}
                                 </div>
-                                <div className="min-w-0">
-                                    <p className="font-medium text-white truncate">{inst.name}</p>
-                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                        <form className="flex items-center" action={async (formData: FormData) => {
+                                <div>
+                                    <p className="font-medium text-gray-900">{inst.name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <form action={async (formData: FormData) => {
                                             "use server";
                                             const { updateInstructorDepartment } = await import("./instructorActions");
                                             const deptId = formData.get("department_id") as string;
                                             await updateInstructorDepartment(inst.id, deptId === "" ? null : deptId);
                                         }}>
                                             {isSuperAdmin ? (
-                                                <div className="flex items-center gap-1">
+                                                <>
                                                     <select
                                                         name="department_id"
                                                         defaultValue={inst.department_id || ""}
-                                                        className="px-2 py-1 text-[10px] bg-dark-bg/50 border border-white/10 rounded-lg text-gray-400 outline-none hover:border-white/30 transition-colors w-32 focus:border-nu-500"
+                                                        className="px-1 py-0.5 border border-gray-200 rounded bg-transparent focus:ring-1 focus:ring-nwu-red outline-none transition-all text-[10px] font-medium w-32"
                                                     >
-                                                        <option value="" className="bg-dark-surface text-gray-500">(No Dept)</option>
+                                                        <option value="">(No Dept)</option>
                                                         {departments?.map((d) => (
-                                                            <option key={d.id} value={d.id} className="bg-dark-surface text-gray-300">{d.name} ({d.code})</option>
+                                                            <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
                                                         ))}
                                                     </select>
                                                     <button
                                                         type="submit"
-                                                        className="p-1.5 bg-white/5 text-gray-400 rounded-lg hover:bg-nu-500 hover:text-white transition-colors border border-transparent hover:border-nu-500/50 shadow-sm"
+                                                        className="ml-1 p-1 bg-gray-100 text-gray-400 rounded hover:bg-nwu-red hover:text-white transition-all"
                                                         title="Save Department"
                                                     >
                                                         <Key className="h-3 w-3" />
                                                     </button>
-                                                </div>
+                                                </>
                                             ) : (
                                                 // Read Only for Dept Admins
-                                                <span className="text-[10px] bg-white/5 text-gray-400 px-2 py-0.5 rounded-full border border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)]">
+                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
                                                     {/* @ts-expect-error: Supabase sometimes infers relations as arrays */}
                                                     {inst.departments?.code || "No Dept"}
                                                 </span>
                                             )}
                                         </form>
                                         {inst.role === "admin" && (
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 font-bold shadow-[0_0_10px_rgba(234,179,8,0.2)]">Admin</span>
+                                            <span className="px-2 py-0.5 bg-nwu-gold/20 text-nwu-red rounded-full font-bold">Admin</span>
                                         )}
                                         {inst.pin_code && (
-                                            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-nu-500/30 bg-nu-500/10 text-nu-400 font-medium">
+                                            <span className="flex items-center gap-1 text-amber-600">
                                                 <Key className="h-3 w-3" /> PIN
                                             </span>
                                         )}
                                     </div>
                                 </div>
                             </div>
-                            <div className="pl-14 md:pl-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
-                            </div>
+                            <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
                         </div>
                     ))}
                     {(!instructors || instructors.length === 0) && (
-                        <div className="py-12 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center mt-6 bg-white/5 backdrop-blur-sm">
-                            <Users className="h-8 w-8 text-gray-600 mb-2" />
-                            <p className="text-sm font-medium text-gray-400">No instructors found.</p>
-                            <p className="text-xs text-gray-500 mt-1 max-w-xs text-center">Add a new instructor above to see them here.</p>
-                        </div>
+                        <p className="text-sm text-gray-400 py-4 text-center">No instructors yet. Add one above.</p>
                     )}
                 </div>
             </div>

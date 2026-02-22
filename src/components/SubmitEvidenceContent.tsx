@@ -160,59 +160,57 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                 <div className="w-full">
                     {/* Wait for initial data load */}
                     {loadingData && (
-                        <div className="flex flex-col items-center justify-center p-12 glass-card rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] border-t border-t-white/10">
-                            <Loader2 className="h-8 w-8 text-nu-400 animate-spin shadow-[0_0_15px_rgba(176,42,42,0.6)] rounded-full" />
-                            <p className="text-xs font-bold tracking-widest uppercase text-gray-400 mt-4">Loading form data...</p>
+                        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-gray-100">
+                            <Loader2 className="h-8 w-8 text-nwu-red animate-spin" />
+                            <p className="text-sm font-medium text-gray-500 mt-4">Loading form data...</p>
                         </div>
                     )}
 
                     {/* Step 2: Upload Form */}
                     {step === "form" && student && !loadingData && (
-                        <div className="glass-card rounded-3xl p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] border-t border-t-white/10 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-nu-500/10 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none group-hover:bg-nu-500/20 transition-colors duration-700"></div>
-
-                            <div className="relative z-10 space-y-6">
+                        <div className="bg-white rounded-xl shadow-xl border-t-4 border-nwu-gold overflow-hidden">
+                            <div className="p-6 space-y-5">
                                 {/* Instructor Selection (FIRST) */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                        <UserCheck className="h-3.5 w-3.5 text-gray-500 drop-shadow-sm" />
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1 flex items-center gap-1">
+                                        <UserCheck className="h-3.5 w-3.5" />
                                         Select Instructor
                                     </label>
                                     <select
                                         value={selectedInstructor}
                                         onChange={(e) => handleInstructorChange(e.target.value)}
-                                        className="w-full px-4 py-3.5 bg-dark-bg border border-white/10 rounded-xl text-white text-sm focus:ring-1 focus:ring-nu-500/50 focus:border-nu-400 shadow-inner appearance-none transition-colors"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                     >
-                                        <option value="" className="bg-dark-surface text-gray-400">Choose your instructor...</option>
+                                        <option value="">Choose your instructor...</option>
                                         {instructors.map((inst) => (
-                                            <option key={inst.id} value={inst.id} className="bg-dark-surface text-white">
+                                            <option key={inst.id} value={inst.id}>
                                                 {inst.name}
                                             </option>
                                         ))}
                                     </select>
                                     {instructors.length === 0 && (
-                                        <p className="text-xs text-orange-400 mt-2 font-medium tracking-wide">No instructors found. You may not be enrolled in any classes.</p>
+                                        <p className="text-xs text-amber-600 mt-1">No instructors found. You may not be enrolled in any classes.</p>
                                     )}
                                 </div>
 
                                 {/* Class Selection (filtered by instructor) - MULTI SELECT */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Select Class(es) to Excuse From</label>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Select Class(es) to Excuse From</label>
 
                                     {!selectedInstructor ? (
-                                        <div className="text-xs font-bold tracking-widest uppercase text-gray-500 p-4 glass-panel rounded-xl text-center shadow-inner">
+                                        <div className="text-sm text-gray-400 italic p-3 bg-gray-50 rounded-lg border border-gray-200 text-center">
                                             Select an instructor above to see their classes
                                         </div>
                                     ) : filteredClasses.length === 0 ? (
-                                        <p className="text-xs text-orange-400 mt-2 font-medium tracking-wide">No classes found for this instructor.</p>
+                                        <p className="text-xs text-amber-600 mt-1">No classes found for this instructor.</p>
                                     ) : (
-                                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="space-y-2 max-h-48 overflow-y-auto p-1 custom-scrollbar">
                                             {filteredClasses.map((c) => (
                                                 <label
                                                     key={c.id}
-                                                    className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-300 group ${selectedClass.includes(String(c.id))
-                                                        ? "bg-nu-500/10 border-nu-500/40 shadow-[0_0_15px_rgba(176,42,42,0.1)]"
-                                                        : "glass-panel hover:bg-white/5 hover:border-white/20"
+                                                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${selectedClass.includes(String(c.id))
+                                                        ? "bg-red-50 border-nwu-red shadow-sm"
+                                                        : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                                                         }`}
                                                 >
                                                     <input
@@ -230,18 +228,18 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                                             }
                                                             setSelectedClass(newSelection.join(','));
                                                         }}
-                                                        className="mt-1 h-4 w-4 text-nu-500 bg-dark-bg border border-white/20 rounded focus:ring-nu-500/50 focus:ring-offset-dark-surface"
+                                                        className="mt-1 h-4 w-4 text-nwu-red border-gray-300 rounded focus:ring-nwu-red"
                                                     />
                                                     <div>
-                                                        <div className={`font-bold text-sm tracking-wide transition-colors ${selectedClass.includes(String(c.id)) ? "text-white drop-shadow-sm" : "text-gray-300 group-hover:text-white"}`}>{c.subject_name}</div>
-                                                        <div className="text-[10px] font-bold tracking-widest uppercase text-gray-500 mt-1">{c.section} • {c.year_level}</div>
+                                                        <div className="font-medium text-sm text-gray-900">{c.subject_name}</div>
+                                                        <div className="text-xs text-gray-500">{c.section} • {c.year_level}</div>
                                                     </div>
                                                 </label>
                                             ))}
                                         </div>
                                     )}
                                     {selectedInstructor && (selectedClass.split(',').filter(Boolean).length > 0) && (
-                                        <p className="text-[10px] text-nu-400 mt-3 text-right font-bold uppercase tracking-widest">
+                                        <p className="text-xs text-gray-500 mt-2 text-right font-medium">
                                             {selectedClass.split(',').filter(Boolean).length} class(es) selected
                                         </p>
                                     )}
@@ -249,25 +247,25 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
                                 {/* Date Selection */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Absence Date(s)</label>
-                                    <div className="flex gap-3">
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Absence Date(s)</label>
+                                    <div className="flex gap-2">
                                         <input
                                             type="date"
                                             value={currentDate}
                                             onChange={(e) => setCurrentDate(e.target.value)}
-                                            className="flex-1 px-4 py-3 glass-input rounded-xl text-white text-sm focus:border-nu-400 shadow-inner [color-scheme:dark]"
+                                            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                         />
-                                        <button onClick={addDate} disabled={!currentDate} className="px-5 py-3 bg-nu-500 text-white rounded-xl hover:bg-nu-400 disabled:opacity-50 disabled:hover:bg-nu-500 transition-colors shadow-glow-red hover:shadow-[0_0_15px_rgba(176,42,42,0.6)]">
-                                            <Plus className="h-5 w-5 drop-shadow-md" />
+                                        <button onClick={addDate} disabled={!currentDate} className="px-3 py-2 bg-nwu-red text-white rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 transition-colors shadow-sm">
+                                            <Plus className="h-4 w-4" />
                                         </button>
                                     </div>
                                     {dates.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mt-3">
+                                        <div className="flex flex-wrap gap-2 mt-2">
                                             {dates.map((d) => (
-                                                <span key={d} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-nu-500/10 text-nu-400 border border-nu-500/30 rounded-lg text-xs font-bold tracking-widest shadow-sm">
+                                                <span key={d} className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-nwu-red border border-red-100 rounded-md text-xs font-medium">
                                                     <Calendar className="h-3.5 w-3.5" />
                                                     {d}
-                                                    <button onClick={() => setDates(dates.filter((x) => x !== d))} className="hover:text-red-400 ml-1 transition-colors">
+                                                    <button onClick={() => setDates(dates.filter((x) => x !== d))} className="hover:text-red-900 ml-1 transition-colors">
                                                         <X className="h-3.5 w-3.5" />
                                                     </button>
                                                 </span>
@@ -278,27 +276,25 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
                                 {/* File Upload */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 leading-relaxed">
-                                        Upload Documents <span className="text-gray-500 ml-1">(JPG/PNG, max 5MB each, up to {Math.min(5, uploadsRemaining)} files)</span>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                                        Upload Documents (JPG/PNG, max 5MB each, up to {Math.min(5, uploadsRemaining)} files)
                                     </label>
-                                    <div className="relative">
-                                        <input
-                                            type="file"
-                                            accept=".jpg,.jpeg,.png"
-                                            multiple
-                                            onChange={handleFileSelect}
-                                            className="w-full text-xs text-gray-400 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:tracking-widest file:uppercase file:bg-white/10 file:text-white hover:file:bg-white/20 hover:file:shadow-[0_0_10px_rgba(255,255,255,0.1)] transition-all cursor-pointer glass-input rounded-xl file:cursor-pointer"
-                                        />
-                                    </div>
+                                    <input
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png"
+                                        multiple
+                                        onChange={handleFileSelect}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-nwu-red hover:file:bg-red-100 transition-colors"
+                                    />
                                     {files.length > 0 && (
-                                        <div className="mt-3 space-y-2">
+                                        <div className="mt-2 space-y-1">
                                             {files.map((f, i) => (
-                                                <div key={i} className="flex items-center justify-between px-4 py-3 glass-panel border border-white/10 rounded-xl text-sm hover:border-white/20 transition-colors group">
-                                                    <span className="flex items-center gap-3 text-gray-300 truncate font-medium tracking-wide">
-                                                        <FileText className="h-4 w-4 text-gray-500 group-hover:text-nu-400 transition-colors" />
-                                                        {f.name} <span className="text-gray-500 font-bold uppercase tracking-widest text-[10px] ml-1">({(f.size / 1024 / 1024).toFixed(1)}MB)</span>
+                                                <div key={i} className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                                                    <span className="flex items-center gap-2 text-gray-700 truncate font-medium">
+                                                        <FileText className="h-4 w-4 text-gray-400" />
+                                                        {f.name} <span className="text-gray-400 font-normal">({(f.size / 1024 / 1024).toFixed(1)}MB)</span>
                                                     </span>
-                                                    <button onClick={() => removeFile(i)} className="text-gray-500 hover:text-red-400 transition-colors bg-white/5 hover:bg-red-500/10 p-1.5 rounded-lg">
+                                                    <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500 transition-colors">
                                                         <X className="h-4 w-4" />
                                                     </button>
                                                 </div>
@@ -309,33 +305,33 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
                                 {/* Description */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Description <span className="text-gray-500 normal-case tracking-normal text-xs">(optional)</span></label>
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Description (optional)</label>
                                     <textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        rows={3}
+                                        rows={2}
                                         placeholder="e.g. Medical certificate for illness on Feb 10"
-                                        className="w-full px-4 py-3 glass-input rounded-xl text-white text-sm resize-none focus:border-nu-400 shadow-inner placeholder-gray-600"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm resize-none focus:ring-nwu-red focus:border-nwu-red shadow-sm"
                                     />
                                 </div>
 
                                 {/* Messages */}
                                 {uploadMessage && (
-                                    <div className={`flex items-center gap-3 p-4 rounded-xl text-sm font-bold tracking-wide shadow-inner border ${uploadMessage.type === "error" ? "bg-red-500/10 text-red-400 border-red-500/20" : "bg-green-500/10 text-green-400 border-green-500/20"}`}>
-                                        {uploadMessage.type === "error" ? <XCircle className="h-5 w-5 shrink-0 drop-shadow-md" /> : <CheckCircle className="h-5 w-5 shrink-0 drop-shadow-md" />}
+                                    <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${uploadMessage.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
+                                        {uploadMessage.type === "error" ? <XCircle className="h-4 w-4 shrink-0" /> : <CheckCircle className="h-4 w-4 shrink-0" />}
                                         {uploadMessage.text}
                                     </div>
                                 )}
 
                                 {/* Action Buttons */}
-                                <div className="flex gap-4 pt-2">
+                                <div className="flex gap-3">
                                     <button
                                         onClick={handleSubmit}
                                         disabled={!selectedClass || dates.length === 0 || files.length === 0 || uploading}
-                                        className="w-full py-4 text-sm tracking-widest font-bold text-white uppercase bg-nu-500 hover:bg-nu-400 rounded-xl transition-all duration-300 shadow-glow-red hover:shadow-[0_0_25px_rgba(176,42,42,0.6)] disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed hover:-translate-y-0.5 flex items-center justify-center gap-3"
+                                        className="flex-1 py-3 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2 text-sm"
                                     >
-                                        {uploading ? <Loader2 className="h-5 w-5 animate-spin drop-shadow-md" /> : <Upload className="h-5 w-5 drop-shadow-md" />}
-                                        <span className="drop-shadow-sm">{uploading ? "Uploading Evidence..." : "Submit Excuse Letter"}</span>
+                                        {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                                        Submit Excuse Letter
                                     </button>
                                 </div>
                             </div>
@@ -344,25 +340,23 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
                     {/* Step 3: Success */}
                     {step === "success" && (
-                        <div className="glass-card rounded-3xl p-10 text-center space-y-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] border-t border-t-green-500/50 relative overflow-hidden group">
-                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-500/10 rounded-full blur-[80px] pointer-events-none transition-colors duration-700"></div>
-
-                            <div className="mx-auto h-20 w-20 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center shadow-[inset_0_1px_10px_rgba(74,222,128,0.2)] drop-shadow-[0_0_15px_rgba(74,222,128,0.3)] relative z-10">
-                                <CheckCircle className="h-10 w-10 text-green-400" />
+                        <div className="bg-white rounded-xl shadow-xl border-t-4 border-green-500 p-8 text-center space-y-6">
+                            <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center shadow-inner">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
                             </div>
-                            <div className="relative z-10">
-                                <h2 className="text-2xl font-black text-white tracking-wide drop-shadow-sm">Submitted Successfully!</h2>
-                                <p className="mt-3 text-sm text-gray-400 font-medium leading-relaxed">
+                            <div>
+                                <h2 className="text-2xl font-extrabold text-gray-900">Submitted Successfully!</h2>
+                                <p className="mt-2 text-sm text-gray-500">
                                     Your excuse letter has been submitted for review.<br />
                                     Your instructor will be notified and can approve or reject the submission.
                                 </p>
                             </div>
-                            <div className="glass-panel border-white/5 rounded-2xl p-6 text-sm space-y-3 text-left shadow-inner relative z-10">
-                                <p className="text-gray-400 flex justify-between font-bold uppercase tracking-widest text-[10px]"><span>Documents submitted:</span> <strong className="text-white text-sm font-black drop-shadow-sm">{files.length}</strong></p>
-                                <p className="text-gray-400 flex justify-between font-bold uppercase tracking-widest text-[10px]"><span>Remaining uploads:</span> <strong className="text-white text-sm font-black drop-shadow-sm">{uploadsRemaining}</strong></p>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 text-sm space-y-2 text-left shadow-sm">
+                                <p className="text-gray-600 flex justify-between"><span>Documents submitted:</span> <strong className="text-gray-900 text-base">{files.length}</strong></p>
+                                <p className="text-gray-600 flex justify-between"><span>Remaining uploads:</span> <strong className="text-gray-900 text-base">{uploadsRemaining}</strong></p>
                             </div>
-                            <div className="pt-4 relative z-10">
-                                <button onClick={resetForm} className="w-full py-4 bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 text-white font-bold tracking-widest uppercase rounded-xl shadow-sm transition-all focus:ring-1 focus:ring-white/30">
+                            <div className="pt-2">
+                                <button onClick={resetForm} className="w-full py-3 bg-nwu-red text-white font-bold rounded-lg hover:bg-[#5e0d0e] shadow-sm transition-all text-sm">
                                     Submit Another
                                 </button>
                             </div>
