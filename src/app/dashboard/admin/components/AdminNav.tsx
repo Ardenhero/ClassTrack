@@ -13,6 +13,7 @@ const tabs = [
     { name: "Instructors", href: "/dashboard/admin/instructors", icon: Users, superAdminOnly: false, hideForSuperAdmin: true },
 
     // Super Admin "Admin Management" Tabs
+    { name: "Departments", href: "/dashboard/admin/departments", icon: Building2, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Provisioning", href: "/dashboard/admin/provisioning", icon: UserCheck, superAdminOnly: true, hideForSuperAdmin: false },
     { name: "Devices", href: "/dashboard/admin/devices", icon: KeyRound, superAdminOnly: false, hideForSuperAdmin: false },
     { name: "Kiosks", href: "/dashboard/admin/kiosks", icon: Monitor, superAdminOnly: false, hideForSuperAdmin: false },
