@@ -1,21 +1,20 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { AddStudentDialog } from "./AddStudentDialog";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { StudentGrid } from "./StudentGrid";
-import { YearGroup } from "@/components/YearGroup";
 import { Suspense } from "react";
-import { getCachedStudents } from "@/lib/cache";
 import { checkIsSuperAdmin } from "@/lib/auth-utils";
+import StudentsListContent from "@/components/students/StudentsListContent";
+import { Loader2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-// PURIFIED INTERFACE: Allowing fingerprint_slot_id for status display
-interface Student {
-    id: string;
-    name: string;
-    sin?: string;
-    year_level: string;
-    fingerprint_slot_id?: number | null;
+function StudentsSkeleton() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-nwu-red" />
+            <p className="text-gray-500 text-sm animate-pulse">Loading students directory...</p>
+        </div>
+    );
 }
 
 export default async function StudentsPage({
@@ -25,34 +24,6 @@ export default async function StudentsPage({
 }) {
     const query = searchParams?.query || "";
     const isSuperAdmin = await checkIsSuperAdmin();
-    let students: Student[] = [];
-    let errorMsg = null;
-
-    try {
-        const rawStudents = await getCachedStudents(query);
-
-        // SANITIZATION: Map to clean Student interface
-        students = (rawStudents || []).map((s) => ({
-            id: s.id,
-            name: s.name || "",
-            sin: s.sin || undefined,
-            year_level: s.year_level || "",
-            fingerprint_slot_id: s.fingerprint_slot_id // Pass through for UI status
-        }));
-    } catch (err: unknown) {
-        console.error("Failed to load students:", err);
-        errorMsg = "Failed to load students. Please try again later.";
-    }
-
-    const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-    const groupedStudents = YEAR_LEVELS.reduce((acc, level) => {
-        acc[level] = students.filter((s) => (s.year_level || "") === level);
-        return acc;
-    }, {} as Record<string, Student[]>);
-
-    // Catch-all for students with non-standard year levels
-    const otherStudents = students.filter((s) => !YEAR_LEVELS.includes(s.year_level || ""));
-    if (otherStudents.length > 0) groupedStudents["Other"] = otherStudents;
 
     return (
         <DashboardLayout>
@@ -80,27 +51,10 @@ export default async function StudentsPage({
                 </div>
             </div>
 
-            {errorMsg && (
-                <div className="p-4 mb-6 bg-red-50 text-red-600 rounded-xl border border-red-100">
-                    {errorMsg}
-                </div>
-            )}
+            <Suspense fallback={<StudentsSkeleton />}>
+                <StudentsListContent query={query} isSuperAdmin={isSuperAdmin} />
+            </Suspense>
 
-            <div className="space-y-6">
-                {Object.entries(groupedStudents).map(([level, items]) => (
-                    items && items.length > 0 && (
-                        <YearGroup key={level} title={level} count={items.length} itemLabel="students">
-                            <StudentGrid students={items} isSuperAdmin={isSuperAdmin} />
-                        </YearGroup>
-                    )
-                ))}
-            </div>
-
-            {(!students || students.length === 0) && !errorMsg && (
-                <div className="p-12 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                    No students found.
-                </div>
-            )}
         </DashboardLayout>
     );
 }
