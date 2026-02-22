@@ -127,18 +127,19 @@ export default function AdminManagementPage() {
             <div className="flex flex-col lg:flex-row gap-8">
 
                 {/* Left Side: Admin List */}
-                <div className="lg:w-2/3 space-y-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                                <ShieldCheck className="mr-2 h-6 w-6 text-nwu-gold" />
-                                Existing Department Admins
-                            </h2>
-                            <p className="text-sm text-gray-500">Managing {admins.length} institution-level accounts</p>
+                <div className="lg:w-2/3">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm h-fit">
+                        <div className="p-8 border-b border-gray-50 dark:border-gray-700/50">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-3 bg-nwu-gold/10 rounded-2xl text-nwu-gold">
+                                    <ShieldCheck className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Existing Department Admins</h2>
+                                    <p className="text-xs text-gray-500 mt-0.5">Managing {admins.length} institution-level accounts</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700">
                                 <tr>
