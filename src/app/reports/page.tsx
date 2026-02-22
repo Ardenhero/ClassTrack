@@ -74,8 +74,8 @@ export default function ReportsPage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="glass-card p-5">
-                    <div className="flex items-center gap-3 relative z-10">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                             <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
@@ -85,8 +85,8 @@ export default function ReportsPage() {
                         </div>
                     </div>
                 </div>
-                <div className="glass-card p-5">
-                    <div className="flex items-center gap-3 relative z-10">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                             <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
                         </div>
@@ -96,8 +96,8 @@ export default function ReportsPage() {
                         </div>
                     </div>
                 </div>
-                <div className="glass-card p-5">
-                    <div className="flex items-center gap-3 relative z-10">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                             <TrendingDown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                         </div>
@@ -112,8 +112,8 @@ export default function ReportsPage() {
             </div>
 
             {/* At-Risk Monitor — Full Width */}
-            <div className="glass-panel overflow-hidden rounded-2xl">
-                <div className="bg-gradient-to-r from-red-600 to-nwu-red p-5 text-white transition-colors duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-red-600 to-red-700 p-5 text-white">
                     <div className="flex items-center gap-3">
                         <AlertTriangle className="h-6 w-6" />
                         <div>
@@ -128,8 +128,8 @@ export default function ReportsPage() {
                     <div className="p-12 text-center text-gray-400">No at-risk students found 🎉</div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200/50 dark:divide-white/5">
-                            <thead className="bg-gray-50/50 dark:bg-white/5">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-900/50">
                                 <tr>
                                     <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
                                     <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sessions</th>
@@ -139,11 +139,11 @@ export default function ReportsPage() {
                                     <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200/50 dark:divide-white/5">
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {atRisk.map((s) => {
                                     const risk = riskLevel(s.attendance_rate);
                                     return (
-                                        <tr key={s.student_id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                        <tr key={s.student_id} className="hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
                                             <td className="px-5 py-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-700 dark:text-red-400 font-bold text-xs">

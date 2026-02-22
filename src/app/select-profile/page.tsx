@@ -92,28 +92,26 @@ export default function SelectProfilePage() {
     // No profiles linked - show a message
     if (profiles.length === 0) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 transition-colors duration-300">
-                <div className="max-w-md w-full text-center space-y-8 glass-panel p-8 rounded-[2rem]">
-                    <h1 className="text-3xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-white">No Profiles Found</h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-lg mb-8 text-center max-w-md">
-                        Your account doesn&apos;t have any profiles yet. Please contact an administrator to get your account approved.
-                    </p>
-                    <form action="/login">
-                        <button
-                            type="submit"
-                            className="px-6 py-3 bg-nwu-red text-white rounded-lg font-medium hover:bg-red-800 transition-colors shadow-lg"
-                        >
-                            Back to Login
-                        </button>
-                    </form>
-                </div>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
+                <h1 className="text-3xl md:text-5xl font-bold mb-6">No Profiles Found</h1>
+                <p className="text-gray-400 text-lg mb-8 text-center max-w-md">
+                    Your account doesn&apos;t have any profiles yet. Please contact an administrator to get your account approved.
+                </p>
+                <form action="/login">
+                    <button
+                        type="submit"
+                        className="px-6 py-3 bg-nwu-red text-white rounded-lg font-medium hover:bg-[#5e0d0e] transition-colors"
+                    >
+                        Back to Login
+                    </button>
+                </form>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 transition-colors duration-300">
-            <h1 className="text-3xl md:text-5xl font-bold mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700 text-gray-900 dark:text-white">Who&apos;s checking in?</h1>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-4">
+            <h1 className="text-3xl md:text-5xl font-bold mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">Who&apos;s checking in?</h1>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-5xl">
                 {profiles.map((profile) => (
@@ -122,22 +120,22 @@ export default function SelectProfilePage() {
                         onClick={() => handleProfileClick(profile)}
                         className="group flex flex-col items-center cursor-pointer transition-transform hover:scale-105 active:scale-95"
                     >
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl relative overflow-hidden mb-4 border-2 border-transparent group-hover:border-nwu-red/50 transition-all shadow-xl glass-panel flex items-center justify-center">
+                        <div className="w-32 h-32 md:w-40 md:h-40 rounded relative overflow-hidden mb-4 border-2 border-transparent group-hover:border-2 group-hover:border-white transition-all shadow-xl bg-gray-800 flex items-center justify-center">
                             {profile.role === "admin" ? (
                                 <ShieldCheck className="h-16 w-16 text-nwu-gold" />
                             ) : (
-                                <div className="text-4xl font-bold text-gray-500 dark:text-gray-400">
+                                <div className="text-4xl font-bold text-gray-400">
                                     {profile.name[0]}
                                 </div>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             {profile.has_pin && (
-                                <div className="absolute top-2 right-2 bg-gray-900/50 p-1.5 rounded-full backdrop-blur-sm">
+                                <div className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full backdrop-blur-sm">
                                     <Lock className="h-3 w-3 text-white/80" />
                                 </div>
                             )}
                         </div>
-                        <span className="text-lg md:text-xl text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white font-medium text-center transition-colors">
+                        <span className="text-lg md:text-xl text-gray-400 group-hover:text-white font-medium text-center transition-colors">
                             {profile.name}
                         </span>
                         {profile.role === 'admin' && (

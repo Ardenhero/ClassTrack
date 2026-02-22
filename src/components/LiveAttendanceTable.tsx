@@ -183,17 +183,17 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
     }, [dayString]);
 
     return (
-        <div className="glass-panel rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
             {/* Live indicator */}
-            <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-200/50 dark:border-white/5 bg-gray-50/50 dark:bg-white/5">
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
                 <Radio className={`h-4 w-4 ${isLive ? "text-green-500 animate-pulse" : "text-gray-400"}`} />
                 <span className={`text-xs font-medium ${isLive ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
                     {isLive ? "Live — Listening for scans" : "Connecting..."}
                 </span>
             </div>
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200/50 dark:divide-white/5">
-                    <thead className="bg-gray-50/50 dark:bg-white/5">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SIN</th>
@@ -204,7 +204,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200/50 dark:divide-white/5 bg-transparent">
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {rows.map((row, idx) => {
                             const Icon = resolveIcon(row.iconName);
                             const isNew = flash === row.id;
@@ -213,7 +213,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                                     key={`${row.id}-${idx}`}
                                     className={`transition-all duration-500 ${isNew
                                         ? "bg-green-50 dark:bg-green-900/20 ring-1 ring-green-200 dark:ring-green-800"
-                                        : "hover:bg-gray-50 dark:hover:bg-white/5"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                         }`}
                                     data-testid="attendance-record"
                                 >
