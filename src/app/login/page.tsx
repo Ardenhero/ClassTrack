@@ -43,6 +43,7 @@ export default function LoginPage() {
                             alt="Northwestern University Seal"
                             width={80}
                             height={80}
+                            priority
                             className="h-16 w-16 md:h-20 md:w-20 object-contain rounded-full border-2 border-white bg-white"
                         />
                     </div>
@@ -64,6 +65,7 @@ export default function LoginPage() {
                             alt="ICPEP Logo"
                             width={80}
                             height={80}
+                            priority
                             className="h-16 w-16 md:h-20 md:w-20 object-contain rounded-full border-2 border-white bg-white/10"
                         />
                     </div>
