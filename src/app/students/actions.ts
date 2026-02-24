@@ -251,10 +251,75 @@ export async function updateStudent(id: string, data: any) {
 }
 
 export async function deleteStudent(id: string) {
+    // PRODUCTION HARDENING: Archive instead of delete
+    return archiveStudent(id);
+}
+
+export async function archiveStudent(id: string) {
     const supabase = createClient();
-    const { error } = await supabase.from("students").delete().eq("id", id);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Get archiver profile
+    let archivedBy: string | null = null;
+    if (user) {
+        const { data: profile } = await supabase
+            .from('instructors')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .single();
+        archivedBy = profile?.id || null;
+    }
+
+    const { error } = await supabase
+        .from("students")
+        .update({
+            is_archived: true,
+            archived_at: new Date().toISOString(),
+            archived_by: archivedBy,
+        })
+        .eq("id", id);
 
     if (error) return { error: error.message };
+
+    // Audit log
+    if (user) {
+        await supabase.from("audit_logs").insert({
+            action: "student_archived",
+            entity_type: "student",
+            entity_id: id,
+            details: "Student moved to archive",
+            performed_by: user.id,
+        });
+    }
+
+    revalidatePath("/students");
+    return { success: true };
+}
+
+export async function restoreStudent(id: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from("students")
+        .update({
+            is_archived: false,
+            archived_at: null,
+            archived_by: null,
+        })
+        .eq("id", id);
+
+    if (error) return { error: error.message };
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        await supabase.from("audit_logs").insert({
+            action: "student_restored",
+            entity_type: "student",
+            entity_id: id,
+            details: "Student restored from archive",
+            performed_by: user.id,
+        });
+    }
+
     revalidatePath("/students");
     return { success: true };
 }

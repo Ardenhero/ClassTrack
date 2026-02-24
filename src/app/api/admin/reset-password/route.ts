@@ -32,10 +32,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing target_user_id or new_password" }, { status: 400 });
         }
 
-        if (new_password.length < 6) {
-            return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
-        }
-
         // Check rate limit: count resets in last 30 days
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { count } = await serverSupabase

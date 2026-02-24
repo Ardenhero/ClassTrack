@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { deleteAccount, deleteProfile } from "./actions";
+import { deleteAccount } from "./actions";
 
 // Define prop types
 interface DeleteSectionProps {
@@ -9,33 +9,29 @@ interface DeleteSectionProps {
 }
 
 export function DeleteSection({ role }: DeleteSectionProps) {
+    // PRODUCTION HARDENING: Instructors cannot self-delete
+    if (role !== 'admin') {
+        return (
+            <section className="bg-gray-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Account Management</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Profile and account deletion is managed by your System Administrator. Contact your department admin if changes are needed.
+                </p>
+            </section>
+        );
+    }
+
     return (
         <section className="bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-100 dark:border-red-900/20 p-6">
             <h2 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">Danger Zone</h2>
-
-            {role === 'admin' ? (
-                <>
-                    <p className="text-sm text-red-600/80 dark:text-red-400/70 mb-6">
-                        Once you delete your account, there is no going back. Please be certain.
-                    </p>
-                    <DeleteButton
-                        action={deleteAccount}
-                        label="Delete Account"
-                        confirmMsg="Are you sure you want to delete your ENTIRE ACCOUNT? This cannot be undone."
-                    />
-                </>
-            ) : (
-                <>
-                    <p className="text-sm text-red-600/80 dark:text-red-400/70 mb-6">
-                        Delete your instructor profile data. Only System Admins can delete the account itself.
-                    </p>
-                    <DeleteButton
-                        action={deleteProfile}
-                        label="Delete Profile"
-                        confirmMsg="Are you sure you want to delete your profile? This will remove your classes and data."
-                    />
-                </>
-            )}
+            <p className="text-sm text-red-600/80 dark:text-red-400/70 mb-6">
+                Once you delete your account, there is no going back. Please be certain.
+            </p>
+            <DeleteButton
+                action={deleteAccount}
+                label="Delete Account"
+                confirmMsg="Are you sure you want to delete your ENTIRE ACCOUNT? This cannot be undone."
+            />
         </section>
     );
 }

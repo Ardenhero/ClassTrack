@@ -18,21 +18,23 @@ import {
     User,
     Info,
     ShieldCheck,
+    ShieldAlert,
     Building2,
     ChevronDown,
     ChevronRight,
     Search,
-    FileCheck,
     BarChart3,
     ChevronLeft,
-    QrCode
+    QrCode,
+    KeyRound,
+    Mail as MailIcon
 } from "lucide-react";
 
 // Instructor Navigation (full access including Evidence)
 const instructorNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
-    { name: "Evidence Queue", href: "/evidence", icon: FileCheck },
+    { name: "Mails", href: "/evidence", icon: MailIcon },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
     { name: "QR Scanner", href: "/dashboard/scanner", icon: QrCode },
@@ -58,8 +60,11 @@ const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
+    { name: "Approval Inbox", href: "/dashboard/admin/approval-inbox", icon: ClipboardList },
+    { name: "API Keys", href: "/dashboard/admin/api-keys", icon: KeyRound },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
+    { name: "Audit Trail", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "System Info", href: "/about", icon: Info },
 ];

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { FileCheck, Loader2, CheckCircle, XCircle, Clock, Eye, Calendar } from "lucide-react";
+import { Mail, Loader2, CheckCircle, XCircle, Clock, Eye, Calendar } from "lucide-react";
 
 interface EvidenceItem {
     id: string;
@@ -99,8 +99,8 @@ export default function EvidenceQueuePage() {
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <FileCheck className="h-7 w-7 text-nwu-red" />
-                        Evidence Queue
+                        <Mail className="h-7 w-7 text-nwu-red" />
+                        Mails
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Review and approve submitted excuse letters from your students</p>
                 </div>
@@ -109,13 +109,13 @@ export default function EvidenceQueuePage() {
                         onClick={() => setFilter("pending")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === "pending" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200"}`}
                     >
-                        Pending Only
+                        Pending Mails
                     </button>
                     <button
                         onClick={() => setFilter("all")}
                         className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === "all" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200"}`}
                     >
-                        All Submissions
+                        All Mails
                     </button>
                 </div>
             </div>
@@ -124,7 +124,7 @@ export default function EvidenceQueuePage() {
                 <div className="p-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" /></div>
             ) : items.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center text-gray-400">
-                    {filter === "pending" ? "No pending evidence to review 🎉" : "No evidence submissions found"}
+                    {filter === "pending" ? "No pending mails to review 🎉" : "No mail submissions found"}
                 </div>
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">

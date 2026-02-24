@@ -90,7 +90,7 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    <form className="mt-8 space-y-6" onSubmit={handleSubmit} method="POST">
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 mb-1">
