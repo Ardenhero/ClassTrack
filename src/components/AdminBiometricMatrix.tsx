@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import { Fingerprint, AlertTriangle, RefreshCw, Loader2, Copy } from "lucide-react";
+import { Fingerprint, AlertTriangle, RefreshCw, Loader2, Copy, Lock, Unlock } from "lucide-react";
 import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface SlotData {
@@ -11,6 +11,7 @@ interface SlotData {
     student_id?: string;
     student_name?: string;
     instructor_id?: string; // Added for isolation check
+    fingerprint_locked?: boolean;
     status: "occupied" | "empty" | "orphan" | "restricted";
 }
 
@@ -24,6 +25,7 @@ export function AdminBiometricMatrix() {
     const [unlinking, setUnlinking] = useState(false);
     const [moveTargetRoom, setMoveTargetRoom] = useState<string>("");
     const [moving, setMoving] = useState(false);
+    const [togglingLock, setTogglingLock] = useState(false);
 
     const loadMatrix = useCallback(async () => {
         setLoading(true);
@@ -93,26 +95,26 @@ export function AdminBiometricMatrix() {
             // Check both students.device_id (primary) and fingerprint_device_links (copies)
             const { data: primaryStudents, error } = await supabase
                 .from("students")
-                .select("id, name, fingerprint_slot_id, instructor_id")
+                .select("id, name, fingerprint_slot_id, instructor_id, fingerprint_locked")
                 .not("fingerprint_slot_id", "is", null)
                 .in("instructor_id", currentAccountScope)
-                .eq("device_id", deviceId) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }[] | null; error: PostgrestError | null };
+                .eq("device_id", deviceId) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string; fingerprint_locked: boolean }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
 
             // Also fetch students linked via fingerprint_device_links (copies)
             const { data: linkedStudents } = await supabase
                 .from("fingerprint_device_links")
-                .select("student_id, fingerprint_slot_id, students!inner(id, name, instructor_id)")
+                .select("student_id, fingerprint_slot_id, students!inner(id, name, instructor_id, fingerprint_locked)")
                 .eq("device_serial", deviceId);
 
             // Merge: build a combined list, deduplicating by student id
-            const studentMap = new Map<string, { id: string; name: string; fingerprint_slot_id: number; instructor_id: string }>();
+            const studentMap = new Map<string, { id: string; name: string; fingerprint_slot_id: number; instructor_id: string; fingerprint_locked: boolean }>();
             primaryStudents?.forEach(s => studentMap.set(s.id, s));
-            linkedStudents?.forEach((link: { student_id: number; fingerprint_slot_id: number; students: { id: string; name: string; instructor_id: string } }) => {
+            linkedStudents?.forEach((link: { student_id: number; fingerprint_slot_id: number; students: { id: string; name: string; instructor_id: string; fingerprint_locked: boolean } }) => {
                 const s = link.students;
                 if (s && currentAccountScope.includes(s.instructor_id) && !studentMap.has(s.id)) {
-                    studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id });
+                    studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id, fingerprint_locked: s.fingerprint_locked });
                 }
             });
             const allOccupiedStudents = Array.from(studentMap.values());
@@ -146,6 +148,7 @@ export function AdminBiometricMatrix() {
                         student_id: isMine ? student.id : undefined,
                         student_name: isMine ? student.name : "Restricted",
                         instructor_id: student.instructor_id,
+                        fingerprint_locked: student.fingerprint_locked,
                         status: isMine ? "occupied" : "restricted"
                     });
                 } else if (orphanSet.has(i)) {
@@ -194,6 +197,34 @@ export function AdminBiometricMatrix() {
             alert("Failed to unlink fingerprint. Please try again.");
         } finally {
             setUnlinking(false);
+        }
+    };
+
+    const toggleLockSlot = async (slot: SlotData) => {
+        if (!slot.student_id) return;
+        const willLock = !slot.fingerprint_locked;
+
+        if (!confirm(`Are you sure you want to ${willLock ? "lock" : "unlock"} ${slot.student_name}'s fingerprint? ${willLock ? "This will prevent them from logging attendance using this fingerprint." : "They will be able to log attendance again."}`)) return;
+
+        setTogglingLock(true);
+        const supabase = createClient();
+
+        try {
+            const { error } = await supabase
+                .from("students")
+                .update({ fingerprint_locked: willLock })
+                .eq("id", slot.student_id);
+
+            if (error) throw error;
+
+            await loadMatrix();
+            // Optimistically update selected slot locally so UI doesn't jump
+            setSelectedSlot({ ...slot, fingerprint_locked: willLock });
+        } catch (err) {
+            console.error("Failed to toggle lock:", err);
+            alert("Failed to change lock status. Please try again.");
+        } finally {
+            setTogglingLock(false);
         }
     };
 
@@ -334,7 +365,9 @@ export function AdminBiometricMatrix() {
                                     relative p-1 rounded border text-center transition-all hover:scale-110 focus:ring-2 focus:ring-offset-1 focus:outline-none
                                     ${selectedSlot?.slot_id === slot.slot_id ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}
                                     ${slot.status === 'occupied'
-                                        ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+                                        ? slot.fingerprint_locked
+                                            ? 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/40 dark:border-orange-700 dark:text-orange-300'
+                                            : 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
                                         : slot.status === 'orphan'
                                             ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-500/50'
                                             : slot.status === 'restricted'
@@ -342,12 +375,17 @@ export function AdminBiometricMatrix() {
                                                 : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }
                                 `}
-                                title={slot.status === 'occupied' ? slot.student_name : `Slot ${slot.slot_id}: ${slot.status}`}
+                                title={slot.status === 'occupied' ? `${slot.student_name}${slot.fingerprint_locked ? ' (Locked)' : ''}` : `Slot ${slot.slot_id}: ${slot.status}`}
                             >
                                 <span className="text-[9px] font-bold block">#{slot.slot_id}</span>
                                 {slot.status === 'orphan' && (
                                     <div className="absolute -top-1 -right-1">
                                         <AlertTriangle className="h-2 w-2 text-red-600 fill-red-100" />
+                                    </div>
+                                )}
+                                {slot.status === 'occupied' && slot.fingerprint_locked && (
+                                    <div className="absolute -bottom-1 -right-1">
+                                        <Lock className="h-2 w-2 text-orange-600 fill-orange-100" />
                                     </div>
                                 )}
                             </button>
@@ -369,7 +407,15 @@ export function AdminBiometricMatrix() {
                                     </span>
 
                                     {selectedSlot.status === 'occupied' && (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => toggleLockSlot(selectedSlot)}
+                                                disabled={togglingLock}
+                                                className={`text-xs flex items-center gap-1 hover:underline disabled:opacity-50 ${selectedSlot.fingerprint_locked ? "text-green-600 hover:text-green-700" : "text-orange-600 hover:text-orange-700"}`}
+                                            >
+                                                {togglingLock ? 'Updating...' : selectedSlot.fingerprint_locked ? <><Unlock className="w-3 h-3" /> Unlock</> : <><Lock className="w-3 h-3" /> Lock</>}
+                                            </button>
+                                            <div className="w-px h-3 bg-gray-300 dark:bg-gray-600"></div>
                                             <button
                                                 onClick={() => unlinkSlot(selectedSlot)}
                                                 disabled={unlinking}
