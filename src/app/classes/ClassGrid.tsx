@@ -18,9 +18,11 @@ interface ClassItem {
 interface ClassGridProps {
     classes: ClassItem[];
     isSuperAdmin: boolean;
+    isAdmin?: boolean;
 }
 
-export function ClassGrid({ classes, isSuperAdmin }: ClassGridProps) {
+export function ClassGrid({ classes, isSuperAdmin, isAdmin }: ClassGridProps) {
+    const canEdit = !isSuperAdmin && !isAdmin; // Only instructors can edit/archive
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     const toggleSelect = (id: string) => {
@@ -46,7 +48,7 @@ export function ClassGrid({ classes, isSuperAdmin }: ClassGridProps) {
                     <div key={c.id} className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow relative ${selected.has(c.id) ? "border-nwu-red ring-2 ring-nwu-red/30" : "border-gray-100 dark:border-gray-700"}`}>
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">
-                                {!isSuperAdmin && (
+                                {canEdit && (
                                     <input
                                         type="checkbox"
                                         checked={selected.has(c.id)}
@@ -58,7 +60,7 @@ export function ClassGrid({ classes, isSuperAdmin }: ClassGridProps) {
                                     <BookOpen className="h-5 w-5 text-nwu-red" />
                                 </div>
                             </div>
-                            {!isSuperAdmin && <DeleteClassButton id={c.id} />}
+                            {canEdit && <DeleteClassButton id={c.id} />}
                         </div>
 
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{c.name}</h3>
@@ -73,19 +75,20 @@ export function ClassGrid({ classes, isSuperAdmin }: ClassGridProps) {
                                 href={`/classes/${c.id}`}
                                 className="text-sm font-medium text-nwu-red hover:underline"
                             >
-                                {isSuperAdmin ? "View" : "Manage"} &rarr;
+                                {isSuperAdmin || isAdmin ? "View" : "Manage"} &rarr;
                             </Link>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {!isSuperAdmin && (
+            {canEdit && (
                 <MultiDeleteBar
                     count={selected.size}
                     itemLabel={`class${selected.size !== 1 ? "es" : ""}`}
                     onDelete={handleBulkDelete}
                     onClear={() => setSelected(new Set())}
+                    actionLabel="Archive"
                 />
             )}
         </>

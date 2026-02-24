@@ -15,9 +15,11 @@ interface Student {
 interface StudentGridProps {
     students: Student[];
     isSuperAdmin: boolean;
+    isAdmin?: boolean;
 }
 
-export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
+export function StudentGrid({ students, isSuperAdmin, isAdmin }: StudentGridProps) {
+    const canEdit = !isSuperAdmin && !isAdmin; // Only instructors can edit/archive
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     const toggleSelect = (id: string) => {
@@ -44,14 +46,14 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
                     <StudentCardItem
                         key={student.id}
                         student={student}
-                        isSuperAdmin={isSuperAdmin}
+                        canEdit={canEdit}
                         isSelected={selected.has(student.id)}
                         onToggleSelect={() => toggleSelect(student.id)}
                     />
                 ))}
             </div>
 
-            {!isSuperAdmin && (
+            {canEdit && (
                 <MultiDeleteBar
                     count={selected.size}
                     itemLabel={`student${selected.size !== 1 ? "s" : ""}`}
@@ -64,9 +66,9 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
     );
 }
 
-function StudentCardItem({ student, isSuperAdmin, isSelected, onToggleSelect }: {
+function StudentCardItem({ student, canEdit, isSelected, onToggleSelect }: {
     student: Student;
-    isSuperAdmin: boolean;
+    canEdit: boolean;
     isSelected: boolean;
     onToggleSelect: () => void;
 }) {
@@ -120,7 +122,7 @@ function StudentCardItem({ student, isSuperAdmin, isSelected, onToggleSelect }: 
         <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border p-6 hover:shadow-md transition-shadow group relative ${isSelected ? "border-nwu-red ring-2 ring-nwu-red/30" : "border-gray-100 dark:border-gray-700"}`}>
             <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                    {!isSuperAdmin && (
+                    {canEdit && (
                         <input
                             type="checkbox"
                             checked={isSelected}
@@ -134,7 +136,7 @@ function StudentCardItem({ student, isSuperAdmin, isSelected, onToggleSelect }: 
                 </div>
 
                 <div className="relative">
-                    {!isSuperAdmin && (
+                    {canEdit && (
                         <button onClick={() => setShowMenu(!showMenu)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                             <MoreHorizontal className="h-5 w-5" />
                         </button>

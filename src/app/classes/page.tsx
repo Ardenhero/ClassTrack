@@ -119,7 +119,7 @@ export default async function ClassesPage({
                 {Object.entries(groupedClasses).map(([level, items]) => (
                     items.length > 0 && (
                         <YearGroup key={level} title={level} count={items.length} itemLabel="classes">
-                            <ClassGrid classes={items} isSuperAdmin={isSuperAdmin} />
+                            <ClassGrid classes={items} isSuperAdmin={isSuperAdmin} isAdmin={isActiveAdmin} />
                         </YearGroup>
                     )
                 ))}
