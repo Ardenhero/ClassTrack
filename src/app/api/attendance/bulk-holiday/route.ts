@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
             .eq("id", profileId)
             .single();
 
-        const isAuthorized = actor?.role === "admin" || actor?.is_super_admin;
+        const isAuthorized = actor?.role === "instructor";
         if (!isAuthorized) {
-            return NextResponse.json({ error: "Only admins can declare holidays" }, { status: 403 });
+            return NextResponse.json({ error: "Only instructors can declare holidays" }, { status: 403 });
         }
 
         const { date, type, note } = await request.json();
@@ -30,11 +30,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Date and type are required" }, { status: 400 });
         }
 
-        // Get all active (non-archived) classes
+        // Get all active (non-archived) classes FOR THIS INSTRUCTOR
         const { data: classes } = await supabase
             .from("classes")
             .select("id")
-            .eq("is_archived", false);
+            .eq("is_archived", false)
+            .eq("instructor_id", profileId);
 
         if (!classes || classes.length === 0) {
             return NextResponse.json({ error: "No active classes found" }, { status: 404 });

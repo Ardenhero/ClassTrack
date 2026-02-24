@@ -34,12 +34,13 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     if (viewerProfileId) {
         const { data: viewerProfile } = await supabase
             .from("instructors")
-            .select("role, is_super_admin")
+            .select("role")
             .eq("id", viewerProfileId)
             .single();
 
+        // STRICTLY Instructors only
         if (viewerProfile) {
-            isInstructor = viewerProfile.role === "instructor" || viewerProfile.role === "admin" || viewerProfile.is_super_admin;
+            isInstructor = viewerProfile.role === "instructor";
         }
     }
 
