@@ -63,11 +63,71 @@ export async function addClass(formData: FormData) {
 }
 
 export async function deleteClass(classId: string) {
-    const supabase = createClient();
-    const { error } = await supabase.from("classes").delete().eq("id", classId);
+    // PRODUCTION HARDENING: Archive instead of delete
+    return archiveClass(classId);
+}
 
-    if (error) {
-        return { error: error.message };
+export async function archiveClass(classId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    let archivedBy: string | null = null;
+    if (user) {
+        const { data: profile } = await supabase
+            .from('instructors')
+            .select('id')
+            .eq('auth_user_id', user.id)
+            .single();
+        archivedBy = profile?.id || null;
+    }
+
+    const { error } = await supabase
+        .from("classes")
+        .update({
+            is_archived: true,
+            archived_at: new Date().toISOString(),
+            archived_by: archivedBy,
+        })
+        .eq("id", classId);
+
+    if (error) return { error: error.message };
+
+    if (user) {
+        await supabase.from("audit_logs").insert({
+            action: "class_archived",
+            entity_type: "class",
+            entity_id: classId,
+            details: "Class moved to archive",
+            performed_by: user.id,
+        });
+    }
+
+    revalidatePath("/classes");
+    return { success: true };
+}
+
+export async function restoreClass(classId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+        .from("classes")
+        .update({
+            is_archived: false,
+            archived_at: null,
+            archived_by: null,
+        })
+        .eq("id", classId);
+
+    if (error) return { error: error.message };
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        await supabase.from("audit_logs").insert({
+            action: "class_restored",
+            entity_type: "class",
+            entity_id: classId,
+            details: "Class restored from archive",
+            performed_by: user.id,
+        });
     }
 
     revalidatePath("/classes");

@@ -53,9 +53,9 @@ export default function ReportsPage() {
     }, [profile?.id]);
 
     const riskLevel = (rate: number) => {
-        if (rate >= 95) return { label: "EXCELLENT", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
-        if (rate >= 80) return { label: "GOOD", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
-        return { label: "AT-RISK", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
+        if (rate >= 95) return { label: "🟢 EXCELLENT", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" };
+        if (rate >= 80) return { label: "🟡 GOOD", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" };
+        return { label: "🔴 CRITICAL", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" };
     };
 
     const scopeLabel = isSuperAdmin ? "System-Wide" : isAdmin ? "Your Department" : "Your Classes";
@@ -68,7 +68,7 @@ export default function ReportsPage() {
                     Reports & Monitoring
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
-                    At-risk alerts • Scope: <span className="font-medium text-gray-700 dark:text-gray-300">{scopeLabel}</span>
+                    Student alerts • Scope: <span className="font-medium text-gray-700 dark:text-gray-300">{scopeLabel}</span>
                 </p>
             </div>
 
@@ -92,7 +92,7 @@ export default function ReportsPage() {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-red-600 dark:text-red-400">{atRisk.length}</p>
-                            <p className="text-xs text-gray-500">At-Risk Students</p>
+                            <p className="text-xs text-gray-500">Student Alerts</p>
                         </div>
                     </div>
                 </div>
@@ -105,7 +105,7 @@ export default function ReportsPage() {
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {totalStudents > 0 ? ((atRisk.length / totalStudents) * 100).toFixed(1) : 0}%
                             </p>
-                            <p className="text-xs text-gray-500">At-Risk Rate</p>
+                            <p className="text-xs text-gray-500">Alert Rate</p>
                         </div>
                     </div>
                 </div>
@@ -117,7 +117,7 @@ export default function ReportsPage() {
                     <div className="flex items-center gap-3">
                         <AlertTriangle className="h-6 w-6" />
                         <div>
-                            <h2 className="text-lg font-bold">At-Risk Students</h2>
+                            <h2 className="text-lg font-bold">Student Alerts</h2>
                             <p className="text-red-200 text-xs">3+ consecutive absences or &lt;80% attendance</p>
                         </div>
                     </div>
@@ -125,7 +125,7 @@ export default function ReportsPage() {
                 {riskLoading ? (
                     <div className="p-12 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" /></div>
                 ) : atRisk.length === 0 ? (
-                    <div className="p-12 text-center text-gray-400">No at-risk students found 🎉</div>
+                    <div className="p-12 text-center text-gray-400">No student alerts found 🎉</div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
