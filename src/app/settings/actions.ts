@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -71,5 +72,83 @@ export async function togglePin(instructorId: string, enabled: boolean) {
     }
 
     revalidatePath("/identity");
+    return { success: true };
+}
+
+export async function startNewSemester(data: { name: string; start_date: string; end_date: string }) {
+    const supabase = createClient();
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+
+    if (!profileId) return { error: "Not authorized" };
+
+    // Set all existing to inactive
+    await supabase.from("semesters").update({ is_active: false }).neq("id", "00000000-0000-0000-0000-000000000000");
+
+    // Insert new active semester
+    const { error } = await supabase.from("semesters").insert({
+        ...data,
+        is_active: true
+    });
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/settings");
+    revalidatePath("/classes");
+    revalidatePath("/students");
+    return { success: true };
+}
+
+export async function endCurrentSemester(semesterId: string) {
+    const supabase = createClient();
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+
+    if (!profileId) return { error: "Not authorized" };
+
+    // 1. Mark semester as inactive
+    const { error: semError } = await supabase
+        .from("semesters")
+        .update({ is_active: false })
+        .eq("id", semesterId);
+
+    if (semError) return { error: semError.message };
+
+    // 2. Archive all active classes
+    await supabase
+        .from("classes")
+        .update({ is_archived: true })
+        .eq("is_archived", false);
+
+    // 3. Archive all active students (using a direct bypass or the secure RPC per student)
+    // To do it in bulk for all students in the system safely, we do a direct update.
+    // However, RLS students restricts this unless we use service_role. We can use service_role here 
+    // because this is a system admin wide action.
+    const adminSupabase = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    await adminSupabase
+        .from("students")
+        .update({
+            is_archived: true,
+            archived_at: new Date().toISOString(),
+            archived_by: profileId
+        })
+        .eq("is_archived", false);
+
+    // 4. Audit log
+    await adminSupabase.from("audit_logs").insert({
+        action: "semester_ended",
+        entity_type: "system",
+        entity_id: semesterId,
+        details: "Ended semester and mass-archived all classes and students",
+        performed_by: profileId
+    });
+
+    revalidatePath("/settings");
+    revalidatePath("/classes");
+    revalidatePath("/students");
     return { success: true };
 }

@@ -279,14 +279,10 @@ export async function archiveStudent(id: string) {
         archivedBy = profile?.id || null;
     }
 
-    const { error } = await supabase
-        .from("students")
-        .update({
-            is_archived: true,
-            archived_at: new Date().toISOString(),
-            archived_by: archivedBy,
-        })
-        .eq("id", id);
+    const { error } = await supabase.rpc('archive_student_securely', {
+        p_student_id: id,
+        p_archived_by: archivedBy
+    });
 
     if (error) return { error: error.message };
 
