@@ -108,82 +108,18 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
             }
 
-            // SMS Notifications via Semaphore
-            const semaphoreKey = process.env.SEMAPHORE_API_KEY;
-            let smsSentCount = 0;
-
-            if (semaphoreKey) {
-                // Fetch all active students' phone numbers
-                const { data: students } = await supabase
-                    .from("students")
-                    .select("phone_number")
-                    .eq("is_archived", false)
-                    .not("phone_number", "is", null)
-                    .neq("phone_number", "");
-
-                if (students && students.length > 0) {
-                    // Filter valid PH numbers (starts with 09 or +639)
-                    const validNumbers = students
-                        .map(s => s.phone_number?.trim())
-                        .filter(num => num && (num.startsWith('09') || num.startsWith('+639')))
-                        .map(num => num?.startsWith('+63') ? `09${num?.substring(3)}` : num);
-
-                    const uniqueNumbers = Array.from(new Set(validNumbers)) as string[];
-
-                    if (uniqueNumbers.length > 0) {
-                        const typeLabel = type === "weather" ? "Weather Inclement" : type === "university" ? "University Suspension" : "Holiday";
-                        const message = `ClassTrack Alert: Classes are suspended on ${date} due to ${typeLabel}. Note: ${note || "No classes. Keep safe!"}`;
-
-                        // Semaphore allows up to 1000 numbers per request
-                        const numberChunks = [];
-                        for (let i = 0; i < uniqueNumbers.length; i += 1000) {
-                            numberChunks.push(uniqueNumbers.slice(i, i + 1000).join(','));
-                        }
-
-                        for (const chunk of numberChunks) {
-                            try {
-                                const params = new URLSearchParams({
-                                    apikey: semaphoreKey,
-                                    number: chunk,
-                                    message: message
-                                });
-
-                                if (process.env.SEMAPHORE_SENDER_NAME) {
-                                    params.append("sendername", process.env.SEMAPHORE_SENDER_NAME);
-                                }
-
-                                const smsRes = await fetch("https://api.semaphore.co/api/v4/messages", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                                    body: params
-                                });
-
-                                if (smsRes.ok) {
-                                    smsSentCount += chunk.split(',').length;
-                                } else {
-                                    console.error("Semaphore API rejected:", await smsRes.text());
-                                }
-                            } catch (smsErr) {
-                                console.error("Semaphore SMS error:", smsErr);
-                            }
-                        }
-                    }
-                }
-            }
-
             // Audit log
             await supabase.from("audit_logs").insert({
                 actor_id: profileId,
                 action: "system_suspension_declared",
                 target_type: "system",
                 target_id: date,
-                details: { date, type, note, classes_affected: classes.length, sms_sent: smsSentCount },
+                details: { date, type, note, classes_affected: classes.length },
             });
 
             return NextResponse.json({
                 success: true,
                 classesAffected: classes.length,
-                smsSent: smsSentCount
             });
         }
     } catch (err) {
