@@ -1304,4 +1304,95 @@
 
 ---
 
+## 12. System Admin Read-Only Test Cases
+
+#### TC-ADM-RO-01: Students Page — No Edit/Archive Controls
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Logged in as System Admin |
+| **Steps** | 1. Navigate to `/students` |
+| **Expected** | No checkboxes, no "..." menu, no archive button visible. "Add Student" button IS visible. |
+
+#### TC-ADM-RO-02: Classes Page — No Edit/Archive Controls
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Logged in as System Admin |
+| **Steps** | 1. Navigate to `/classes` |
+| **Expected** | No checkboxes, no archive button visible. Cards show "View →" (not "Manage →"). "Add Class" IS visible. |
+
+#### TC-ADM-RO-03: Class Detail — No Unenroll Button
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Logged in as System Admin, class with enrolled students exists |
+| **Steps** | 1. Navigate to `/classes/[id]` |
+| **Expected** | Enrolled students visible. No unenroll (UserMinus) button. No "Assign Student" button. Export CSV IS visible. |
+
+---
+
+## 13. Deletion Request Test Cases
+
+#### TC-DEL-01: Instructor Requests Deletion
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Instructor logged in, archived student exists |
+| **Steps** | 1. Navigate to `/archived` → Students tab <br> 2. Click "Request Deletion" on a student <br> 3. Enter a reason <br> 4. Click "Send Request" |
+| **Expected** | Modal closes. Alert: "Deletion request sent to your System Administrator." Record created in `deletion_requests` table. Audit log entry created. |
+
+#### TC-DEL-02: Admin Approves Deletion
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | System Admin logged in, pending deletion request exists |
+| **Steps** | 1. Navigate to Admin Console → Deletion Requests card <br> 2. Click "Approve & Delete" <br> 3. Confirm the permanent deletion dialog |
+| **Expected** | Item permanently deleted. Request status changes to "approved". Moves to History section. |
+
+#### TC-DEL-03: Admin Rejects Deletion
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Pending deletion request exists |
+| **Steps** | 1. Navigate to Deletion Requests <br> 2. Click "Reject" |
+| **Expected** | Request status changes to "rejected". Item stays archived. Audit log entry created. |
+
+---
+
+## 14. Export & Unenroll Test Cases
+
+#### TC-EXPORT-01: Export Class Attendance as CSV
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Class with attendance data for the selected date |
+| **Steps** | 1. Navigate to `/classes/[id]` <br> 2. Click "Export CSV" |
+| **Expected** | CSV file downloads with filename `ClassName_YYYY-MM-DD.csv`. Contains header rows (class name, date, summary stats), column headers, per-student rows (Name, SIN, Year Level, Status, Time In, Time Out), and footer. |
+
+#### TC-EXPORT-02: Export Empty Class
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Class with no attendance for the selected date |
+| **Steps** | 1. Navigate to `/classes/[id]` <br> 2. Click "Export CSV" |
+| **Expected** | CSV downloads with header and summary (all zeros) but no student rows. |
+
+#### TC-UNENROLL-01: Unenroll Student with Confirmation
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Instructor logged in, class with enrolled students |
+| **Steps** | 1. Navigate to `/classes/[id]` <br> 2. Click the unenroll icon (UserMinus) <br> 3. Read the confirmation message <br> 4. Click "OK" |
+| **Expected** | Student removed from roster. Confirmation says "attendance history will be preserved." Student still exists on Students page. |
+
+#### TC-UNENROLL-02: Cancel Unenroll
+
+| Field | Detail |
+|-------|--------|
+| **Steps** | 1. Click unenroll icon <br> 2. Click "Cancel" in confirmation |
+| **Expected** | Nothing happens. Student remains enrolled. |
+
+---
+
 *Document generated from codebase analysis — February 2026*
