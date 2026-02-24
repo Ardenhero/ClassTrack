@@ -5,12 +5,13 @@ import { deleteAccount } from "./actions";
 
 // Define prop types
 interface DeleteSectionProps {
-    role: string | null;
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
 }
 
-export function DeleteSection({ role }: DeleteSectionProps) {
+export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
     // PRODUCTION HARDENING: Instructors cannot self-delete
-    if (role !== 'admin') {
+    if (!isAdmin && !isSuperAdmin) {
         return (
             <section className="bg-gray-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Account Management</h2>
@@ -25,12 +26,12 @@ export function DeleteSection({ role }: DeleteSectionProps) {
         <section className="bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-100 dark:border-red-900/20 p-6">
             <h2 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">Danger Zone</h2>
             <p className="text-sm text-red-600/80 dark:text-red-400/70 mb-6">
-                Once you delete your account, there is no going back. Please be certain.
+                Deactivating your account will immediately revoke your access to the system.
             </p>
             <DeleteButton
                 action={deleteAccount}
-                label="Delete Account"
-                confirmMsg="Are you sure you want to delete your ENTIRE ACCOUNT? This cannot be undone."
+                label="Deactivate Account"
+                confirmMsg="Are you sure you want to Deactivate your account? You will be logged out immediately."
             />
         </section>
     );

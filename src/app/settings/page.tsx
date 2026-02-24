@@ -2,10 +2,11 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Fingerprint } from "lucide-react";
 import { DeleteSection } from "./DeleteSection";
-import { getProfileRole } from "@/lib/auth-utils";
+import { checkIsSuperAdmin, checkIsAdmin } from "@/lib/auth-utils";
 
 export default async function SettingsPage() {
-    const role = await getProfileRole();
+    const isSuperAdmin = await checkIsSuperAdmin();
+    const isAdmin = await checkIsAdmin();
 
     return (
         <DashboardLayout>
@@ -39,7 +40,7 @@ export default async function SettingsPage() {
                     </div>
                 </section>
 
-                <DeleteSection role={role} />
+                <DeleteSection isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} />
             </div>
         </DashboardLayout>
     );

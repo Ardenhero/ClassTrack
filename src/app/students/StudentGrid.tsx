@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MoreHorizontal, Pencil, Archive, Check, X as XIcon } from "lucide-react";
-import { updateStudent, deleteStudent } from "./actions";
+import { updateStudent, archiveStudent } from "./actions";
 import { MultiDeleteBar } from "@/components/MultiDeleteBar";
 
 interface Student {
@@ -34,7 +34,7 @@ export function StudentGrid({ students, isSuperAdmin, isAdmin }: StudentGridProp
     const handleBulkDelete = async () => {
         if (!confirm(`Archive ${selected.size} student${selected.size !== 1 ? "s" : ""}? They can be restored from the Archived page.`)) return;
         for (const id of Array.from(selected)) {
-            await deleteStudent(id);
+            await archiveStudent(id);
         }
         setSelected(new Set());
     };
@@ -87,7 +87,7 @@ function StudentCardItem({ student, canEdit, isSelected, onToggleSelect }: {
 
     const handleDelete = async () => {
         if (confirm("Archive this student? They can be restored later from the Archived page.")) {
-            await deleteStudent(student.id);
+            await archiveStudent(student.id);
         }
     };
 
