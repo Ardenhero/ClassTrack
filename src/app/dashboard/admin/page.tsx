@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
-import { BookOpen, BarChart3, ChevronRight, ShieldAlert, Shield } from "lucide-react";
+import { BookOpen, BarChart3, ChevronRight, ShieldAlert, Shield, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 const quickCards = [
@@ -33,7 +33,15 @@ const quickCards = [
         icon: Shield,
         color: "bg-amber-50 text-amber-600 border-amber-100",
     },
+    {
+        title: "Deletion Requests",
+        desc: "Review instructor requests to permanently delete archived items.",
+        href: "/dashboard/admin/deletion-requests",
+        icon: Trash2,
+        color: "bg-red-50 text-red-600 border-red-100",
+    },
 ];
+
 
 export default function AdminDashboardPage() {
     return (

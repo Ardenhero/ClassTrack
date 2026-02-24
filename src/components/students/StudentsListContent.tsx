@@ -13,10 +13,12 @@ interface Student {
 
 export default async function StudentsListContent({
     query,
-    isSuperAdmin
+    isSuperAdmin,
+    isAdmin
 }: {
     query: string;
     isSuperAdmin: boolean;
+    isAdmin?: boolean;
 }) {
     let students: Student[] = [];
     let errorMsg = null;
@@ -68,7 +70,7 @@ export default async function StudentsListContent({
             {Object.entries(groupedStudents).map(([level, items]) => (
                 items && items.length > 0 && (
                     <YearGroup key={level} title={level} count={items.length} itemLabel="students">
-                        <StudentGrid students={items} isSuperAdmin={isSuperAdmin} />
+                        <StudentGrid students={items} isSuperAdmin={isSuperAdmin} isAdmin={isAdmin} />
                     </YearGroup>
                 )
             ))}

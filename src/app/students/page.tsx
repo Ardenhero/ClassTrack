@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { AddStudentDialog } from "./AddStudentDialog";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Suspense } from "react";
-import { checkIsSuperAdmin } from "@/lib/auth-utils";
+import { checkIsSuperAdmin, getProfileRole } from "@/lib/auth-utils";
 import StudentsListContent from "@/components/students/StudentsListContent";
 import { Loader2 } from "lucide-react";
 
@@ -24,6 +24,8 @@ export default async function StudentsPage({
 }) {
     const query = searchParams?.query || "";
     const isSuperAdmin = await checkIsSuperAdmin();
+    const role = await getProfileRole();
+    const isAdmin = role === 'admin' && !isSuperAdmin;
 
     return (
         <DashboardLayout>
@@ -52,7 +54,7 @@ export default async function StudentsPage({
             </div>
 
             <Suspense fallback={<StudentsSkeleton />}>
-                <StudentsListContent query={query} isSuperAdmin={isSuperAdmin} />
+                <StudentsListContent query={query} isSuperAdmin={isSuperAdmin} isAdmin={isAdmin} />
             </Suspense>
 
         </DashboardLayout>
