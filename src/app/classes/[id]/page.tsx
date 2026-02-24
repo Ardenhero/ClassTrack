@@ -1,14 +1,14 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
-import { ArrowLeft, Users, Clock, AlertCircle, CheckCircle, Ghost, TimerOff } from "lucide-react";
+import { ArrowLeft, Clock, AlertCircle, CheckCircle, Ghost, TimerOff, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { AssignStudentDialog } from "../AssignStudentDialog";
 import { format, parse, differenceInMinutes } from "date-fns";
 import { AttendanceFilter } from "@/app/attendance/AttendanceFilter";
 import { cookies } from "next/headers";
-import StatusOverrideButton from "./StatusOverrideButton";
 import { ExportCSVButton } from "./ExportCSVButton";
-import { UnenrollButton } from "./UnenrollButton";
+import { ExportFullReportButton } from "./ExportFullReportButton";
+import EnrolledStudentsList from "./EnrolledStudentsList";
 
 interface Enrollment {
     id: string;
@@ -90,12 +90,36 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     const studentIds = enrollments?.map(e => e.students.id) || [];
     const { data: logs } = await supabase
         .from("attendance_logs")
-        .select("student_id, timestamp, time_out, status") // Select status
+        .select("student_id, timestamp, time_out, status")
         .in("student_id", studentIds)
         .eq("class_id", params.id)
         .gte("timestamp", targetStart)
         .lte("timestamp", targetEnd)
         .order("timestamp", { ascending: true });
+
+    // Fetch ALL-TIME attendance logs for per-student summary
+    const { data: allTimeLogs } = await supabase
+        .from("attendance_logs")
+        .select("student_id, status")
+        .in("student_id", studentIds)
+        .eq("class_id", params.id);
+
+    // Compute per-student all-time stats
+    const allTimeStats: Record<string, { sessions: number; present: number; late: number; absent: number; excused: number }> = {};
+    studentIds.forEach(id => {
+        allTimeStats[id] = { sessions: 0, present: 0, late: 0, absent: 0, excused: 0 };
+    });
+    allTimeLogs?.forEach(log => {
+        const stats = allTimeStats[log.student_id];
+        if (stats) {
+            stats.sessions++;
+            const s = log.status || 'Present';
+            if (s === 'Present' || s === 'Manually Verified') stats.present++;
+            else if (s === 'Late') stats.late++;
+            else if (s === 'Excused') stats.excused++;
+            else stats.absent++;
+        }
+    });
 
     // Helper to calculate status visuals
     const getStatusVisuals = (studentId: string) => {
@@ -241,6 +265,23 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                                     };
                                 }) || []}
                             />
+                            <ExportFullReportButton
+                                className_={classData.name}
+                                students={enrollments?.map(e => {
+                                    const stats = allTimeStats[e.students.id] || { sessions: 0, present: 0, late: 0, absent: 0, excused: 0 };
+                                    const rate = stats.sessions > 0 ? ((stats.present + stats.late) / stats.sessions) * 100 : 100;
+                                    return {
+                                        name: e.students.name,
+                                        year_level: e.students.year_level,
+                                        totalSessions: stats.sessions,
+                                        presentCount: stats.present,
+                                        lateCount: stats.late,
+                                        absentCount: stats.absent,
+                                        excusedCount: stats.excused,
+                                        attendanceRate: rate,
+                                    };
+                                }) || []}
+                            />
                         </div>
                         <div className="mt-2">
                             <AttendanceFilter />
@@ -249,100 +290,66 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                 </div>
 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-4 gap-4 mt-6">
-                    <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-lg border border-green-100 dark:border-green-900/30">
-                        <div className="text-sm text-green-600 dark:text-green-400 font-medium">Present</div>
-                        <div className="text-2xl font-bold text-green-700 dark:text-green-300">{presentCount}</div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
+                    <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
+                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">Present</div>
+                        <div className="text-xl font-bold text-green-700 dark:text-green-300">{presentCount}</div>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-lg border border-orange-100 dark:border-orange-900/30">
-                        <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Late</div>
-                        <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">{lateCount}</div>
+                    <div className="bg-orange-50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                        <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Late</div>
+                        <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{lateCount}</div>
                     </div>
-                    <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                        <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Excused</div>
-                        <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{excusedCount}</div>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Excused</div>
+                        <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{excusedCount}</div>
                     </div>
-                    <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-lg border border-red-100 dark:border-red-900/30">
-                        <div className="text-sm text-red-600 dark:text-red-400 font-medium">Absent</div>
-                        <div className="text-2xl font-bold text-red-700 dark:text-red-300">{absentCount}</div>
+                    <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/30">
+                        <div className="text-xs text-red-600 dark:text-red-400 font-medium">Absent</div>
+                        <div className="text-xl font-bold text-red-700 dark:text-red-300">{absentCount}</div>
                     </div>
-                </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                    <div className="flex items-center">
-                        <Users className="h-5 w-5 text-gray-400 mr-2" />
-                        <h3 className="font-bold text-gray-900 dark:text-white">{displayDate}</h3>
-                    </div>
-                </div>
-
-                <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {enrollments?.map((enrollment) => {
-                        const { statusLabel, badgeColor, icon: Icon, timeIn, timeOut } = getStatusVisuals(enrollment.students.id);
+                    {enrollments && enrollments.length > 0 && (() => {
+                        const totalSessions = Object.values(allTimeStats).reduce((s, v) => s + v.sessions, 0);
+                        const totalPresent = Object.values(allTimeStats).reduce((s, v) => s + v.present + v.late, 0);
+                        const avgRate = totalSessions > 0 ? ((totalPresent / totalSessions) * 100).toFixed(0) : '0';
                         return (
-                            <div key={enrollment.id} className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors gap-4">
-                                <div className="flex items-center min-w-0">
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-gray-100 dark:bg-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-300 font-bold mr-4">
-                                        {enrollment.students.name[0]}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="font-medium text-gray-900 dark:text-white truncate">{enrollment.students.name}</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">{enrollment.students.year_level}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center space-x-6 text-sm">
-                                    <div className="flex space-x-8 mr-4">
-                                        <div className="text-center w-24">
-                                            <span className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Time In</span>
-                                            <div className="bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded text-gray-900 dark:text-gray-100 font-mono text-sm">
-                                                {timeIn}
-                                            </div>
-                                        </div>
-                                        <div className="text-center w-24">
-                                            <span className="text-xs text-gray-400 uppercase tracking-wider mb-1 block">Time Out</span>
-                                            <div className="bg-gray-50 dark:bg-gray-900 px-2 py-1 rounded text-gray-900 dark:text-gray-100 font-mono text-sm">
-                                                {timeOut}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold ${badgeColor} min-w-[100px] justify-center`}>
-                                        <Icon className="h-3 w-3 mr-1.5" />
-                                        {statusLabel}
-                                    </div>
-
-                                    {isInstructor && (
-                                        <UnenrollButton
-                                            classId={params.id}
-                                            studentId={enrollment.students.id}
-                                            studentName={enrollment.students.name}
-                                            className_={classData.name}
-                                        />
-                                    )}
-
-                                    {/* Manual Override — Instructor Only */}
-                                    {isInstructor && (
-                                        <StatusOverrideButton
-                                            studentId={enrollment.students.id}
-                                            classId={params.id}
-                                            date={dayString}
-                                            currentStatus={statusLabel}
-                                        />
-                                    )}
-                                </div>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/10 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+                                <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Class Avg</div>
+                                <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{avgRate}%</div>
                             </div>
-                        )
-                    })}
-
-                    {enrollments?.length === 0 && (
-                        <div className="p-12 text-center text-gray-500">
-                            No students enrolled yet.
-                        </div>
-                    )}
+                        );
+                    })()}
                 </div>
             </div>
+
+            <EnrolledStudentsList
+                students={enrollments?.map(e => {
+                    const { statusLabel, badgeColor, icon: Icon, timeIn, timeOut } = getStatusVisuals(e.students.id);
+                    const stats = allTimeStats[e.students.id] || { sessions: 0, present: 0, late: 0, absent: 0, excused: 0 };
+                    const rate = stats.sessions > 0 ? ((stats.present + stats.late) / stats.sessions) * 100 : 100;
+                    return {
+                        enrollmentId: e.id,
+                        studentId: e.students.id,
+                        studentName: e.students.name,
+                        yearLevel: e.students.year_level,
+                        statusLabel,
+                        badgeColor,
+                        iconName: Icon.displayName || 'CheckCircle',
+                        timeIn,
+                        timeOut,
+                        allTimeSessions: stats.sessions,
+                        allTimePresent: stats.present,
+                        allTimeLate: stats.late,
+                        allTimeAbsent: stats.absent,
+                        allTimeExcused: stats.excused,
+                        attendanceRate: rate,
+                    };
+                }) || []}
+                classId={params.id}
+                className_={classData.name}
+                dayString={dayString}
+                displayDate={displayDate}
+                isInstructor={isInstructor}
+            />
         </DashboardLayout>
     );
 }
