@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Calendar, CheckCircle2, CloudRain, ShieldAlert, X, Loader2 } from "lucide-react";
+import { AlertTriangle, Calendar, CheckCircle2, CloudRain, ShieldAlert, X, Loader2, Info } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { createClient } from "@/utils/supabase/client";
+import { useEffect } from "react";
 
 export default function DeclareSuspensionsButton() {
     const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +15,35 @@ export default function DeclareSuspensionsButton() {
     const [loading, setLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+    const [syncedHolidays, setSyncedHolidays] = useState<{ date: string, note: string }[]>([]);
+
+    useEffect(() => {
+        if (isOpen && mode === "auto") {
+            const fetchHolidays = async () => {
+                const supabase = createClient();
+                const today = new Date().toISOString().split("T")[0];
+                const { data } = await supabase
+                    .from("class_day_overrides")
+                    .select("date, note")
+                    .eq("type", "holiday")
+                    .gte("date", today)
+                    .order("date", { ascending: true });
+
+                if (data) {
+                    const unique = [];
+                    const seen = new Set();
+                    for (const row of data) {
+                        if (!seen.has(row.date)) {
+                            seen.add(row.date);
+                            unique.push(row);
+                        }
+                    }
+                    setSyncedHolidays(unique);
+                }
+            };
+            fetchHolidays();
+        }
+    }, [isOpen, mode]);
 
     const handleManualSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,7 +108,7 @@ export default function DeclareSuspensionsButton() {
                 className="flex items-center gap-2 bg-nwu-red hover:bg-[#5e0d0e] text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
             >
                 <AlertTriangle className="w-5 h-5" />
-                Declare Suspensions
+                Declare Suspension
             </button>
 
             {isOpen && (
@@ -86,7 +117,7 @@ export default function DeclareSuspensionsButton() {
                         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <AlertTriangle className="w-5 h-5 text-nwu-red" />
-                                Declare Suspensions
+                                Declare Suspension
                             </h2>
                             <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                                 <X className="w-5 h-5" />
@@ -203,7 +234,7 @@ export default function DeclareSuspensionsButton() {
                                         disabled={loading || !date}
                                         className="w-full mt-4 flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm font-medium text-white bg-nwu-red hover:bg-[#5e0d0e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nwu-red transition-colors disabled:opacity-50"
                                     >
-                                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Declare System-Wide Suspension"}
+                                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Declare Suspension"}
                                     </button>
                                 </form>
                             ) : (
@@ -219,7 +250,7 @@ export default function DeclareSuspensionsButton() {
                                     <button
                                         onClick={handleAutoSync}
                                         disabled={loading}
-                                        className="w-full flex justify-center items-center py-2.5 px-4 rounded-lg shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                                        className="w-full flex justify-center items-center py-2.5 px-4 rounded-lg shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 mt-4"
                                     >
                                         {loading ? (
                                             <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Syncing with PH Calendar...</>
@@ -227,6 +258,23 @@ export default function DeclareSuspensionsButton() {
                                             "Sync Active Year Holidays"
                                         )}
                                     </button>
+
+                                    {syncedHolidays.length > 0 && (
+                                        <div className="mt-6 text-left border-t pt-4 dark:border-gray-700">
+                                            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                                                <Info className="w-4 h-4 text-gray-400" />
+                                                Upcoming Synced Holidays
+                                            </h4>
+                                            <div className="max-h-40 overflow-y-auto space-y-2 border rounded-lg p-2 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                                                {syncedHolidays.map((h, i) => (
+                                                    <div key={i} className="flex justify-between items-center text-xs">
+                                                        <span className="font-mono text-gray-500 dark:text-gray-400">{h.date}</span>
+                                                        <span className="text-gray-700 dark:text-gray-300 ml-2 truncate">{h.note || "Holiday"}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

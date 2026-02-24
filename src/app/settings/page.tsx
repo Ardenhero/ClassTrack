@@ -2,11 +2,20 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Fingerprint } from "lucide-react";
 import { DeleteSection } from "./DeleteSection";
+import { SemesterManager } from "./SemesterManager";
 import { checkIsSuperAdmin, checkIsAdmin } from "@/lib/auth-utils";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function SettingsPage() {
     const isSuperAdmin = await checkIsSuperAdmin();
     const isAdmin = await checkIsAdmin();
+    const supabase = createClient();
+
+    const { data: activeSemester } = await supabase
+        .from('semesters')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle();
 
     return (
         <DashboardLayout>
@@ -39,6 +48,8 @@ export default async function SettingsPage() {
                         </div>
                     </div>
                 </section>
+
+                {(isAdmin || isSuperAdmin) && <SemesterManager activeSemester={activeSemester} />}
 
                 <DeleteSection isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} />
             </div>

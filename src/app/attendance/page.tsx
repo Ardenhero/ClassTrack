@@ -4,6 +4,7 @@ import { format, differenceInMinutes } from "date-fns";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Suspense } from "react";
 import { AttendanceFilter } from "./AttendanceFilter";
+import DeclareSuspensionsButton from "./DeclareSuspensionsButton";
 import { cookies } from "next/headers";
 import { getProfileRole } from "@/lib/auth-utils";
 import LiveAttendanceTable from "@/components/LiveAttendanceTable";
@@ -185,7 +186,12 @@ export default async function AttendancePage({
                         )}
                     </p>
                 </div>
-                <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto items-center">
+                <div className="flex flex-col md:flex-row md:flex-wrap space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto items-center justify-end">
+                    {isActiveAdmin && (
+                        <div className="w-full md:w-auto pb-4 md:pb-0">
+                            <DeclareSuspensionsButton />
+                        </div>
+                    )}
                     <div className="w-full md:w-48">
                         <AttendanceFilter />
                     </div>
