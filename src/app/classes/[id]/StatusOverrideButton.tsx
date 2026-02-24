@@ -14,6 +14,7 @@ interface StatusOverrideButtonProps {
 const statusOptions = [
     { label: "Present", value: "Present", icon: CheckCircle, color: "text-green-600" },
     { label: "Late", value: "Late", icon: Clock, color: "text-orange-600" },
+    { label: "Excused", value: "Excused", icon: CheckCircle, color: "text-blue-600" },
     { label: "Absent", value: "Absent", icon: AlertCircle, color: "text-red-600" },
 ];
 

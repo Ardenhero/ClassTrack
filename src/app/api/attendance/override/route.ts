@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const validStatuses = ["Present", "Late", "Absent"];
+        const validStatuses = ["Present", "Late", "Absent", "Excused"];
         if (!validStatuses.includes(new_status)) {
             return NextResponse.json({ error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` }, { status: 400 });
         }
@@ -69,21 +69,29 @@ export async function POST(request: NextRequest) {
             // Update existing log
             const { error: updateError } = await supabase
                 .from("attendance_logs")
-                .update({ status: new_status })
+                .update({
+                    status: new_status,
+                    admin_note: `Status overridden to ${new_status} by instructor`,
+                    note_by: profileId,
+                    note_at: new Date().toISOString(),
+                })
                 .eq("id", existingLog.id);
 
             if (updateError) {
                 return NextResponse.json({ error: updateError.message }, { status: 500 });
             }
         } else {
-            // Create a new log entry for manual override (e.g., marking absent student as present)
+            // Create a new log entry for manual override — use CURRENT time, not hardcoded 8AM
             const { error: insertError } = await supabase
                 .from("attendance_logs")
                 .insert({
-                    student_id: student_id, // Keep as string or number depending on DB type, DO NOT FORCE parseInt if it might be UUID (though here it seems to be number in DB based on other files, checking schema...)
+                    student_id: student_id,
                     class_id,
-                    timestamp: new Date(`${date}T08:00:00+08:00`).toISOString(),
+                    timestamp: new Date().toISOString(),
                     status: new_status,
+                    admin_note: `Manual override: ${new_status}`,
+                    note_by: profileId,
+                    note_at: new Date().toISOString(),
                 });
 
             if (insertError) {

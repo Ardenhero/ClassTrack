@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { getProfileRole } from "@/lib/auth-utils";
 import LiveAttendanceTable from "@/components/LiveAttendanceTable";
 import type { AttendanceRow } from "@/components/LiveAttendanceTable";
+import DeclareHolidayButton from "./DeclareHolidayButton";
 
 interface AttendanceLog {
     id: string;
@@ -185,7 +186,10 @@ export default async function AttendancePage({
                         )}
                     </p>
                 </div>
-                <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto items-center">
+                    {isActiveAdmin && (
+                        <DeclareHolidayButton selectedDate={dayString} />
+                    )}
                     <div className="w-full md:w-48">
                         <AttendanceFilter />
                     </div>

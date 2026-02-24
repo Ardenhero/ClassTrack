@@ -48,3 +48,19 @@ CREATE POLICY "authenticated_access_class_day_overrides" ON class_day_overrides
 -- Index for fast lookups
 CREATE INDEX IF NOT EXISTS idx_class_day_overrides_lookup
   ON class_day_overrides(class_id, date);
+
+-- 3. RLS Fixes — Allow authenticated users to archive students/classes
+-- (Needed because UPDATE policies may be too strict for setting is_archived)
+DO $$ BEGIN
+  -- Students: allow instructors to update their own students
+  DROP POLICY IF EXISTS "instructors_archive_students" ON students;
+  CREATE POLICY "instructors_archive_students" ON students
+    FOR UPDATE USING (auth.role() = 'authenticated')
+    WITH CHECK (auth.role() = 'authenticated');
+  
+  -- Classes: allow instructors to update their own classes  
+  DROP POLICY IF EXISTS "instructors_archive_classes" ON classes;
+  CREATE POLICY "instructors_archive_classes" ON classes
+    FOR UPDATE USING (auth.role() = 'authenticated')
+    WITH CHECK (auth.role() = 'authenticated');
+END $$;

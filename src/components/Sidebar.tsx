@@ -27,6 +27,7 @@ import {
     QrCode,
     KeyRound,
     Archive,
+    Trash2,
     Mail as MailIcon
 } from "lucide-react";
 
@@ -51,6 +52,7 @@ const adminNavigation = [
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
     { name: "Archived", href: "/archived", icon: Archive },
+    { name: "Deletion Requests", href: "/dashboard/admin/deletion-requests", icon: Trash2 },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
