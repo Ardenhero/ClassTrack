@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Mail, Loader2, CheckCircle, XCircle, Clock, Eye, Calendar } from "lucide-react";
+import { Mail, Loader2, CheckCircle, XCircle, Clock, Eye, Calendar, Trash2 } from "lucide-react";
 
 interface EvidenceItem {
     id: string;
@@ -81,6 +81,16 @@ export default function EvidenceQueuePage() {
         } finally {
             setProcessing(null);
         }
+    };
+
+    const handleDelete = async (evidenceId: string) => {
+        if (!confirm("Delete this submission permanently? This cannot be undone.")) return;
+        setProcessing(evidenceId);
+        const { error } = await supabase.from("evidence_documents").delete().eq("id", evidenceId);
+        if (!error) {
+            setItems(prev => prev.filter(i => i.id !== evidenceId));
+        }
+        setProcessing(null);
     };
 
     const statusBadge = (status: string) => {
@@ -171,7 +181,7 @@ export default function EvidenceQueuePage() {
                                     </td>
                                     <td className="px-6 py-4">{statusBadge(item.status)}</td>
                                     <td className="px-6 py-4">
-                                        {item.status === "pending" && (
+                                        {item.status === "pending" ? (
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => handleReview(item.id, "approve")}
@@ -190,6 +200,14 @@ export default function EvidenceQueuePage() {
                                                     Reject
                                                 </button>
                                             </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleDelete(item.id)}
+                                                disabled={processing === item.id}
+                                                className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 disabled:opacity-50 transition-colors flex items-center gap-1"
+                                            >
+                                                <Trash2 className="h-3 w-3" /> Delete
+                                            </button>
                                         )}
                                     </td>
                                 </tr>

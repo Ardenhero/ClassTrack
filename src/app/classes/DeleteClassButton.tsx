@@ -1,19 +1,20 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Archive } from "lucide-react";
 import { deleteClass } from "./actions";
 
 export function DeleteClassButton({ id }: { id: string }) {
     return (
         <button
             onClick={async () => {
-                if (confirm("Are you sure? This will remove the class along with all student enrollments.")) {
+                if (confirm("Archive this class? It can be restored later from the Archived page.")) {
                     await deleteClass(id);
                 }
             }}
-            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-orange-600 transition-colors"
+            title="Archive Class"
         >
-            <Trash2 className="h-4 w-4" />
+            <Archive className="h-4 w-4" />
         </button>
     );
 }

@@ -60,6 +60,10 @@ ALTER TABLE classes ADD COLUMN IF NOT EXISTS archived_by UUID REFERENCES instruc
 
 ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false;
 
+-- 3. Guardian Contact Info (for auto-absent email notifications)
+ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_email TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS guardian_name TEXT;
+
 -- 3. Attendance Notes (Admin/Instructor notes on records)
 ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS admin_note TEXT;
 ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS note_by UUID REFERENCES instructors(id);

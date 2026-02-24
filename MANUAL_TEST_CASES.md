@@ -222,35 +222,7 @@
 
 ---
 
-### 3.5 Approval Inbox (Production Hardening)
-
-#### TC-SA-INBOX-01: View SIN Change Requests
-
-| Field | Detail |
-|-------|--------|
-| **Precondition** | Super Admin logged in, SIN change requests exist |
-| **Steps** | 1. Navigate to `/dashboard/admin/approval-inbox` |
-| **Expected** | List of pending SIN change requests displayed with student name, current SIN, requested SIN, reason, and requester. |
-
-#### TC-SA-INBOX-02: Approve a SIN Change Request
-
-| Field | Detail |
-|-------|--------|
-| **Precondition** | Pending SIN change request exists |
-| **Steps** | 1. Navigate to Approval Inbox <br> 2. Click "Approve" on a request |
-| **Expected** | Request status changes to "Approved". Student's SIN is updated in the database. Audit log entry created. |
-
-#### TC-SA-INBOX-03: Reject a SIN Change Request
-
-| Field | Detail |
-|-------|--------|
-| **Precondition** | Pending SIN change request exists |
-| **Steps** | 1. Navigate to Approval Inbox <br> 2. Click "Reject" on a request |
-| **Expected** | Request status changes to "Rejected". Student's SIN remains unchanged. Audit log entry created. |
-
----
-
-### 3.6 API Key Management (Production Hardening)
+### 3.5 API Key Management (Production Hardening)
 
 #### TC-SA-KEY-01: Generate a New API Key
 
@@ -275,6 +247,14 @@
 | **Precondition** | Active API key exists |
 | **Steps** | 1. Navigate to API Keys page <br> 2. Click the shield/revoke icon on an active key |
 | **Expected** | Key status changes to "Revoked" with red badge. Key can no longer be used for API authentication. |
+
+#### TC-SA-KEY-04: Delete a Revoked API Key
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Revoked API key exists |
+| **Steps** | 1. Navigate to API Keys page <br> 2. Find a revoked key (red "Revoked" badge) <br> 3. Click the trash icon next to it <br> 4. Confirm deletion |
+| **Expected** | Key permanently removed from the list. Cannot be restored. |
 
 ---
 
@@ -650,6 +630,14 @@
 | **Steps** | 1. Click "Reject" on a pending evidence item |
 | **Expected** | Evidence status changes to "Rejected" (red). Attendance records unchanged. |
 
+#### TC-ADM-MAIL-05: Delete Reviewed Evidence
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Evidence has been approved or rejected |
+| **Steps** | 1. View "All Mails" (not Pending filter) <br> 2. Find a reviewed item (green approved / red rejected badge) <br> 3. Click "Delete" button <br> 4. Confirm deletion |
+| **Expected** | Evidence permanently deleted. Removed from the list. |
+
 ---
 
 ### 4.10 Reports & Student Alerts
@@ -1004,7 +992,7 @@
 | Field | Detail |
 |-------|--------|
 | **Steps** | 1. Open any page while logged in <br> 2. Check sidebar items |
-| **Expected** | Role-appropriate nav items shown. Super Admin sees: Approval Inbox, API Keys, Audit Trail. Instructor sees: Mails, QR Scanner. |
+| **Expected** | Role-appropriate nav items shown. Super Admin sees: API Keys, Audit Trail. Admin sees: Archived. Instructor sees: Mails, QR Scanner. |
 
 #### TC-SHARED-NAV-02: Collapsible Sidebar
 
@@ -1205,6 +1193,114 @@
 | **Endpoint** | `POST /api/evidence/public-upload` |
 | **Steps** | 1. Send multipart form with file and metadata |
 | **Expected** | File uploaded to storage. Evidence record created in pending status. |
+
+---
+
+---
+
+## 10. Archive System Test Cases (New)
+
+### 10.1 Archived Page — Recently Deleted
+
+#### TC-ARC-01: View Archived Students
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | At least one student has been archived |
+| **Steps** | 1. Navigate to `/dashboard/admin/archived` <br> 2. Click the "Students" tab |
+| **Expected** | List of archived students with name, SIN, and "Archived X days ago" timestamp. |
+
+#### TC-ARC-02: View Archived Classes
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | At least one class has been archived |
+| **Steps** | 1. Navigate to Archived page <br> 2. Click the "Classes" tab |
+| **Expected** | List of archived classes with name, year level, and archive date. |
+
+#### TC-ARC-03: Restore a Student
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Archived student exists |
+| **Steps** | 1. Navigate to Archived → Students tab <br> 2. Click "Restore" on a student |
+| **Expected** | Student removed from archived list. Appears again in the active Students page. Audit log entry: "Student restored from archive". |
+
+#### TC-ARC-04: Restore a Class
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Archived class exists |
+| **Steps** | 1. Navigate to Archived → Classes tab <br> 2. Click "Restore" on a class |
+| **Expected** | Class removed from archived list. Appears again in the active Classes page. Audit log entry: "Class restored from archive". |
+
+#### TC-ARC-05: Delete Forever — Student
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Archived student exists |
+| **Steps** | 1. Navigate to Archived → Students tab <br> 2. Click "Delete Forever" on a student <br> 3. Confirm the double-confirmation dialog |
+| **Expected** | Student permanently deleted from database. All attendance records for this student are lost. Cannot be undone. |
+
+#### TC-ARC-06: Delete Forever — Class
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Archived class exists |
+| **Steps** | 1. Navigate to Archived → Classes tab <br> 2. Click "Delete Forever" on a class <br> 3. Confirm |
+| **Expected** | Class permanently deleted. All enrollment records lost. Cannot be undone. |
+
+---
+
+## 11. Auto-Absent Email Notification Test Cases (New)
+
+#### TC-EMAIL-01: Cron Endpoint with Valid Secret
+
+| Field | Detail |
+|-------|--------|
+| **Endpoint** | `GET /api/cron/absent-notify?secret=YOUR_SECRET` |
+| **Precondition** | `CRON_SECRET` environment variable set, students were absent yesterday, students have `guardian_email` set |
+| **Steps** | 1. Call the endpoint with the correct secret |
+| **Expected** | Returns JSON with `sent` count, `failed` count, and `date`. Emails sent to guardian emails via Resend. Audit log entries created. |
+
+#### TC-EMAIL-02: Cron Endpoint with Invalid Secret
+
+| Field | Detail |
+|-------|--------|
+| **Steps** | 1. Call `GET /api/cron/absent-notify?secret=wrong` |
+| **Expected** | Returns 401 Unauthorized. No emails sent. |
+
+#### TC-EMAIL-03: No Absences Yesterday
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | No students were absent yesterday |
+| **Steps** | 1. Call the endpoint with valid secret |
+| **Expected** | Returns `{ sent: 0, message: "No absences found for yesterday" }`. |
+
+#### TC-EMAIL-04: Student Without Guardian Email — Skipped
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Absent student has no `guardian_email` set |
+| **Steps** | 1. Call the cron endpoint |
+| **Expected** | Student is silently skipped. No error. Other students with guardian emails are still notified. |
+
+#### TC-EMAIL-05: Dry Run Mode (No Resend Key)
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | `RESEND_API_KEY` environment variable not set |
+| **Steps** | 1. Call the endpoint with valid CRON_SECRET |
+| **Expected** | Returns `{ message: "Dry run (RESEND_API_KEY not set)" }`. Notifications logged to console but no real emails sent. |
+
+#### TC-EMAIL-06: Add Guardian Email to Student
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Admin or Instructor logged in |
+| **Steps** | 1. Navigate to Students <br> 2. Click "Add Student" <br> 3. Fill in name, SIN, year level <br> 4. Scroll to "Guardian Contact" section <br> 5. Enter guardian name and email <br> 6. Submit |
+| **Expected** | Student created with `guardian_email` and `guardian_name` fields saved. These are used for auto-absent notifications. |
 
 ---
 

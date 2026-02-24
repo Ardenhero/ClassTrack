@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, X } from "lucide-react";
+import { Trash2, Archive, X } from "lucide-react";
 import { useState } from "react";
 
 interface MultiDeleteBarProps {
@@ -8,9 +8,10 @@ interface MultiDeleteBarProps {
     itemLabel: string;
     onDelete: () => Promise<void>;
     onClear: () => void;
+    actionLabel?: string; // "Archive" or "Delete" — defaults to "Delete"
 }
 
-export function MultiDeleteBar({ count, itemLabel, onDelete, onClear }: MultiDeleteBarProps) {
+export function MultiDeleteBar({ count, itemLabel, onDelete, onClear, actionLabel }: MultiDeleteBarProps) {
     const [confirming, setConfirming] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -34,10 +35,10 @@ export function MultiDeleteBar({ count, itemLabel, onDelete, onClear }: MultiDel
                     <>
                         <button
                             onClick={() => setConfirming(true)}
-                            className="px-4 py-1.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5"
+                            className={`px-4 py-1.5 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-1.5 ${actionLabel === "Archive" ? "bg-orange-600 hover:bg-orange-700" : "bg-red-600 hover:bg-red-700"}`}
                         >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Delete Selected
+                            {actionLabel === "Archive" ? <Archive className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                            {actionLabel || "Delete"} Selected
                         </button>
                         <button
                             onClick={onClear}
@@ -54,7 +55,7 @@ export function MultiDeleteBar({ count, itemLabel, onDelete, onClear }: MultiDel
                             disabled={deleting}
                             className="px-4 py-1.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                         >
-                            {deleting ? "Deleting..." : "Confirm"}
+                            {deleting ? (actionLabel === "Archive" ? "Archiving..." : "Deleting...") : "Confirm"}
                         </button>
                         <button
                             onClick={() => setConfirming(false)}
