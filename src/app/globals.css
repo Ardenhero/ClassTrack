@@ -48,3 +48,43 @@ body {
 .animate-snowfall {
   animation: snowfall 2s linear infinite;
 }
+
+/* ── Print-Ready Styles ── */
+@media print {
+
+  nav,
+  aside,
+  .print\\:hidden,
+  button,
+  [data-testid],
+  .sidebar {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11px !important;
+  }
+
+  .rounded-xl,
+  .rounded-lg,
+  .rounded-2xl {
+    border-radius: 0 !important;
+  }
+
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  .dark\\:bg-gray-800 {
+    background: white !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
