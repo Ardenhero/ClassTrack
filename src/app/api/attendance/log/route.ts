@@ -164,7 +164,7 @@ export async function POST(request: Request) {
             // DIRECT LOOKUP on students table (Matches Identity Tool Logic)
             const { data: studentInfo } = await supabase
                 .from('students')
-                .select('id, name, year_level, instructor_id')
+                .select('id, name, year_level, instructor_id, fingerprint_locked')
                 .eq('fingerprint_slot_id', fingerprint_slot_id)
                 .maybeSingle();
 
@@ -191,6 +191,25 @@ export async function POST(request: Request) {
             // Use the class_id from request body
             if (!classIdInput) {
                 return NextResponse.json({ error: 'class_id is required for biometric attendance' }, { status: 400 });
+            }
+
+            // Reject if fingerprint is locked
+            if (studentInfo.fingerprint_locked) {
+                console.warn(`[API] BIOMETRIC BLOCKED - FINGERPRINT LOCKED: Slot ${fingerprint_slot_id} on ${device_id} for Student=${studentInfo.id}`);
+
+                await supabase.from('biometric_audit_logs').insert({
+                    fingerprint_slot_id,
+                    device_id,
+                    event_type: 'INVALID_SCAN',
+                    details: 'Scan rejected because fingerprint is locked for this student.',
+                    metadata: { student_id: studentInfo.id, rpc_status: rpcStatusInput }
+                });
+
+                return NextResponse.json({
+                    error: "fingerprint_locked",
+                    message: `Fingerprint is locked. Please contact your instructor.`,
+                    student_name: studentInfo.name
+                }, { status: 403 });
             }
 
             // Verify student is enrolled in this class

@@ -3,6 +3,7 @@
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
 import { BookOpen, BarChart3, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import DeclareSuspensionsButton from "./DeclareSuspensionsButton";
 
 const quickCards = [
     {
@@ -27,8 +28,11 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
             {/* Quick Access Cards */}
             <div>
-                <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-4">
-                    Quick Access
+                <div className="flex items-center justify-between mb-4">
+                    <div className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                        Quick Access
+                    </div>
+                    <DeclareSuspensionsButton />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {quickCards.map(card => {

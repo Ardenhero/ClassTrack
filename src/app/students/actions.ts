@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createNotification } from "@/lib/notifications";
 import { z } from 'zod';
 
@@ -265,14 +266,16 @@ export async function archiveStudent(id: string) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Get archiver profile
-    let archivedBy: string | null = null;
-    if (user) {
+    const cookieStore = cookies();
+    let archivedBy = cookieStore.get("sc_profile_id")?.value || null;
+
+    if (!archivedBy && user) {
         const { data: profile } = await supabase
             .from('instructors')
             .select('id')
             .eq('auth_user_id', user.id)
-            .single();
+            .limit(1)
+            .maybeSingle();
         archivedBy = profile?.id || null;
     }
 

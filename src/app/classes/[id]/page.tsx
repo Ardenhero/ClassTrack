@@ -31,19 +31,6 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     const viewerProfileId = cookieStore.get("sc_profile_id")?.value;
     let isInstructor = false;
 
-    if (viewerProfileId) {
-        const { data: viewerProfile } = await supabase
-            .from("instructors")
-            .select("role")
-            .eq("id", viewerProfileId)
-            .single();
-
-        // STRICTLY Instructors only
-        if (viewerProfile) {
-            isInstructor = viewerProfile.role === "instructor";
-        }
-    }
-
     // Date Logic matching Attendance Page (Manila Timezone Safe)
     const getManilaDate = () => {
         return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
@@ -74,6 +61,19 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
     if (!classData) {
         return <div>Class not found</div>;
+    }
+
+    if (viewerProfileId) {
+        const { data: viewerProfile } = await supabase
+            .from("instructors")
+            .select("role")
+            .eq("id", viewerProfileId)
+            .single();
+
+        // STRICTLY Instructors only (and only if they own the class)
+        if (viewerProfile) {
+            isInstructor = viewerProfile.role === "instructor" && classData.instructor_id === viewerProfileId;
+        }
     }
 
     // Fetch enrolled students
