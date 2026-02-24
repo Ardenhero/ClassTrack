@@ -28,10 +28,7 @@ CREATE POLICY "Admins can manage semesters"
     TO authenticated
     USING (EXISTS (SELECT 1 FROM instructors WHERE auth_user_id = auth.uid() AND (role = 'admin' OR is_super_admin = true)));
 
--- 2. Add phone_number to students for SMS Notifications
-ALTER TABLE students ADD COLUMN IF NOT EXISTS phone_number TEXT;
-
--- 3. Security Definer RPC for Student Archiving
+-- 2. Security Definer RPC for Student Archiving
 -- Because students are bound by RLS `students_owner_isolation` (only the exact owner_id can update),
 -- sub-instructors who have access to the class/student via `sc_profile_id` scoping cannot update `is_archived`.
 -- This RPC securely checks that the caller is an instructor, and then does the update bypassing RLS.
