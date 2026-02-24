@@ -389,6 +389,32 @@ export function AddStudentDialog({ trigger }: AddStudentDialogProps) {
                                 )}
                             </div>
 
+                            {/* Guardian Contact (for absent notifications) */}
+                            <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Guardian Contact (Optional)</p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Guardian Name</label>
+                                        <input
+                                            name="guardian_name"
+                                            type="text"
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white"
+                                            placeholder="e.g. Maria Dela Cruz"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Guardian Email</label>
+                                        <input
+                                            name="guardian_email"
+                                            type="email"
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white"
+                                            placeholder="e.g. parent@email.com"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Absence alerts will be emailed automatically to this address.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Assign Classes <span className="text-red-500">*</span>

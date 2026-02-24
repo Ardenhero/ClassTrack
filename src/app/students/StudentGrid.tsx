@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash2, Check, X as XIcon } from "lucide-react";
+import { MoreHorizontal, Pencil, Archive, Check, X as XIcon } from "lucide-react";
 import { updateStudent, deleteStudent } from "./actions";
 import { MultiDeleteBar } from "@/components/MultiDeleteBar";
 
@@ -30,6 +30,7 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
     };
 
     const handleBulkDelete = async () => {
+        if (!confirm(`Archive ${selected.size} student${selected.size !== 1 ? "s" : ""}? They can be restored from the Archived page.`)) return;
         for (const id of Array.from(selected)) {
             await deleteStudent(id);
         }
@@ -56,6 +57,7 @@ export function StudentGrid({ students, isSuperAdmin }: StudentGridProps) {
                     itemLabel={`student${selected.size !== 1 ? "s" : ""}`}
                     onDelete={handleBulkDelete}
                     onClear={() => setSelected(new Set())}
+                    actionLabel="Archive"
                 />
             )}
         </>
@@ -82,7 +84,7 @@ function StudentCardItem({ student, isSuperAdmin, isSelected, onToggleSelect }: 
     };
 
     const handleDelete = async () => {
-        if (confirm("Are you sure? This will delete all attendance records for this student.")) {
+        if (confirm("Archive this student? They can be restored later from the Archived page.")) {
             await deleteStudent(student.id);
         }
     };
@@ -148,9 +150,9 @@ function StudentCardItem({ student, isSuperAdmin, isSelected, onToggleSelect }: 
                             </button>
                             <button
                                 onClick={() => { handleDelete(); setShowMenu(false); }}
-                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center"
+                                className="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center"
                             >
-                                <Trash2 className="h-3 w-3 mr-2" /> Delete
+                                <Archive className="h-3 w-3 mr-2" /> Archive
                             </button>
                         </div>
                     )}

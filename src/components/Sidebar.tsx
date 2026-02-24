@@ -27,6 +27,7 @@ import {
     ChevronLeft,
     QrCode,
     KeyRound,
+    Archive,
     Mail as MailIcon
 } from "lucide-react";
 
@@ -51,6 +52,7 @@ const adminNavigation = [
     { name: "Students", href: "/students", icon: Users },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
+    { name: "Archived", href: "/dashboard/admin/archived", icon: Archive },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
@@ -60,7 +62,6 @@ const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Departments", href: "/dashboard/admin/departments", icon: Building2 },
-    { name: "Approval Inbox", href: "/dashboard/admin/approval-inbox", icon: ClipboardList },
     { name: "API Keys", href: "/dashboard/admin/api-keys", icon: KeyRound },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },

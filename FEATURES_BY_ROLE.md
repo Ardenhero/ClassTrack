@@ -68,6 +68,15 @@
 | **Read-Only Classes** | View all classes across every department. Cannot create, edit, or delete. |
 | **Read-Only Students** | View all students across every department. Cannot create, edit, or delete. |
 
+### API Key Management (`/dashboard/admin/api-keys`)
+
+| Feature | Description |
+|---------|-------------|
+| **Generate API Key** | Create a new API key for a kiosk/device with name, device type, and scope. Raw key displayed once only. |
+| **One-Time Key Display** | Raw key shown in green banner. After clicking "I've copied it — dismiss", key is hidden permanently. |
+| **Revoke API Key** | Disable a key so it can no longer be used for authentication. |
+| **Delete Revoked Key** | Permanently remove a revoked API key from the system. |
+
 ### Reports (`/reports`)
 
 | Feature | Description |
@@ -156,7 +165,20 @@
 | **View All Evidence** | List all submitted evidence across the department, showing student name, SIN, year level, file type, linked absence dates, submission date, and review status |
 | **Approve Evidence** | Mark evidence as approved — updates the corresponding attendance status to "Excused" |
 | **Reject Evidence** | Mark evidence as rejected — no attendance change |
+| **Delete Evidence** | Permanently delete reviewed (approved/rejected) evidence submissions to clean up old records |
 | **Preview Files** | View submitted evidence files (images, PDFs) inline |
+
+### Archived / Recently Deleted (`/dashboard/admin/archived`)
+
+| Feature | Description |
+|---------|-------------|
+| **View Archived Students** | List all archived (soft-deleted) students with name, SIN, and archive date |
+| **View Archived Classes** | List all archived classes with name, year level, and archive date |
+| **Restore Student** | Un-archive a student, making them appear in active lists again |
+| **Restore Class** | Un-archive a class, restoring it to the active list |
+| **Delete Forever (Student)** | Permanently hard-delete an archived student. Cannot be undone. |
+| **Delete Forever (Class)** | Permanently hard-delete an archived class. Cannot be undone. |
+| **Tab Switcher** | Switch between Students and Classes tabs with item counts |
 
 ### Security Panel (`/dashboard/admin/security`)
 
@@ -191,7 +213,7 @@
 | **View All Classes** | List all classes with name, section, schedule, instructor, enrolled student count |
 | **Create Class** | Add a new class with name, section, year level, schedule (day + time), and assign instructor |
 | **Edit Class** | Modify class name, section, schedule, and instructor assignment |
-| **Delete Class** | Remove a class (with confirmation dialog) |
+| **Delete Class** | Archive a class (soft-delete). Class hidden from active lists but can be restored from the Archived page. |
 | **View Class Detail** | Click a class card → see enrolled students, attendance summary for that class |
 | **Assign Students** | Add students to a class via a searchable assignment modal |
 | **Remove Students** | Un-enroll students from a class |
@@ -201,10 +223,21 @@
 | Feature | Description |
 |---------|-------------|
 | **View All Students** | Grid/list of all students showing name, SIN, year level, and enrolled class count |
-| **Add Student** | Create a new student with name, SIN, year level, and optional fingerprint ID — includes batch CSV import support |
+| **Add Student** | Create a new student with name, SIN, year level, guardian contact (email/name), and optional fingerprint ID — includes batch CSV import support |
 | **Edit Student** | Modify student name, SIN, year level |
-| **Delete Student** | Remove a student — supports multi-select batch deletion with confirmation |
+| **Archive Student** | Soft-delete a student — supports multi-select batch archiving with confirmation. Archived students can be restored from the Archived page. |
 | **Student Detail View** | Click a student → see their enrollment list and attendance history |
+
+### Auto-Absent Email Notifications (`/api/cron/absent-notify`)
+
+| Feature | Description |
+|---------|-------------|
+| **Automatic Parent Notification** | Cron job (runs daily) automatically detects students who were Absent the previous day and sends a branded HTML email to their guardian_email address. |
+| **No Human Confirmation** | Emails are sent fully automatically — no instructor or admin action required. |
+| **Resend Integration** | Uses Resend API for email delivery. Falls back to dry-run logging if `RESEND_API_KEY` not set. |
+| **Grouped by Student** | If a student is absent from multiple classes, one email lists all missed classes. |
+| **Audit Logging** | Every notification sent is logged in the audit trail with student ID, guardian email, and absence date. |
+| **CRON_SECRET Protection** | Endpoint protected by secret token to prevent unauthorized triggers. |
 
 ### Reports (`/reports`)
 

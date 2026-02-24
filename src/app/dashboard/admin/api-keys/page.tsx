@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Key, Plus, Loader2, Copy, Check, ShieldOff, ShieldCheck, Cpu, Wifi } from "lucide-react";
+import { Key, Plus, Loader2, Copy, Check, ShieldOff, ShieldCheck, Cpu, Wifi, Trash2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
 interface APIKey {
@@ -104,6 +104,12 @@ export default function APIKeysPage() {
         if (!error) fetchKeys();
     };
 
+    const handleDeleteKey = async (keyId: string) => {
+        if (!confirm("Permanently delete this revoked key?")) return;
+        const { error } = await supabase.from("api_keys").delete().eq("id", keyId).eq("is_revoked", true);
+        if (!error) fetchKeys();
+    };
+
     const handleCopy = () => {
         if (!newKey) return;
         navigator.clipboard.writeText(newKey);
@@ -159,7 +165,16 @@ export default function APIKeysPage() {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             {k.is_revoked ? (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-bold border border-red-100 uppercase">Revoked</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-bold border border-red-100 uppercase">Revoked</span>
+                                                    <button
+                                                        onClick={() => handleDeleteKey(k.id)}
+                                                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                                                        title="Delete Key"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <>
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-600 text-[10px] font-bold border border-green-100 uppercase">Active</span>

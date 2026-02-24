@@ -134,6 +134,33 @@ export async function restoreClass(classId: string) {
     return { success: true };
 }
 
+export async function permanentlyDeleteClass(classId: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+        .from("classes")
+        .delete()
+        .eq("id", classId)
+        .eq("is_archived", true); // Safety: only permanently delete if already archived
+
+    if (error) return { error: error.message };
+
+    if (user) {
+        await supabase.from("audit_logs").insert({
+            action: "class_permanently_deleted",
+            entity_type: "class",
+            entity_id: classId,
+            details: "Class permanently deleted from archive",
+            performed_by: user.id,
+        });
+    }
+
+    revalidatePath("/classes");
+    revalidatePath("/dashboard/admin/archived");
+    return { success: true };
+}
+
 // ─── Bulk Import ────────────────────────────────────────────────────────────
 
 interface ClassRow {

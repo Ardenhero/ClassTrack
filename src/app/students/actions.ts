@@ -30,6 +30,10 @@ export async function addStudent(formData: FormData) {
 
     const { name, sin, year_level, class_ids: classIds } = parseResult.data;
 
+    // Guardian contact (optional)
+    const guardian_email = (formData.get("guardian_email") as string)?.trim() || null;
+    const guardian_name = (formData.get("guardian_name") as string)?.trim() || null;
+
     // Get Profile ID from cookie
     const { cookies } = await import("next/headers");
     const cookieStore = cookies();
@@ -107,7 +111,9 @@ export async function addStudent(formData: FormData) {
                 name,
                 sin,
                 year_level,
-                instructor_id: profileId // Created by this instructor
+                instructor_id: profileId,
+                guardian_email,
+                guardian_name,
             })
             .select("id")
             .single();
@@ -321,6 +327,33 @@ export async function restoreStudent(id: string) {
     }
 
     revalidatePath("/students");
+    return { success: true };
+}
+
+export async function permanentlyDeleteStudent(id: string) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", id)
+        .eq("is_archived", true); // Safety: only permanently delete if already archived
+
+    if (error) return { error: error.message };
+
+    if (user) {
+        await supabase.from("audit_logs").insert({
+            action: "student_permanently_deleted",
+            entity_type: "student",
+            entity_id: id,
+            details: "Student permanently deleted from archive",
+            performed_by: user.id,
+        });
+    }
+
+    revalidatePath("/students");
+    revalidatePath("/dashboard/admin/archived");
     return { success: true };
 }
 
