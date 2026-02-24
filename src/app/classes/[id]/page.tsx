@@ -1,13 +1,14 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
-import { ArrowLeft, UserMinus, Users, Clock, AlertCircle, CheckCircle, Ghost, TimerOff } from "lucide-react";
+import { ArrowLeft, Users, Clock, AlertCircle, CheckCircle, Ghost, TimerOff } from "lucide-react";
 import Link from "next/link";
 import { AssignStudentDialog } from "../AssignStudentDialog";
-import { removeStudent } from "./actions";
 import { format, parse, differenceInMinutes } from "date-fns";
 import { AttendanceFilter } from "@/app/attendance/AttendanceFilter";
 import { cookies } from "next/headers";
 import StatusOverrideButton from "./StatusOverrideButton";
+import { ExportCSVButton } from "./ExportCSVButton";
+import { UnenrollButton } from "./UnenrollButton";
 
 interface Enrollment {
     id: string;
@@ -224,7 +225,23 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                         )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                        <AssignStudentDialog classId={params.id} />
+                        <div className="flex items-center gap-2">
+                            {isInstructor && <AssignStudentDialog classId={params.id} />}
+                            <ExportCSVButton
+                                className_={classData.name}
+                                date={dayString}
+                                students={enrollments?.map(e => {
+                                    const vis = getStatusVisuals(e.students.id);
+                                    return {
+                                        name: e.students.name,
+                                        year_level: e.students.year_level,
+                                        status: vis.statusLabel,
+                                        timeIn: vis.timeIn,
+                                        timeOut: vis.timeOut,
+                                    };
+                                }) || []}
+                            />
+                        </div>
                         <div className="mt-2">
                             <AttendanceFilter />
                         </div>
@@ -296,14 +313,14 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                                         {statusLabel}
                                     </div>
 
-                                    <form action={async () => {
-                                        "use server";
-                                        await removeStudent(params.id, enrollment.students.id);
-                                    }}>
-                                        <button type="submit" className="text-gray-400 hover:text-red-500 transition-colors" title="Remove Student">
-                                            <UserMinus className="h-4 w-4" />
-                                        </button>
-                                    </form>
+                                    {isInstructor && (
+                                        <UnenrollButton
+                                            classId={params.id}
+                                            studentId={enrollment.students.id}
+                                            studentName={enrollment.students.name}
+                                            className_={classData.name}
+                                        />
+                                    )}
 
                                     {/* Manual Override — Instructor Only */}
                                     {isInstructor && (

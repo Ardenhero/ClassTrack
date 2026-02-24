@@ -113,7 +113,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Quick Access Cards** | Links to All Classes and System Reports |
+| **Quick Access Cards** | Links to All Classes, System Reports, Audit Trail, Security, and Deletion Requests |
 | **Sensor Memory Map (Biometric Matrix)** | Real-time grid of all students with their fingerprint enrollment status (Slot IDs), with Supabase Realtime for live updates when students are enrolled/modified. Shows connection status indicator and last-updated timestamp. |
 
 ### Instructor Management (`/dashboard/admin/instructors`)
@@ -168,7 +168,7 @@
 | **Delete Evidence** | Permanently delete reviewed (approved/rejected) evidence submissions to clean up old records |
 | **Preview Files** | View submitted evidence files (images, PDFs) inline |
 
-### Archived / Recently Deleted (`/dashboard/admin/archived`)
+### Archived / Recently Deleted (`/archived`)
 
 | Feature | Description |
 |---------|-------------|
@@ -178,7 +178,9 @@
 | **Restore Class** | Un-archive a class, restoring it to the active list |
 | **Delete Forever (Student)** | Permanently hard-delete an archived student. Cannot be undone. |
 | **Delete Forever (Class)** | Permanently hard-delete an archived class. Cannot be undone. |
+| **Deletion Request Queue** | Review and approve/reject instructor requests to permanently delete archived items |
 | **Tab Switcher** | Switch between Students and Classes tabs with item counts |
+| **Loading Animations** | Spinners on Restore and Delete buttons while processing |
 
 ### Security Panel (`/dashboard/admin/security`)
 
@@ -212,11 +214,8 @@
 |---------|-------------|
 | **View All Classes** | List all classes with name, section, schedule, instructor, enrolled student count |
 | **Create Class** | Add a new class with name, section, year level, schedule (day + time), and assign instructor |
-| **Edit Class** | Modify class name, section, schedule, and instructor assignment |
-| **Delete Class** | Archive a class (soft-delete). Class hidden from active lists but can be restored from the Archived page. |
 | **View Class Detail** | Click a class card → see enrolled students, attendance summary for that class |
-| **Assign Students** | Add students to a class via a searchable assignment modal |
-| **Remove Students** | Un-enroll students from a class |
+| **Note:** System Admin is **read-only** for classes | Cannot edit, archive, or delete. Only instructors can perform these actions. |
 
 ### Students (`/students`)
 
@@ -224,9 +223,7 @@
 |---------|-------------|
 | **View All Students** | Grid/list of all students showing name, SIN, year level, and enrolled class count |
 | **Add Student** | Create a new student with name, SIN, year level, guardian contact (email/name), and optional fingerprint ID — includes batch CSV import support |
-| **Edit Student** | Modify student name, SIN, year level |
-| **Archive Student** | Soft-delete a student — supports multi-select batch archiving with confirmation. Archived students can be restored from the Archived page. |
-| **Student Detail View** | Click a student → see their enrollment list and attendance history |
+| **Note:** System Admin is **read-only** for students | Cannot edit, archive, or delete. No checkboxes for multi-select. Only instructors can modify students. |
 
 ### Auto-Absent Email Notifications (`/api/cron/absent-notify`)
 
@@ -299,9 +296,10 @@ Same as Super Admin — scoped to the admin's department.
 | **View Own Classes** | List only classes assigned to this instructor |
 | **Create Class** | Add a new class (auto-assigned to this instructor) |
 | **Edit Class** | Modify class name, section, schedule |
-| **Delete Class** | Remove a class with confirmation |
+| **Archive Class** | Soft-delete a class with confirmation |
 | **View Class Detail** | Enrolled students list, class-specific attendance |
-| **Assign / Remove Students** | Manage student enrollment within a class |
+| **Assign / Unenroll Students** | Manage student enrollment within a class. Unenroll with confirmation ("attendance history preserved") |
+| **Export Attendance CSV** | Download per-class attendance as CSV file (Student Name, SIN, Year Level, Status, Time In, Time Out) with summary stats |
 
 ### Students (`/students`)
 
@@ -310,7 +308,7 @@ Same as Super Admin — scoped to the admin's department.
 | **View Own Students** | Only students enrolled in this instructor's classes |
 | **Add Student** | Create new student with name, SIN, year level, optional fingerprint ID, CSV batch import |
 | **Edit Student** | Modify student details |
-| **Delete Student** | Remove student with batch multi-select support |
+| **Archive Student** | Soft-delete student with batch multi-select support ("Archive Selected") |
 | **Student Detail** | View enrollment and attendance history |
 
 ### QR Scanner (`/dashboard/scanner`) — *Instructor Only*
