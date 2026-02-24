@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminBiometricMatrix } from "@/components/AdminBiometricMatrix";
-import { BookOpen, BarChart3, ChevronRight } from "lucide-react";
+import { BookOpen, BarChart3, ChevronRight, ShieldAlert, Shield } from "lucide-react";
 import Link from "next/link";
 
 const quickCards = [
@@ -18,6 +18,20 @@ const quickCards = [
         href: "/reports",
         icon: BarChart3,
         color: "bg-red-50 text-red-600 border-red-100",
+    },
+    {
+        title: "Audit Trail",
+        desc: "Forensic log of all administrative actions.",
+        href: "/dashboard/admin/audit-logs",
+        icon: ShieldAlert,
+        color: "bg-purple-50 text-purple-600 border-purple-100",
+    },
+    {
+        title: "Security",
+        desc: "Reset passwords, PINs, and manage user access.",
+        href: "/dashboard/admin/security",
+        icon: Shield,
+        color: "bg-amber-50 text-amber-600 border-amber-100",
     },
 ];
 

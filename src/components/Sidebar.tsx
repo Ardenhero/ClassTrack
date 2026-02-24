@@ -18,7 +18,6 @@ import {
     User,
     Info,
     ShieldCheck,
-    ShieldAlert,
     Building2,
     ChevronDown,
     ChevronRight,
@@ -38,6 +37,7 @@ const instructorNavigation = [
     { name: "Mails", href: "/evidence", icon: MailIcon },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
+    { name: "Archived", href: "/archived", icon: Archive },
     { name: "QR Scanner", href: "/dashboard/scanner", icon: QrCode },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -50,9 +50,9 @@ const adminNavigation = [
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Classes", href: "/classes", icon: BookOpen },
     { name: "Students", href: "/students", icon: Users },
+    { name: "Archived", href: "/archived", icon: Archive },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
-    { name: "Archived", href: "/dashboard/admin/archived", icon: Archive },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "About", href: "/about", icon: Info },
 ];
@@ -65,7 +65,6 @@ const superAdminNavigation = [
     { name: "API Keys", href: "/dashboard/admin/api-keys", icon: KeyRound },
     // Global Directory is handled separately as a dropdown
     { name: "Reports", href: "/reports", icon: BarChart3 },
-    { name: "Audit Trail", href: "/dashboard/admin/audit-logs", icon: ShieldAlert },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "System Info", href: "/about", icon: Info },
 ];
