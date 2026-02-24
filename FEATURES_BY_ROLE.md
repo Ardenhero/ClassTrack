@@ -297,9 +297,14 @@ Same as Super Admin — scoped to the admin's department.
 | **Create Class** | Add a new class (auto-assigned to this instructor) |
 | **Edit Class** | Modify class name, section, schedule |
 | **Archive Class** | Soft-delete a class with confirmation |
-| **View Class Detail** | Enrolled students list, class-specific attendance |
+| **View Class Detail** | Enrolled students list, class-specific attendance, per-student all-time attendance % badges (green/amber/red) |
 | **Assign / Unenroll Students** | Manage student enrollment within a class. Unenroll with confirmation ("attendance history preserved") |
-| **Export Attendance CSV** | Download per-class attendance as CSV file (Student Name, SIN, Year Level, Status, Time In, Time Out) with summary stats |
+| **Export Attendance CSV** | Download daily per-class attendance as CSV (Name, SIN, Year Level, Status, Time In, Time Out) |
+| **Export Full Report** | Download all-time per-student attendance summary CSV (sessions, present, late, absent, excused, %) |
+| **Mark as No Class** | Mark a date as Holiday, Cancelled, or Suspended — excludes from attendance calculations and absent notifications |
+| **Finalize Attendance** | Create official "Absent" records for enrolled students who didn't scan in (only appears when ≥1 student scanned) |
+| **Search & Sort Students** | Filter enrolled students by name, sort by A-Z or "At Risk First" (worst attendance) |
+| **Print Attendance** | Print-ready view of class attendance (hides sidebar, buttons, cleans layout) |
 
 ### Students (`/students`)
 

@@ -1,6 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
-import { ArrowLeft, Clock, AlertCircle, CheckCircle, Ghost, TimerOff, TrendingUp } from "lucide-react";
+import { ArrowLeft, Clock, AlertCircle, CheckCircle, Ghost, TimerOff, TrendingUp, CalendarOff } from "lucide-react";
 import Link from "next/link";
 import { AssignStudentDialog } from "../AssignStudentDialog";
 import { format, parse, differenceInMinutes } from "date-fns";
@@ -9,6 +9,8 @@ import { cookies } from "next/headers";
 import { ExportCSVButton } from "./ExportCSVButton";
 import { ExportFullReportButton } from "./ExportFullReportButton";
 import EnrolledStudentsList from "./EnrolledStudentsList";
+import MarkNoClassButton from "./MarkNoClassButton";
+import FinalizeAttendanceButton from "./FinalizeAttendanceButton";
 
 interface Enrollment {
     id: string;
@@ -96,6 +98,17 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
         .gte("timestamp", targetStart)
         .lte("timestamp", targetEnd)
         .order("timestamp", { ascending: true });
+
+    // Fetch day override (holiday/cancelled)
+    const { data: dayOverrideData } = await supabase
+        .from("class_day_overrides")
+        .select("id, type, note")
+        .eq("class_id", params.id)
+        .eq("date", dayString)
+        .maybeSingle();
+
+    const dayOverride = dayOverrideData || null;
+    const isHoliday = !!dayOverride;
 
     // Fetch ALL-TIME attendance logs for per-student summary
     const { data: allTimeLogs } = await supabase
@@ -251,6 +264,23 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                     <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2">
                             {isInstructor && <AssignStudentDialog classId={params.id} />}
+                            {isInstructor && (
+                                <MarkNoClassButton
+                                    classId={params.id}
+                                    date={dayString}
+                                    instructorId={viewerProfileId || ''}
+                                    existingOverride={dayOverride}
+                                />
+                            )}
+                            {isInstructor && (
+                                <FinalizeAttendanceButton
+                                    classId={params.id}
+                                    date={dayString}
+                                    enrolledStudentIds={studentIds}
+                                    presentStudentIds={logs?.map(l => l.student_id) || []}
+                                    isHoliday={isHoliday}
+                                />
+                            )}
                             <ExportCSVButton
                                 className_={classData.name}
                                 date={dayString}
@@ -288,6 +318,20 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                         </div>
                     </div>
                 </div>
+
+                {/* Holiday Banner */}
+                {isHoliday && (
+                    <div className="flex items-center gap-3 p-4 mt-4 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-800">
+                        <CalendarOff className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <div>
+                            <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">
+                                No Class — {dayOverride?.type === 'holiday' ? 'Holiday' : dayOverride?.type === 'cancelled' ? 'Cancelled' : dayOverride?.type === 'suspended' ? 'Suspended' : dayOverride?.type}
+                            </p>
+                            {dayOverride?.note && <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">{dayOverride.note}</p>}
+                            <p className="text-xs text-amber-500 dark:text-amber-500 mt-1">This day is excluded from attendance calculations and absence notifications.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">

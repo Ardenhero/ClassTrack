@@ -103,20 +103,5 @@ CREATE POLICY "super_admins_full_access_api_keys" ON api_keys
 CREATE INDEX IF NOT EXISTS idx_students_archived ON students(is_archived) WHERE is_archived = false;
 CREATE INDEX IF NOT EXISTS idx_classes_archived ON classes(is_archived) WHERE is_archived = false;
 
--- 5. Deletion Requests (Instructor → Admin approval for permanent deletion)
-CREATE TABLE IF NOT EXISTS deletion_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  entity_type TEXT NOT NULL CHECK (entity_type IN ('student', 'class')),
-  entity_id TEXT NOT NULL,
-  entity_name TEXT NOT NULL,
-  requested_by UUID NOT NULL REFERENCES instructors(id) ON DELETE CASCADE,
-  reason TEXT,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-  reviewed_by UUID REFERENCES instructors(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  reviewed_at TIMESTAMPTZ
-);
-
-ALTER TABLE deletion_requests ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "authenticated_access_deletion_requests" ON deletion_requests
-  FOR ALL USING (auth.role() = 'authenticated');
+-- NOTE: deletion_requests and class_day_overrides tables moved to
+-- 20260224000000_feature_additions.sql for clean standalone migration.

@@ -1395,4 +1395,68 @@
 
 ---
 
+## 15. Holiday / No-Class Test Cases
+
+#### TC-HOLIDAY-01: Mark Day as Holiday
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Instructor logged in, class exists |
+| **Steps** | 1. Navigate to `/classes/[id]` <br> 2. Click "No Class" button <br> 3. Select "Holiday" <br> 4. Enter note "EDSA Anniversary" <br> 5. Click "Save" |
+| **Expected** | Amber "🏖 Holiday — EDSA Anniversary" banner appears. Day excluded from attendance calculations. |
+
+#### TC-HOLIDAY-02: Remove No-Class Marker
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Day already marked as holiday |
+| **Steps** | 1. Click the X next to the holiday badge <br> 2. Confirm removal |
+| **Expected** | Marker removed. Day counts normally in attendance again. |
+
+#### TC-HOLIDAY-03: No-Class Marker Not Visible to Admin
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Logged in as System Admin |
+| **Steps** | 1. Navigate to `/classes/[id]` that has an existing holiday marker |
+| **Expected** | Holiday banner IS visible (informational), but "No Class" button is NOT visible (admin can't mark days). |
+
+---
+
+## 16. Finalize Attendance Test Cases
+
+#### TC-FINAL-01: Finalize Creates Absent Records
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Class with 5 enrolled students, 2 have scanned in for today |
+| **Steps** | 1. Navigate to `/classes/[id]` <br> 2. Click "Finalize (3 absent)" <br> 3. Confirm dialog |
+| **Expected** | 3 absence records created. Summary cards update: Absent count = 3. Button changes to "Finalized ✓". |
+
+#### TC-FINAL-02: Finalize Not Shown When Nobody Scanned
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Class with enrolled students, no attendance logs for today |
+| **Steps** | 1. Navigate to `/classes/[id]` |
+| **Expected** | "Finalize" button does NOT appear (no evidence class occurred). |
+
+#### TC-FINAL-03: Finalize Not Shown on Holiday
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | Day marked as holiday |
+| **Steps** | 1. Navigate to `/classes/[id]` |
+| **Expected** | "Finalize" button does NOT appear (day is excluded). |
+
+#### TC-FINAL-04: Finalize Not Shown When All Present
+
+| Field | Detail |
+|-------|--------|
+| **Precondition** | All enrolled students have scanned in |
+| **Steps** | 1. Navigate to `/classes/[id]` |
+| **Expected** | "Finalize" button does NOT appear (no students to mark absent). |
+
+---
+
 *Document generated from codebase analysis — February 2026*
