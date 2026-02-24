@@ -42,6 +42,11 @@ CREATE TABLE IF NOT EXISTS class_day_overrides (
 
 ALTER TABLE class_day_overrides ENABLE ROW LEVEL SECURITY;
 
+-- Drop policy first if it already exists (idempotent)
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "authenticated_access_class_day_overrides" ON class_day_overrides;
+END $$;
+
 CREATE POLICY "authenticated_access_class_day_overrides" ON class_day_overrides
   FOR ALL USING (auth.role() = 'authenticated');
 

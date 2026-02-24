@@ -27,7 +27,6 @@ import {
     QrCode,
     KeyRound,
     Archive,
-    Trash2,
     Mail as MailIcon
 } from "lucide-react";
 
@@ -49,10 +48,6 @@ const instructorNavigation = [
 const adminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
-    { name: "Classes", href: "/classes", icon: BookOpen },
-    { name: "Students", href: "/students", icon: Users },
-    { name: "Archived", href: "/archived", icon: Archive },
-    { name: "Deletion Requests", href: "/dashboard/admin/deletion-requests", icon: Trash2 },
     { name: "Reports", href: "/reports", icon: BarChart3 },
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -144,8 +139,11 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
 
                 <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
-                        // Handle the gap where Global Directory should be for Super Admin
-                        if (isSuperAdmin && item.name === 'Departments') {
+                        // Handle the gap where Global Directory should be for Super Admin and System Admin
+                        const isSystemAdmin = !isSuperAdmin && profile?.role === 'admin';
+                        const shouldRenderDropdown = (isSuperAdmin && item.name === 'Departments') || (isSystemAdmin && item.name === 'Attendance');
+
+                        if (shouldRenderDropdown) {
                             return (
                                 <div key="nav-group-admin" className="space-y-2">
                                     <Link
@@ -181,7 +179,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                         >
                                             <div className="flex items-center">
                                                 <Search className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
-                                                {!isCollapsed && <span>Global Directory</span>}
+                                                {!isCollapsed && <span>{isSuperAdmin ? "Global Directory" : "Directory"}</span>}
                                             </div>
                                             {!isCollapsed && (isDirOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
                                         </button>
@@ -195,7 +193,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                                         pathname === "/classes" ? "text-nwu-gold font-bold" : "text-white/60 hover:text-white"
                                                     )}
                                                 >
-                                                    Read-Only Classes
+                                                    {isSuperAdmin ? "Read-Only Classes" : "Classes"}
                                                 </Link>
                                                 <Link
                                                     href="/students"
@@ -205,7 +203,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                                         pathname === "/students" ? "text-nwu-gold font-bold" : "text-white/60 hover:text-white"
                                                     )}
                                                 >
-                                                    Read-Only Students
+                                                    {isSuperAdmin ? "Read-Only Students" : "Students"}
                                                 </Link>
                                             </div>
                                         )}

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         // User explicitly removed Admin override permission.
         const { data: classData } = await supabase
             .from("classes")
-            .select("id, instructor_id")
+            .select("id, instructor_id, start_time")
             .eq("id", class_id)
             .eq("instructor_id", profileId)
             .single();
@@ -65,6 +65,22 @@ export async function POST(request: NextRequest) {
             .limit(1)
             .single();
 
+        // Determine the timestamp to use for the override
+        let overrideTimestamp = new Date().toISOString();
+
+        // If the class has a start time, use it for Present/Excused overrides
+        if (classData.start_time) {
+            const classStartTimeStr = `${date}T${classData.start_time}+08:00`;
+            const classStartObj = new Date(classStartTimeStr);
+
+            if (new_status === "Present" || new_status === "Excused" || new_status === "Absent") {
+                overrideTimestamp = classStartObj.toISOString();
+            } else if (new_status === "Late") {
+                // For Late, add 15 minutes to the start time
+                overrideTimestamp = new Date(classStartObj.getTime() + 15 * 60000).toISOString();
+            }
+        }
+
         if (existingLog) {
             // Update existing log
             const { error: updateError } = await supabase
@@ -74,6 +90,7 @@ export async function POST(request: NextRequest) {
                     admin_note: `Status overridden to ${new_status} by instructor`,
                     note_by: profileId,
                     note_at: new Date().toISOString(),
+                    timestamp: overrideTimestamp, // Update timestamp too
                 })
                 .eq("id", existingLog.id);
 
@@ -81,13 +98,13 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: updateError.message }, { status: 500 });
             }
         } else {
-            // Create a new log entry for manual override — use CURRENT time, not hardcoded 8AM
+            // Create a new log entry for manual override — use class start time 
             const { error: insertError } = await supabase
                 .from("attendance_logs")
                 .insert({
                     student_id: student_id,
                     class_id,
-                    timestamp: new Date().toISOString(),
+                    timestamp: overrideTimestamp,
                     status: new_status,
                     admin_note: `Manual override: ${new_status}`,
                     note_by: profileId,
