@@ -136,6 +136,17 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
     // Helper to calculate status visuals
     const getStatusVisuals = (studentId: string) => {
+        // If day is marked as No Class (holiday/cancelled/suspended), override all statuses
+        if (isHoliday) {
+            return {
+                statusLabel: 'No Class',
+                badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                icon: AlertCircle,
+                timeIn: '-',
+                timeOut: '-',
+            };
+        }
+
         const studentLogs = logs?.filter(l => l.student_id === studentId) || [];
 
         if (studentLogs.length === 0) {
@@ -231,10 +242,12 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     let lateCount = 0;
     let excusedCount = 0;
     let absentCount = 0;
+    let noClassCount = 0;
 
     enrollments?.forEach(e => {
         const { statusLabel } = getStatusVisuals(e.students.id);
-        if (statusLabel === 'Present') presentCount++;
+        if (statusLabel === 'No Class') noClassCount++;
+        else if (statusLabel === 'Present') presentCount++;
         else if (statusLabel === 'Late') lateCount++;
         else if (statusLabel === 'Excused') excusedCount++;
         else if (statusLabel === 'Invalid (Too Early)') {
@@ -335,22 +348,31 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
-                    <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
-                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">Present</div>
-                        <div className="text-xl font-bold text-green-700 dark:text-green-300">{presentCount}</div>
-                    </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-100 dark:border-orange-900/30">
-                        <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Late</div>
-                        <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{lateCount}</div>
-                    </div>
-                    <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Excused</div>
-                        <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{excusedCount}</div>
-                    </div>
-                    <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/30">
-                        <div className="text-xs text-red-600 dark:text-red-400 font-medium">Absent</div>
-                        <div className="text-xl font-bold text-red-700 dark:text-red-300">{absentCount}</div>
-                    </div>
+                    {isHoliday ? (
+                        <div className="col-span-2 sm:col-span-5 bg-amber-50 dark:bg-amber-900/10 p-4 rounded-lg border border-amber-200 dark:border-amber-800 text-center">
+                            <div className="text-sm text-amber-600 dark:text-amber-400 font-medium">No Class Today</div>
+                            <div className="text-xl font-bold text-amber-700 dark:text-amber-300">{noClassCount} students — not counted</div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
+                                <div className="text-xs text-green-600 dark:text-green-400 font-medium">Present</div>
+                                <div className="text-xl font-bold text-green-700 dark:text-green-300">{presentCount}</div>
+                            </div>
+                            <div className="bg-orange-50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                                <div className="text-xs text-orange-600 dark:text-orange-400 font-medium">Late</div>
+                                <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{lateCount}</div>
+                            </div>
+                            <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Excused</div>
+                                <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{excusedCount}</div>
+                            </div>
+                            <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-100 dark:border-red-900/30">
+                                <div className="text-xs text-red-600 dark:text-red-400 font-medium">Absent</div>
+                                <div className="text-xl font-bold text-red-700 dark:text-red-300">{absentCount}</div>
+                            </div>
+                        </>
+                    )}
                     {enrollments && enrollments.length > 0 && (() => {
                         const totalSessions = Object.values(allTimeStats).reduce((s, v) => s + v.sessions, 0);
                         const totalPresent = Object.values(allTimeStats).reduce((s, v) => s + v.present + v.late, 0);
