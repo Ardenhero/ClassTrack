@@ -34,6 +34,7 @@ export default async function ClassesPage({
     let queryBuilder = supabase
         .from("classes")
         .select("*, enrollments(count)")
+        .or('is_archived.is.null,is_archived.eq.false')
         .order("created_at", { ascending: false });
 
     const role = await getProfileRole();

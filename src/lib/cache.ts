@@ -41,6 +41,7 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                 let queryBuilder = supabase
                     .from('students')
                     .select(columns)
+                    .or('is_archived.is.null,is_archived.eq.false')
                     .order('name');
                 if (query) queryBuilder = queryBuilder.ilike('name', `%${query}%`);
                 const { data, error } = await queryBuilder;
@@ -67,7 +68,7 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
 
                 // Fetch students created by OR enrolled in classes of these instructors
                 // 1. Created by account instructors
-                const { data: createdIds } = await supabase.from('students').select('id').in('instructor_id', accountInstructorIds);
+                const { data: createdIds } = await supabase.from('students').select('id').in('instructor_id', accountInstructorIds).or('is_archived.is.null,is_archived.eq.false');
                 // 2. Enrolled in account instructors' classes
                 const { data: enrolledIds } = await supabase.from('enrollments').select('student_id, classes!inner(instructor_id)').in('classes.instructor_id', accountInstructorIds);
 
@@ -82,6 +83,7 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                     .from('students')
                     .select(columns)
                     .in('id', uniqueIds)
+                    .or('is_archived.is.null,is_archived.eq.false')
                     .order('name');
 
                 if (query) queryBuilder = queryBuilder.ilike('name', `%${query}%`);
@@ -99,7 +101,8 @@ export const getCachedStudents = async (query?: string): Promise<StudentData[]> 
                 const createdQuery = supabase
                     .from('students')
                     .select(columns)
-                    .eq('instructor_id', profileId);
+                    .eq('instructor_id', profileId)
+                    .or('is_archived.is.null,is_archived.eq.false');
 
                 if (query) {
                     createdQuery.ilike('name', `%${query}%`);
