@@ -252,7 +252,8 @@ export async function POST(request: Request) {
 
             if (!classRef) {
                 console.error(`[API] BIOMETRIC FAIL: Class not found for classIdInput='${classIdInput}'. DB Error:`, classRefError);
-                return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+                const errorStr = classRefError ? `DB Error: ${classRefError.message}` : "Class not found";
+                return NextResponse.json({ error: errorStr }, { status: 404 });
             }
 
             const getMinutes = (timeStr: string | null | undefined) => {
