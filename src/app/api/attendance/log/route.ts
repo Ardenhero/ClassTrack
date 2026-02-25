@@ -618,52 +618,6 @@ export async function POST(request: Request) {
                     targetOwnerId = instructorData?.user_id || null;
                 }
 
-                // Phase 4: Pre-Activation Scan Policy Check
-                let isPreActivation = false;
-                try {
-                    // Check system setting
-                    const { data: policySetting } = await supabase
-                        .from('system_settings')
-                        .select('value')
-                        .eq('key', 'pre_activation_scan_policy')
-                        .maybeSingle();
-
-                    const policy = policySetting?.value || 'allow_and_flag';
-
-                    // Check if any IoT device in this class's room was activated today
-                    const todayDateStr = new Date().toISOString().split('T')[0];
-                    const { data: classRoom } = await supabase
-                        .from('classes')
-                        .select('room_id')
-                        .eq('id', classRef.id)
-                        .maybeSingle();
-
-                    if (classRoom?.room_id) {
-                        const { count: activationCount } = await supabase
-                            .from('audit_logs')
-                            .select('id', { count: 'exact', head: true })
-                            .eq('target_type', 'iot_device')
-                            .ilike('action', '%activate%')
-                            .gte('created_at', `${todayDateStr}T00:00:00`)
-                            .lte('created_at', `${todayDateStr}T23:59:59`);
-
-                        if (!activationCount || activationCount === 0) {
-                            isPreActivation = true;
-                            console.log(`[API] Pre-activation scan: Room ${classRoom.room_id} not yet activated`);
-
-                            if (policy === 'block') {
-                                return NextResponse.json({
-                                    error: 'room_not_activated',
-                                    message: 'Room has not been activated yet. Please wait for your instructor.',
-                                }, { status: 403 });
-                            }
-                        }
-                    }
-                } catch (preActErr) {
-                    // Non-fatal: Don't block attendance if pre-activation check fails
-                    console.warn('[API] Pre-activation check error (non-fatal):', preActErr);
-                }
-
                 const { error: insertError } = await supabase.from('attendance_logs').insert({
                     student_id: student.id,
                     class_id: classRef.id,
@@ -671,7 +625,6 @@ export async function POST(request: Request) {
                     status: calculatedStatus,
                     timestamp: timestamp,
                     entry_method: entryMethod,
-                    pre_activation: isPreActivation,
                 });
                 if (insertError) {
                     console.error("[API] Attendance Insert Error:", insertError);

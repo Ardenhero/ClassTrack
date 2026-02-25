@@ -24,6 +24,7 @@ export interface AttendanceRow {
     adminNote?: string | null;
     noteBy?: string | null;
     noteAt?: string | null;
+    entryMethod?: string | null;
 }
 
 /* ── icon resolver (can't pass React components through RSC → client boundary) ── */
@@ -111,7 +112,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                     const { data: fullRecord } = await supabase
                         .from("attendance_logs")
                         .select(`
-                            id, status, timestamp, time_out,
+                    id, status, timestamp, time_out, entry_method,
                             classes ( name ),
                             students ( id, name, sin, year_level )
                         `)
@@ -139,6 +140,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                         statusLabel: status,
                         badgeColor,
                         iconName,
+                        entryMethod: rec.entry_method || null,
                     };
 
                     setRows((prev) => [newRow, ...prev]);
@@ -157,7 +159,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                     const { data: fullRecord } = await supabase
                         .from("attendance_logs")
                         .select(`
-                            id, status, timestamp, time_out,
+                    id, status, timestamp, time_out, entry_method,
                             classes ( name ),
                             students ( id, name, sin, year_level )
                         `)
@@ -222,7 +224,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
             const { data } = await supabase
                 .from("attendance_logs")
                 .select(`
-                    id, status, timestamp, time_out,
+                    id, status, timestamp, time_out, entry_method,
                     classes ( name ),
                     students ( id, name, sin, year_level )
                 `)
@@ -250,6 +252,7 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                     statusLabel: status,
                     badgeColor,
                     iconName,
+                    entryMethod: rec.entry_method || null,
                 };
             });
 
@@ -339,14 +342,33 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
         setNoteText("");
     };
 
+    // Compute scan stats per class for the counter
+    const classStats = rows.reduce((acc, row) => {
+        if (!acc[row.className]) acc[row.className] = { scanned: 0, total: 0 };
+        acc[row.className].total++;
+        if (row.status !== 'Absent' && row.status !== 'No Class') {
+            acc[row.className].scanned++;
+        }
+        return acc;
+    }, {} as Record<string, { scanned: number; total: number }>);
+
     return (
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
-            {/* Live indicator */}
-            <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
-                <Radio className={`h-4 w-4 ${isLive ? "text-green-500 animate-pulse" : "text-gray-400"}`} />
-                <span className={`text-xs font-medium ${isLive ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
-                    {isLive ? "Live — Listening for scans" : "Connecting..."}
-                </span>
+            {/* Live indicator + scan counter */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
+                <div className="flex items-center gap-2">
+                    <Radio className={`h-4 w-4 ${isLive ? "text-green-500 animate-pulse" : "text-gray-400"}`} />
+                    <span className={`text-xs font-medium ${isLive ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
+                        {isLive ? "Live — Listening for scans" : "Connecting..."}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                    {Object.entries(classStats).map(([cls, stats]) => (
+                        <span key={cls} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-nwu-red/10 text-nwu-red">
+                            {cls}: {stats.scanned}/{stats.total}
+                        </span>
+                    ))}
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -411,6 +433,11 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                                             {frozen && (
                                                 <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-500 font-bold" title="Record frozen (>48h)">
                                                     <Snowflake className="h-3 w-3" />
+                                                </span>
+                                            )}
+                                            {row.entryMethod === 'auto-finalize' && (
+                                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800" title="Auto-marked absent by system">
+                                                    Auto
                                                 </span>
                                             )}
                                         </div>
