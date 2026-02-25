@@ -318,9 +318,9 @@ export async function POST(request: Request) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const targetOwnerId = Array.isArray((classRef as any).instructors)
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ? (classRef as any).instructors[0]?.user_id
+                    ? (classRef as any).instructors[0]?.user_id || null
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    : ((classRef as any).instructors?.user_id || classRef.instructor_id);
+                    : ((classRef as any).instructors?.user_id || null);
 
                 const { error: insertErr } = await supabase.from('attendance_logs').insert({
                     student_id: studentInfo.id,
@@ -480,7 +480,7 @@ export async function POST(request: Request) {
             if (classIdInput) {
                 const { data: c } = await supabase
                     .from('classes')
-                    .select('id, instructor_id, start_time, end_time')
+                    .select('id, instructor_id, start_time, end_time, instructors!classes_instructor_id_fkey(user_id)')
                     .eq('id', classIdInput)
                     .single();
                 classRef = c as unknown as ClassWithInstructor;
@@ -489,7 +489,7 @@ export async function POST(request: Request) {
             if (!classRef && instructorIdInput) {
                 const { data: c } = await supabase
                     .from('classes')
-                    .select('id, instructor_id, start_time, end_time')
+                    .select('id, instructor_id, start_time, end_time, instructors!classes_instructor_id_fkey(user_id)')
                     .eq('name', className)
                     .eq('instructor_id', instructorIdInput)
                     .limit(1)
@@ -640,15 +640,16 @@ export async function POST(request: Request) {
                     }
                 }
 
-                // Resolve the actual auth user ID (owner_id) for attendance_logs
+                // Resolve the actual auth user ID (user_id) for attendance_logs
                 // This fixes the FK constraint error (must be a valid auth.users.id)
-                const instructorData = classRef.instructors;
-                let targetOwnerId: string;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const instructorData = (classRef as any).instructors;
+                let targetOwnerId: string | null;
 
                 if (Array.isArray(instructorData)) {
-                    targetOwnerId = instructorData[0]?.owner_id || classRef.instructor_id;
+                    targetOwnerId = instructorData[0]?.user_id || null;
                 } else {
-                    targetOwnerId = instructorData?.owner_id || classRef.instructor_id;
+                    targetOwnerId = instructorData?.user_id || null;
                 }
 
                 const { error: insertError } = await supabase.from('attendance_logs').insert({
