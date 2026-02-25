@@ -76,6 +76,38 @@ export default function DeclareSuspensionsButton() {
         }
     };
 
+    const handleUndeclare = async () => {
+        if (!date) {
+            setErrorMsg("Please select a date to undeclare.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to remove all suspensions on ${date}?`)) return;
+
+        setLoading(true);
+        setErrorMsg("");
+        setSuccessMsg("");
+
+        try {
+            const res = await fetch("/api/attendance/undeclare-suspensions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ date }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to undeclare suspension");
+
+            setSuccessMsg(`Suspensions removed successfully for ${date}.`);
+            setTimeout(() => setIsOpen(false), 3000);
+        } catch (err) {
+            if (err instanceof Error) setErrorMsg(err.message);
+            else setErrorMsg(String(err));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleAutoSync = async () => {
         setLoading(true);
         setErrorMsg("");
@@ -229,13 +261,23 @@ export default function DeclareSuspensionsButton() {
                                         />
                                     </div>
 
-                                    <button
-                                        type="submit"
-                                        disabled={loading || !date}
-                                        className="w-full mt-4 flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm font-medium text-white bg-nwu-red hover:bg-[#5e0d0e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nwu-red transition-colors disabled:opacity-50"
-                                    >
-                                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Declare Suspension"}
-                                    </button>
+                                    <div className="flex gap-2 mt-4">
+                                        <button
+                                            type="button"
+                                            onClick={handleUndeclare}
+                                            disabled={loading || !date}
+                                            className="w-1/3 flex justify-center items-center py-2.5 px-4 border border-rose-200 dark:border-rose-900/50 rounded-lg shadow-sm font-medium text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 focus:outline-none transition-colors disabled:opacity-50"
+                                        >
+                                            Undo
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={loading || !date}
+                                            className="w-2/3 flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm font-medium text-white bg-nwu-red hover:bg-[#5e0d0e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-nwu-red transition-colors disabled:opacity-50"
+                                        >
+                                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Declare"}
+                                        </button>
+                                    </div>
                                 </form>
                             ) : (
                                 <div className="space-y-4 text-center py-4">

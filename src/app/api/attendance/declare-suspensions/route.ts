@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
@@ -112,43 +111,6 @@ export async function POST(request: NextRequest) {
 
             if (error) {
                 return NextResponse.json({ error: error.message }, { status: 500 });
-            }
-
-            // Mass-insert 'No Class' attendance logs system-wide
-            // Use service_role to ensure we bypass any strict instructor-level RLS policies since this is an admin macro action
-            const adminSupabase = createServiceClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!
-            );
-
-            const { data: enrollments } = await adminSupabase
-                .from("enrollments")
-                .select("student_id, class_id")
-                .in("class_id", classes.map(c => c.id));
-
-            if (enrollments && enrollments.length > 0) {
-                // Determine a safe timezone offset for the Philippines (UTC+8) to represent 8:00 AM on that date
-                const timestamp = `${date}T00:00:00Z`;
-
-                // Fetch the auth_user_id of the admin declaring this to satisfy attendance_logs.user_id FK constraint
-                let authUserId = null;
-                const { data: profile } = await supabase.from('instructors').select('auth_user_id').eq('id', profileId).maybeSingle();
-                if (profile && profile.auth_user_id) authUserId = profile.auth_user_id;
-
-                const logsToInsert = enrollments.map((e: { student_id: string; class_id: string }) => ({
-                    student_id: e.student_id,
-                    class_id: e.class_id,
-                    user_id: authUserId,
-                    status: "No Class",
-                    timestamp: timestamp
-                }));
-
-                // Chunk inserts to avoid POST body limits
-                for (let i = 0; i < logsToInsert.length; i += 1000) {
-                    const chunk = logsToInsert.slice(i, i + 1000);
-                    const { error: logErr } = await adminSupabase.from("attendance_logs").insert(chunk);
-                    if (logErr) console.error("[Admin] Auto-log insert error:", logErr);
-                }
             }
 
             // Audit log
