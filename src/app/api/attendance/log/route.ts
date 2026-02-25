@@ -244,13 +244,14 @@ export async function POST(request: Request) {
             }
 
             // Get class info for grading logic
-            const { data: classRef } = await supabase
+            const { data: classRef, error: classRefError } = await supabase
                 .from('classes')
                 .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
                 .eq('id', classIdInput)
                 .single();
 
             if (!classRef) {
+                console.error(`[API] BIOMETRIC FAIL: Class not found for classIdInput='${classIdInput}'. DB Error:`, classRefError);
                 return NextResponse.json({ error: 'Class not found' }, { status: 404 });
             }
 

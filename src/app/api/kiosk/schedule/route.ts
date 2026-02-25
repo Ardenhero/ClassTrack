@@ -46,6 +46,7 @@ export async function GET(request: Request) {
             .from('classes')
             .select('id, name, start_time, end_time, year_level, instructor_id, day_of_week, instructors(name)')
             .eq('room_id', roomId)
+            .eq('is_archived', false) // Exclude past semesters
             .order('start_time');
 
         if (error) throw error;

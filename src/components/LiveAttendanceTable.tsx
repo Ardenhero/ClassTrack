@@ -189,6 +189,17 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                     setTimeout(() => setFlash(null), 2000);
                 }
             )
+            .on(
+                "postgres_changes",
+                { event: "DELETE", schema: "public", table: "attendance_logs" },
+                (payload) => {
+                    // payload.old contains the deleted record's old payload
+                    if (payload.old && payload.old.id) {
+                        const deletedId = payload.old.id;
+                        setRows((prev) => prev.filter((row) => row.id !== deletedId));
+                    }
+                }
+            )
             .subscribe((status: string) => {
                 setIsLive(status === "SUBSCRIBED");
             });
