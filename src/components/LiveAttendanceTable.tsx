@@ -192,7 +192,8 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
             .on(
                 "postgres_changes",
                 { event: "DELETE", schema: "public", table: "attendance_logs" },
-                (payload) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (payload: any) => {
                     // payload.old contains the deleted record's old payload
                     if (payload.old && payload.old.id) {
                         const deletedId = payload.old.id;
