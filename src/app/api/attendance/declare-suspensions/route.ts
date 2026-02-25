@@ -130,10 +130,15 @@ export async function POST(request: NextRequest) {
                 // Determine a safe timezone offset for the Philippines (UTC+8) to represent 8:00 AM on that date
                 const timestamp = `${date}T00:00:00Z`;
 
+                // Fetch the auth_user_id of the admin declaring this to satisfy attendance_logs.user_id FK constraint
+                let authUserId = null;
+                const { data: profile } = await supabase.from('instructors').select('auth_user_id').eq('id', profileId).maybeSingle();
+                if (profile && profile.auth_user_id) authUserId = profile.auth_user_id;
+
                 const logsToInsert = enrollments.map((e: { student_id: string; class_id: string }) => ({
                     student_id: e.student_id,
                     class_id: e.class_id,
-                    user_id: profileId,
+                    user_id: authUserId,
                     status: "No Class",
                     timestamp: timestamp
                 }));
