@@ -10,6 +10,8 @@ import { getProfileRole } from "@/lib/auth-utils";
 import LiveAttendanceTable from "@/components/LiveAttendanceTable";
 import type { AttendanceRow } from "@/components/LiveAttendanceTable";
 
+export const dynamic = "force-dynamic";
+
 interface AttendanceLog {
     id: string;
     timestamp: string;

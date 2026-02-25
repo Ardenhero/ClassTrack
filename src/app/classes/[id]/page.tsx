@@ -12,6 +12,8 @@ import EnrolledStudentsList from "./EnrolledStudentsList";
 import MarkNoClassButton from "./MarkNoClassButton";
 import FinalizeAttendanceButton from "./FinalizeAttendanceButton";
 
+export const dynamic = "force-dynamic";
+
 interface Enrollment {
     id: string;
     students: {
