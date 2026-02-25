@@ -125,12 +125,15 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
     allTimeLogs?.forEach(log => {
         const stats = allTimeStats[log.student_id];
         if (stats) {
-            stats.sessions++;
             const s = log.status || 'Present';
-            if (s === 'Present' || s === 'Manually Verified') stats.present++;
-            else if (s === 'Late') stats.late++;
-            else if (s === 'Excused') stats.excused++;
-            else stats.absent++;
+            // Do not count suspended/holiday classes towards total holding sessions or absences
+            if (s !== 'No Class' && s !== 'Suspended' && s !== 'Holiday') {
+                stats.sessions++;
+                if (s === 'Present' || s === 'Manually Verified') stats.present++;
+                else if (s === 'Late') stats.late++;
+                else if (s === 'Excused') stats.excused++;
+                else stats.absent++;
+            }
         }
     });
 
@@ -198,7 +201,11 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
         let badgeColor = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
         let icon = CheckCircle;
 
-        if (dbStatus === 'Present') {
+        if (statusLabel === 'No Class' || statusLabel === 'Suspended' || statusLabel === 'Holiday') {
+            statusLabel = 'No Class';
+            badgeColor = 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
+            icon = AlertCircle;
+        } else if (dbStatus === 'Present') {
             badgeColor = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
             icon = CheckCircle;
         } else if (dbStatus === 'Late') {
