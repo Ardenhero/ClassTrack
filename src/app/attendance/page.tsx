@@ -206,7 +206,7 @@ export default async function AttendancePage({
                     else if (diffMinutes > 60) { statusLabel = "Ghosting"; iconName = "Ghost"; }
                 }
             } else if (statusLabel === 'No Class') {
-                badgeColor = 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
+                badgeColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
                 iconName = "AlertCircle";
             }
         }
@@ -225,8 +225,8 @@ export default async function AttendancePage({
             studentSin: student.sin,
             yearLevel: student.year_level,
             className: cls?.name || "Unknown",
-            timeIn: formatTime(log.timestamp),
-            timeOut: formatTime(log.time_out),
+            timeIn: statusLabel === 'No Class' ? '-' : formatTime(log.timestamp),
+            timeOut: statusLabel === 'No Class' ? '-' : formatTime(log.time_out),
             status: log.status || 'Present',
             statusLabel,
             badgeColor,
