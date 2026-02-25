@@ -169,21 +169,11 @@ export async function POST(request: Request) {
                 .maybeSingle();
 
             if (!studentInfo) {
-                console.warn(`[API] ORPHAN SCAN: Slot ${fingerprint_slot_id} on ${device_id} - No Student Linked`);
+                console.warn(`[API] Unregistered Fingerprint: Slot ${fingerprint_slot_id} on ${device_id} - No Student Linked`);
 
-                // Log orphan scan to audit table
-                await supabase.from('biometric_audit_logs').insert({
-                    fingerprint_slot_id,
-                    device_id,
-                    event_type: 'ORPHAN_SCAN',
-                    details: 'Valid fingerprint detected but no matching student record found.',
-                    metadata: { rpc_status: rpcStatusInput, instructor_id: instructorIdInput }
-                });
-
-                // Return precise error for ESP32/Frontend (Phase 2 ESP32 will use "no_link")
                 return NextResponse.json({
-                    error: "no_link",
-                    message: `Orphan Scan: Slot ${fingerprint_slot_id} has no student.`,
+                    error: "student_not_found",
+                    message: `Fingerprint is not linked to any enrolled student.`,
                     slot: fingerprint_slot_id
                 }, { status: 404 });
             }

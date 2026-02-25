@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
-import { Fingerprint, AlertTriangle, RefreshCw, Loader2, Copy, Lock, Unlock } from "lucide-react";
+import { Fingerprint, RefreshCw, Loader2, Copy, Lock, Unlock } from "lucide-react";
 import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface SlotData {
@@ -12,7 +12,7 @@ interface SlotData {
     student_name?: string;
     instructor_id?: string; // Added for isolation check
     fingerprint_locked?: boolean;
-    status: "occupied" | "empty" | "orphan" | "restricted";
+    status: "occupied" | "empty" | "restricted";
 }
 
 export function AdminBiometricMatrix() {
@@ -117,26 +117,11 @@ export function AdminBiometricMatrix() {
                     studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id, fingerprint_locked: s.fingerprint_locked });
                 }
             });
+
             const allOccupiedStudents = Array.from(studentMap.values());
-
-            // 5. Get recent orphan scans from audit logs
-            let orphanQuery = supabase
-                .from("biometric_audit_logs")
-                .select("fingerprint_slot_id")
-                .eq("event_type", "ORPHAN_SCAN")
-                .contains("metadata", { instructor_id: profile?.id });
-
-            if (deviceId) {
-                orphanQuery = orphanQuery.eq("device_id", deviceId);
-            }
-
-            const { data: orphans } = await orphanQuery
-                .order("timestamp", { ascending: false })
-                .limit(50);
 
             // 4. Build the 1-127 Matrix
             const matrix: SlotData[] = [];
-            const orphanSet = new Set(orphans?.map((l: { fingerprint_slot_id: number }) => l.fingerprint_slot_id));
 
             for (let i = 1; i <= 127; i++) {
                 const student = allOccupiedStudents?.find(s => s.fingerprint_slot_id === i);
@@ -150,11 +135,6 @@ export function AdminBiometricMatrix() {
                         instructor_id: student.instructor_id,
                         fingerprint_locked: student.fingerprint_locked,
                         status: isMine ? "occupied" : "restricted"
-                    });
-                } else if (orphanSet.has(i)) {
-                    matrix.push({
-                        slot_id: i,
-                        status: "orphan"
                     });
                 } else {
                     matrix.push({
@@ -295,18 +275,6 @@ export function AdminBiometricMatrix() {
                         loadMatrix();
                     }
                 )
-                .on(
-                    'postgres_changes',
-                    { event: 'INSERT', schema: 'public', table: 'biometric_audit_logs', filter: `event_type=eq.ORPHAN_SCAN` },
-                    (payload: RealtimePostgresChangesPayload<{ metadata: { instructor_id?: string } }>) => {
-                        console.log("Realtime: Orphan scan detected", payload);
-                        // Only reload if the orphan scan belongs to THIS instructor
-                        const newRecord = payload.new as { metadata?: { instructor_id?: string } };
-                        if (newRecord?.metadata?.instructor_id === profile?.id) {
-                            loadMatrix();
-                        }
-                    }
-                )
                 .subscribe();
 
             return () => {
@@ -324,7 +292,7 @@ export function AdminBiometricMatrix() {
                         Sensor Memory Map
                     </h2>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span className="text-green-600 font-bold">Linked</span> • <span className="text-red-500 font-bold">Orphan</span> • <span className="text-gray-400">Empty</span>
+                        <span className="text-green-600 font-bold">Linked</span> • <span className="text-gray-400">Empty</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
@@ -368,21 +336,14 @@ export function AdminBiometricMatrix() {
                                         ? slot.fingerprint_locked
                                             ? 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/40 dark:border-orange-700 dark:text-orange-300'
                                             : 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
-                                        : slot.status === 'orphan'
-                                            ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 ring-1 ring-red-500/50'
-                                            : slot.status === 'restricted'
-                                                ? 'bg-gray-200 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed'
-                                                : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                        : slot.status === 'restricted'
+                                            ? 'bg-gray-200 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed'
+                                            : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }
                                 `}
                                 title={slot.status === 'occupied' ? `${slot.student_name}${slot.fingerprint_locked ? ' (Locked)' : ''}` : `Slot ${slot.slot_id}: ${slot.status}`}
                             >
                                 <span className="text-[9px] font-bold block">#{slot.slot_id}</span>
-                                {slot.status === 'orphan' && (
-                                    <div className="absolute -top-1 -right-1">
-                                        <AlertTriangle className="h-2 w-2 text-red-600 fill-red-100" />
-                                    </div>
-                                )}
                                 {slot.status === 'occupied' && slot.fingerprint_locked && (
                                     <div className="absolute -bottom-1 -right-1">
                                         <Lock className="h-2 w-2 text-orange-600 fill-orange-100" />
@@ -399,8 +360,7 @@ export function AdminBiometricMatrix() {
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                         Slot #{selectedSlot.slot_id}
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider ${selectedSlot.status === 'occupied' ? 'bg-green-100 text-green-800' :
-                                            selectedSlot.status === 'orphan' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider ${selectedSlot.status === 'occupied' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             {selectedSlot.status}
                                         </span>
@@ -435,10 +395,6 @@ export function AdminBiometricMatrix() {
                                         </p>
                                         <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
                                     </div>
-                                ) : selectedSlot.status === 'orphan' ? (
-                                    <p className="text-red-600 text-xs">
-                                        Fingerprint exists on device but no student is linked.
-                                    </p>
                                 ) : selectedSlot.status === 'restricted' ? (
                                     <p className="text-gray-500 text-xs italic">
                                         This slot is occupied by another instructor&apos;s student.
@@ -485,13 +441,6 @@ export function AdminBiometricMatrix() {
                 </>
             )}
 
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 text-xs text-blue-800 dark:text-blue-300 flex gap-2">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                <p>
-                    <strong>Orphan slots</strong> (Red) are IDs stored on the sensor but missing from the database.
-                    This happens if a student is deleted from the app but not the device.
-                </p>
-            </div>
         </div>
     );
 }
