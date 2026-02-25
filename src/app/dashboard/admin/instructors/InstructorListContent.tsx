@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { Key, ShieldCheck } from "lucide-react";
 import { DeleteInstructorButton } from "./DeleteInstructorButton";
+import { EnrollActivatorButton } from "./EnrollActivatorButton";
 
 export default async function InstructorListContent({
     isSuperAdmin,
@@ -122,6 +123,9 @@ export default async function InstructorListContent({
                                 </button>
                             </form>
                         </div>
+                        {inst.can_activate_room && (
+                            <EnrollActivatorButton instructorId={inst.id} instructorName={inst.name} />
+                        )}
                         <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
                     </div>
                 </div>
