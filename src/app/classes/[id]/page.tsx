@@ -203,7 +203,7 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
         if (statusLabel === 'No Class' || statusLabel === 'Suspended' || statusLabel === 'Holiday') {
             statusLabel = 'No Class';
-            badgeColor = 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
+            badgeColor = 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
             icon = AlertCircle;
         } else if (dbStatus === 'Present') {
             badgeColor = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
@@ -241,7 +241,13 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
             }
         }
 
-        return { statusLabel, badgeColor, icon, timeIn, timeOut };
+        return {
+            statusLabel,
+            badgeColor,
+            icon,
+            timeIn: statusLabel === 'No Class' ? '-' : timeIn,
+            timeOut: statusLabel === 'No Class' ? '-' : timeOut
+        };
     };
 
     // Calculate Summary Stats

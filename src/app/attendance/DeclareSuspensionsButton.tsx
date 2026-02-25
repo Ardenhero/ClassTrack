@@ -11,6 +11,7 @@ export default function DeclareSuspensionsButton() {
     const [mode, setMode] = useState<"manual" | "auto">("manual");
     const [date, setDate] = useState("");
     const [type, setType] = useState<"weather" | "university" | "holiday">("weather");
+    const [duration, setDuration] = useState<"Whole Day" | "Half Day (Morning)" | "Half Day (Afternoon)">("Whole Day");
     const [customNote, setCustomNote] = useState("");
     const [loading, setLoading] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
@@ -59,6 +60,7 @@ export default function DeclareSuspensionsButton() {
                     mode: "manual",
                     date,
                     type,
+                    duration,
                     note: customNote,
                 }),
             });
@@ -248,6 +250,19 @@ export default function DeclareSuspensionsButton() {
                                                 </div>
                                             </label>
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration</label>
+                                        <select
+                                            value={duration}
+                                            onChange={(e) => setDuration(e.target.value as "Whole Day" | "Half Day (Morning)" | "Half Day (Afternoon)")}
+                                            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-nwu-red focus:outline-none mb-4"
+                                        >
+                                            <option value="Whole Day">Whole Day</option>
+                                            <option value="Half Day (Morning)">Half Day (Morning) - AM Classes Only</option>
+                                            <option value="Half Day (Afternoon)">Half Day (Afternoon) - PM Classes Only</option>
+                                        </select>
                                     </div>
 
                                     <div>

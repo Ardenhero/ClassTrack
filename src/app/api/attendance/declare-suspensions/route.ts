@@ -24,12 +24,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Only admins can declare system-wide suspensions" }, { status: 403 });
         }
 
-        const { mode, date, type, note } = await request.json();
+        const { mode, date, type, duration, note } = await request.json();
 
         // Get all active (non-archived) classes
         const { data: classes } = await supabase
             .from("classes")
-            .select("id")
+            .select("id, start_time")
             .eq("is_archived", false);
 
         if (!classes || classes.length === 0) {
@@ -94,10 +94,27 @@ export async function POST(request: NextRequest) {
             // MAPPING to bypass tight database constraint while preserving detail
             const overrideType = type === "holiday" ? "holiday" : "suspended";
             const typeLabel = type === "weather" ? "Weather Inclement" : type === "university" ? "University Suspension" : "Holiday";
-            const finalNote = note ? `[${typeLabel}] ${note}` : `[${typeLabel}] System Declaration`;
+            const durationLabel = duration && duration !== "Whole Day" ? ` (${duration})` : "";
+            const finalNote = note ? `[${typeLabel}]${durationLabel} ${note}` : `[${typeLabel}]${durationLabel} System Declaration`;
 
-            // Upsert overrides for all classes
-            const overrides = classes.map(c => ({
+            // Filter classes based on duration if applicable
+            let affectedClasses = classes;
+            if (duration === "Half Day (Morning)") {
+                affectedClasses = classes.filter(c => c.start_time && c.start_time < "12:00:00");
+            } else if (duration === "Half Day (Afternoon)") {
+                affectedClasses = classes.filter(c => c.start_time && c.start_time >= "12:00:00");
+            }
+
+            if (affectedClasses.length === 0) {
+                return NextResponse.json({
+                    success: true,
+                    classesAffected: 0,
+                    message: "No classes matched the selected duration.",
+                });
+            }
+
+            // Upsert overrides for affected classes
+            const overrides = affectedClasses.map(c => ({
                 class_id: c.id,
                 date,
                 type: overrideType,
@@ -119,12 +136,12 @@ export async function POST(request: NextRequest) {
                 action: "system_suspension_declared",
                 target_type: "system",
                 target_id: date,
-                details: { date, type, note, classes_affected: classes.length },
+                details: { date, type, duration, note, classes_affected: affectedClasses.length },
             });
 
             return NextResponse.json({
                 success: true,
-                classesAffected: classes.length,
+                classesAffected: affectedClasses.length,
             });
         }
     } catch (err) {
