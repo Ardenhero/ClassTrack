@@ -19,3 +19,37 @@ export async function updateInstructorDepartment(instructorId: string, departmen
     revalidatePath("/dashboard/admin/instructors");
     return { success: true };
 }
+
+export async function toggleRoomActivation(instructorId: string, newValue: boolean) {
+    const supabase = createClient();
+
+    const { error } = await supabase
+        .from('instructors')
+        .update({ can_activate_room: newValue })
+        .eq('id', instructorId);
+
+    if (error) {
+        console.error("Error toggling room activation:", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/admin/instructors");
+    return { success: true };
+}
+
+export async function toggleOutsideSchedule(instructorId: string, newValue: boolean) {
+    const supabase = createClient();
+
+    const { error } = await supabase
+        .from('instructors')
+        .update({ can_activate_outside_schedule: newValue })
+        .eq('id', instructorId);
+
+    if (error) {
+        console.error("Error toggling outside schedule:", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/dashboard/admin/instructors");
+    return { success: true };
+}

@@ -344,41 +344,7 @@ export async function POST(request: Request) {
                     }
                 } catch (occErr) { console.error('[Occupancy] Increment error (non-fatal):', occErr); }
 
-                // AUTO-ON: If this is the first Time In for this class today, turn on room devices
-                try {
-                    const todayDateStr = new Date().toISOString().split('T')[0];
-                    const { count: sessionCount } = await supabase
-                        .from('attendance_logs')
-                        .select('id', { count: 'exact', head: true })
-                        .eq('class_id', classIdInput)
-                        .gte('timestamp', todayDateStr);
-
-                    if (sessionCount !== null && sessionCount <= 1) {
-                        // First Time In of the day — turn ON all room devices
-                        const { data: devices } = await supabase
-                            .from('iot_devices')
-                            .select('id, dp_code')
-                            .eq('current_state', false);
-
-                        if (devices && devices.length > 0) {
-                            const { controlDevice: iotControl } = await import('@/lib/tuya');
-                            for (const device of devices) {
-                                const result = await iotControl(device.id, device.dp_code || 'switch_1', true);
-                                if (result.success) {
-                                    await supabase.from('iot_devices')
-                                        .update({ current_state: true, updated_at: new Date().toISOString() })
-                                        .eq('id', device.id);
-                                    await supabase.from('iot_device_logs')
-                                        .insert({ device_id: device.id, code: device.dp_code || 'switch_1', value: true, source: 'auto', class_id: classIdInput });
-                                }
-                            }
-                            console.log(`[IoT] Auto-ON: ${devices.length} devices activated for class ${classIdInput}`);
-                        }
-                    }
-                } catch (iotErr) {
-                    // Non-fatal: Don't fail the attendance log if IoT fails
-                    console.error('[IoT] Auto-ON error (non-fatal):', iotErr);
-                }
+                // (Auto-ON removed: student scans should not trigger room devices)
 
                 return NextResponse.json({ success: true, student_name: studentInfo.name, status: calculatedStatus, action: 'time_in' });
             }

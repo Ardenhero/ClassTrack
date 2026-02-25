@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { Key } from "lucide-react";
+import { Key, ShieldCheck } from "lucide-react";
 import { DeleteInstructorButton } from "./DeleteInstructorButton";
 
 export default async function InstructorListContent({
@@ -19,6 +19,8 @@ export default async function InstructorListContent({
       role,
       pin_code,
       department_id,
+      can_activate_room,
+      can_activate_outside_schedule,
       departments (
         name,
         code
@@ -49,7 +51,7 @@ export default async function InstructorListContent({
                         </div>
                         <div>
                             <p className="font-medium text-gray-900">{inst.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
                                 <form action={async (formData: FormData) => {
                                     "use server";
                                     const { updateInstructorDepartment } = await import("./instructorActions");
@@ -77,7 +79,6 @@ export default async function InstructorListContent({
                                             </button>
                                         </>
                                     ) : (
-                                        // Read Only for Dept Admins
                                         <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200">
                                             {/* @ts-expect-error: Supabase sometimes infers relations as arrays */}
                                             {inst.departments?.code || "No Dept"}
@@ -92,10 +93,56 @@ export default async function InstructorListContent({
                                         <Key className="h-3 w-3" /> PIN
                                     </span>
                                 )}
+                                {inst.can_activate_room && (
+                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-bold">
+                                        <ShieldCheck className="h-3 w-3" /> Room Activator
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
-                    <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
+                    <div className="flex items-center gap-3">
+                        {/* Permission Toggles — visible on hover */}
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <form action={async (formData: FormData) => {
+                                "use server";
+                                const { toggleRoomActivation } = await import("./instructorActions");
+                                const currentVal = formData.get("can_activate_room") === "true";
+                                await toggleRoomActivation(inst.id, !currentVal);
+                            }}>
+                                <input type="hidden" name="can_activate_room" value={String(!!inst.can_activate_room)} />
+                                <button
+                                    type="submit"
+                                    className={`text-[10px] px-2 py-1 rounded border transition-all ${inst.can_activate_room
+                                        ? "bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+                                        : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+                                        }`}
+                                    title={inst.can_activate_room ? "Revoke Room Activation" : "Grant Room Activation"}
+                                >
+                                    {inst.can_activate_room ? "✓ Room" : "Room"}
+                                </button>
+                            </form>
+                            <form action={async (formData: FormData) => {
+                                "use server";
+                                const { toggleOutsideSchedule } = await import("./instructorActions");
+                                const currentVal = formData.get("can_activate_outside_schedule") === "true";
+                                await toggleOutsideSchedule(inst.id, !currentVal);
+                            }}>
+                                <input type="hidden" name="can_activate_outside_schedule" value={String(!!inst.can_activate_outside_schedule)} />
+                                <button
+                                    type="submit"
+                                    className={`text-[10px] px-2 py-1 rounded border transition-all ${inst.can_activate_outside_schedule
+                                        ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+                                        : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700"
+                                        }`}
+                                    title={inst.can_activate_outside_schedule ? "Revoke Off-Schedule" : "Grant Off-Schedule"}
+                                >
+                                    {inst.can_activate_outside_schedule ? "✓ Off-Sched" : "Off-Sched"}
+                                </button>
+                            </form>
+                        </div>
+                        <DeleteInstructorButton instructorId={inst.id} instructorName={inst.name} />
+                    </div>
                 </div>
             ))}
             {(!instructors || instructors.length === 0) && (
