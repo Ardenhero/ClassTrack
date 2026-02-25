@@ -129,7 +129,7 @@ export async function POST(request: Request) {
         // Fetch classes for this room
         const { data: classes } = await supabase
             .from('classes')
-            .select('id, name, start_time, end_time, year_level, instructor_id, day_of_week, instructors(name)')
+            .select('id, name, start_time, end_time, year_level, instructor_id, day_of_week, instructors!classes_instructor_id_fkey(name)')
             .eq('room_id', roomId)
             .order('start_time');
 

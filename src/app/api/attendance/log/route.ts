@@ -470,7 +470,7 @@ export async function POST(request: Request) {
             if (classIdInput) {
                 const { data: c } = await supabase
                     .from('classes')
-                    .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
+                    .select('id, instructor_id, start_time, end_time')
                     .eq('id', classIdInput)
                     .single();
                 classRef = c as unknown as ClassWithInstructor;
@@ -479,7 +479,7 @@ export async function POST(request: Request) {
             if (!classRef && instructorIdInput) {
                 const { data: c } = await supabase
                     .from('classes')
-                    .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
+                    .select('id, instructor_id, start_time, end_time')
                     .eq('name', className)
                     .eq('instructor_id', instructorIdInput)
                     .limit(1)

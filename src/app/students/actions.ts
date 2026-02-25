@@ -224,7 +224,7 @@ export async function getAssignableClasses() {
         // Admin sees all classes, with instructor names for clarity
         const { data } = await supabase
             .from("classes")
-            .select("id, name, description, instructors(name)")
+            .select("id, name, description, instructors!classes_instructor_id_fkey(name)")
             .order("name");
 
         return (data || []).map((c: { id: string; name: string; description: string | null; instructors: { name: string }[] | null }) => {

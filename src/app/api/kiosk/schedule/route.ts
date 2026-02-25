@@ -44,7 +44,7 @@ export async function GET(request: Request) {
         // Fetch classes assigned to this room for today
         const { data: classes, error } = await supabase
             .from('classes')
-            .select('id, name, start_time, end_time, year_level, instructor_id, day_of_week, instructors(name)')
+            .select('id, name, start_time, end_time, year_level, instructor_id, day_of_week, instructors!classes_instructor_id_fkey(name)')
             .eq('room_id', roomId)
             .order('start_time');
 
