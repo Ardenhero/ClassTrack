@@ -246,7 +246,7 @@ export async function POST(request: Request) {
             // Get class info for grading logic
             const { data: classRef, error: classRefError } = await supabase
                 .from('classes')
-                .select('id, instructor_id, start_time, end_time, instructors(owner_id)')
+                .select('id, instructor_id, start_time, end_time')
                 .eq('id', classIdInput)
                 .single();
 
@@ -314,14 +314,7 @@ export async function POST(request: Request) {
                     else if (delta > 15) calculatedStatus = 'Late';
                 }
 
-                const instructorData = classRef.instructors;
-                type InstructorRef = { owner_id: string };
-                let targetOwnerId: string;
-                if (Array.isArray(instructorData)) {
-                    targetOwnerId = (instructorData as InstructorRef[])[0]?.owner_id || classRef.instructor_id;
-                } else {
-                    targetOwnerId = (instructorData as InstructorRef | null)?.owner_id || classRef.instructor_id;
-                }
+                const targetOwnerId = classRef.instructor_id;
 
                 await supabase.from('attendance_logs').insert({
                     student_id: studentInfo.id,
