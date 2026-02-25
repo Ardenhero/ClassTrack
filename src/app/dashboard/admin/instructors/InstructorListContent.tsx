@@ -20,7 +20,6 @@ export default async function InstructorListContent({
       pin_code,
       department_id,
       can_activate_room,
-      can_activate_outside_schedule,
       departments (
         name,
         code
@@ -120,24 +119,6 @@ export default async function InstructorListContent({
                                     title={inst.can_activate_room ? "Revoke Room Activation" : "Grant Room Activation"}
                                 >
                                     {inst.can_activate_room ? "✓ Room" : "Room"}
-                                </button>
-                            </form>
-                            <form action={async (formData: FormData) => {
-                                "use server";
-                                const { toggleOutsideSchedule } = await import("./instructorActions");
-                                const currentVal = formData.get("can_activate_outside_schedule") === "true";
-                                await toggleOutsideSchedule(inst.id, !currentVal);
-                            }}>
-                                <input type="hidden" name="can_activate_outside_schedule" value={String(!!inst.can_activate_outside_schedule)} />
-                                <button
-                                    type="submit"
-                                    className={`text-[10px] px-2 py-1 rounded border transition-all ${inst.can_activate_outside_schedule
-                                        ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
-                                        : "bg-gray-50 border-gray-200 text-gray-400 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700"
-                                        }`}
-                                    title={inst.can_activate_outside_schedule ? "Revoke Off-Schedule" : "Grant Off-Schedule"}
-                                >
-                                    {inst.can_activate_outside_schedule ? "✓ Off-Sched" : "Off-Sched"}
                                 </button>
                             </form>
                         </div>
