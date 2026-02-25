@@ -210,6 +210,64 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
         };
     }, [dayString]);
 
+    // Polling fallback: refresh attendance data every 10 seconds
+    // This ensures updates appear even if Supabase Realtime isn't enabled
+    useEffect(() => {
+        const supabase = createClient();
+
+        const poll = async () => {
+            const startOfDay = `${dayString}T00:00:00+08:00`;
+            const endOfDay = `${dayString}T23:59:59+08:00`;
+
+            const { data } = await supabase
+                .from("attendance_logs")
+                .select(`
+                    id, status, timestamp, time_out,
+                    classes ( name ),
+                    students ( id, name, sin, year_level )
+                `)
+                .gte('timestamp', startOfDay)
+                .lte('timestamp', endOfDay)
+                .order('timestamp', { ascending: false });
+
+            if (!data) return;
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const freshRows: AttendanceRow[] = data.map((rec: any) => {
+                const status = rec.status || "Present";
+                const { badgeColor, iconName } = getStatusBadge(status);
+                return {
+                    id: rec.id,
+                    studentId: rec.students?.id || "",
+                    date: rec.timestamp,
+                    studentName: rec.students?.name || "Unknown",
+                    studentSin: rec.students?.sin || "-",
+                    yearLevel: rec.students?.year_level || "",
+                    className: rec.classes?.name || "Unknown",
+                    timeIn: fmtTime(rec.timestamp),
+                    timeOut: fmtTime(rec.time_out),
+                    status,
+                    statusLabel: status,
+                    badgeColor,
+                    iconName,
+                };
+            });
+
+            setRows(prev => {
+                // Only update if row count changed or any row differs
+                if (prev.length !== freshRows.length) return freshRows;
+                // Check if top row ID changed (new scan arrived)
+                if (freshRows.length > 0 && prev[0]?.id !== freshRows[0]?.id) return freshRows;
+                // Check for status changes
+                const changed = freshRows.some((r, i) => prev[i]?.status !== r.status || prev[i]?.timeOut !== r.timeOut);
+                return changed ? freshRows : prev;
+            });
+        };
+
+        const interval = setInterval(poll, 10000); // Every 10 seconds
+        return () => clearInterval(interval);
+    }, [dayString]);
+
     /** Add note to attendance record */
     const handleAddNote = async () => {
         if (!noteModal || !noteText.trim()) return;
