@@ -145,6 +145,9 @@ export default async function AttendancePage({
                     if (diffMinutes < -15) { statusLabel = "Cut Class"; iconName = "TimerOff"; }
                     else if (diffMinutes > 60) { statusLabel = "Ghosting"; iconName = "Ghost"; }
                 }
+            } else if (statusLabel === 'No Class') {
+                badgeColor = 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800';
+                iconName = "AlertCircle";
             }
         }
 

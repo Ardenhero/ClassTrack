@@ -46,7 +46,7 @@ export function ExportFullReportButton({ className_, students }: ExportFullRepor
             `Class: ${className_}`,
             `Total Students: ${students.length}`,
             `Class Average Attendance: ${avgRate}%`,
-            `Report Date: ${new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila" })}`,
+            `Generated On: ${new Date().toLocaleString("en-PH", { timeZone: "Asia/Manila" })}`,
             ``,
             headers.join(","),
             ...rows.map(r => r.join(",")),
