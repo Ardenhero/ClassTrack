@@ -246,7 +246,7 @@ export async function POST(request: Request) {
             // Get class info for grading logic
             const { data: classRef, error: classRefError } = await supabase
                 .from('classes')
-                .select('id, instructor_id, start_time, end_time')
+                .select('id, instructor_id, start_time, end_time, instructors!classes_instructor_id_fkey(user_id)')
                 .eq('id', classIdInput)
                 .single();
 
@@ -315,9 +315,14 @@ export async function POST(request: Request) {
                     else if (delta > 15) calculatedStatus = 'Late';
                 }
 
-                const targetOwnerId = classRef.instructor_id;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const targetOwnerId = Array.isArray((classRef as any).instructors)
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ? (classRef as any).instructors[0]?.user_id
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    : ((classRef as any).instructors?.user_id || classRef.instructor_id);
 
-                await supabase.from('attendance_logs').insert({
+                const { error: insertErr } = await supabase.from('attendance_logs').insert({
                     student_id: studentInfo.id,
                     class_id: classIdInput,
                     user_id: targetOwnerId,
@@ -325,6 +330,11 @@ export async function POST(request: Request) {
                     timestamp: timestamp,
                     entry_method: entryMethod,
                 });
+
+                if (insertErr) {
+                    console.error('[API] BIOMETRIC INSERT FAIL:', insertErr);
+                    return NextResponse.json({ error: `DB Insert Error: ${insertErr.message}` }, { status: 500 });
+                }
 
                 // v3.2: Increment room occupancy on Time In
                 try {
