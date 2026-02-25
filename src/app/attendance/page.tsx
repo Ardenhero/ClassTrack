@@ -99,7 +99,67 @@ export default async function AttendancePage({
     }
 
     const { data } = await queryBuilder;
-    const rawLogs = data as unknown as AttendanceLog[];
+    let rawLogs = (data as unknown as AttendanceLog[]) || [];
+
+    // --- DYNAMIC SUSPENSION / NO CLASS HANDLING ---
+    // Fetch day overrides for this date to dynamically inject 'No Class' logs
+    let overridesQuery = supabase.from('class_day_overrides').select('class_id, type').eq('date', dayString);
+    if (!isActiveAdmin && profileId) {
+        // Only get overrides for classes this instructor owns
+        const { data: myClasses } = await supabase.from('classes').select('id').eq('instructor_id', profileId);
+        const myClassIds = myClasses?.map(c => c.id) || [];
+        overridesQuery = overridesQuery.in('class_id', myClassIds);
+    }
+    const { data: overrides } = await overridesQuery;
+
+    if (overrides && overrides.length > 0) {
+        const overriddenClassIds = overrides.map(o => o.class_id);
+
+        // Fetch enrollments for these classes
+        const { data: enrollments } = await supabase
+            .from('enrollments')
+            .select(`
+                student_id,
+                class_id,
+                students (id, name, sin, year_level),
+                classes (name, instructor_id, start_time, end_time)
+            `)
+            .in('class_id', overriddenClassIds);
+
+        if (enrollments && enrollments.length > 0) {
+            // Get all students who already have a physical log today
+            const loggedStudentClassPairs = new Set(rawLogs.map(l => `${l.students.id}-${l.classes?.name}`));
+
+            const injectedLogs: AttendanceLog[] = [];
+
+            enrollments.forEach(e => {
+                const s = Array.isArray(e.students) ? e.students[0] : e.students;
+                const c = Array.isArray(e.classes) ? e.classes[0] : e.classes;
+
+                if (!s || !c) return;
+
+                // Only act on search query if it exists
+                if (query && !s.name.toLowerCase().includes(query.toLowerCase())) return;
+
+                // Don't inject if they somehow physically logged in anyways
+                if (loggedStudentClassPairs.has(`${s.id}-${c.name}`)) return;
+
+                // Construct a synthetic log for "No Class"
+                injectedLogs.push({
+                    id: `synthetic-${s.id}-${c.name}-${dayString}`,
+                    // Set timestamp to the class start_time if it exists, otherwise 8:00 AM
+                    timestamp: `${dayString}T${c.start_time || '08:00:00'}+08:00`,
+                    status: 'No Class',
+                    time_out: null,
+                    classes: c,
+                    students: s
+                });
+            });
+
+            // Append injected logs to the main array
+            rawLogs = [...rawLogs, ...injectedLogs];
+        }
+    }
 
     /* ── Map server data → serialisable AttendanceRow[] ── */
     const formatTime = (ts: string | null) => {
