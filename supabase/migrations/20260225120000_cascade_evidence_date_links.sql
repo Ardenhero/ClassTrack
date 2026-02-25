@@ -14,8 +14,7 @@ BEGIN
     JOIN pg_attribute a ON a.attnum = ANY(c.conkey) AND a.attrelid = c.conrelid
     WHERE c.conrelid = 'public.evidence_date_links'::regclass
       AND c.confrelid = 'public.attendance_logs'::regclass
-      AND c.contype = 'f'
-    LIMIT 1;
+      AND c.contype = 'f';
 
     IF fk_name IS NOT NULL AND col_name IS NOT NULL THEN
         EXECUTE format('ALTER TABLE public.evidence_date_links DROP CONSTRAINT %I', fk_name);
