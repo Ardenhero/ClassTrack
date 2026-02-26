@@ -237,8 +237,8 @@ export async function POST(request: Request) {
                                 // If attendance_type is "Room Control", we toggle:
                                 // Turn ON only if EVERYTHING is currently OFF. Otherwise, turn OFF.
                                 const isRoomControl = attendance_type === 'Room Control';
-                                const allOff = devices.every(d => !d.current_state);
-                                const targetState = isRoomControl ? allOff : (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN');
+                                const allOn = devices.every(d => d.current_state);
+                                const targetState = isRoomControl ? !allOn : (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN');
 
                                 const updatePromises = devices.map(async (d) => {
                                     // Actually command the physical device using Tuya API
@@ -249,7 +249,7 @@ export async function POST(request: Request) {
                                         console.error(`[API] Failed to toggle physical Tuya device ${d.id}:`, err);
                                     }
 
-                                    return supabase
+                                    const { error } = await supabase
                                         .from('iot_devices')
                                         .update({
                                             current_state: targetState,
@@ -261,17 +261,19 @@ export async function POST(request: Request) {
                                             }
                                         })
                                         .eq('id', d.id);
+
+                                    if (error) console.error('[API] Failed to update IoT device status in DB:', error);
                                 });
 
                                 await Promise.all(updatePromises);
                                 console.log(`[API] Toggled ${devices.length} IoT devices to ${targetState ? 'ON' : 'OFF'} in room ${deviceData.room_id}`);
 
-                                // Return successful "Scan OK" feedback for the ESP32 screen
+                                // Return successful feedback for the ESP32 screen
                                 return NextResponse.json({
                                     success: true,
-                                    student_name: `${activatorInfo.name} (Room ${targetState ? 'ON' : 'OFF'})`,
+                                    student_name: `${activatorInfo.name}`,
                                     status: targetState ? 'Power On' : 'Power Off',
-                                    action: 'activator_trigger'
+                                    action: targetState ? 'room_activated' : 'room_deactivated'
                                 });
                             } else {
                                 return NextResponse.json({
@@ -279,7 +281,7 @@ export async function POST(request: Request) {
                                     student_name: activatorInfo.name,
                                     error: "No IoT devices found in this room",
                                     status: "Active",
-                                    action: 'activator_trigger'
+                                    action: 'no_devices'
                                 });
                             }
                         } catch (iotErr) {
@@ -291,7 +293,7 @@ export async function POST(request: Request) {
                         success: true,
                         student_name: activatorInfo.name,
                         status: "Activator Verified",
-                        action: 'activator_trigger'
+                        action: 'no_room'
                     });
                 }
 
