@@ -128,3 +128,23 @@ export async function deleteKiosk(deviceSerial: string) {
     if (error) return { success: false, error: error.message };
     return { success: true };
 }
+
+export async function updateKioskPin(deviceSerial: string, pin: string) {
+    const { isSuperAdmin } = await requireSuperAdmin();
+    if (!isSuperAdmin) return { success: false, error: "Forbidden" };
+
+    const supabase = createAdminClient();
+
+    // Validate PIN is exactly 4 digits
+    if (!/^\d{4}$/.test(pin)) {
+        return { success: false, error: "PIN must be exactly 4 digits." };
+    }
+
+    const { error } = await supabase
+        .from('kiosk_devices')
+        .update({ admin_pin: pin })
+        .eq('device_serial', deviceSerial);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+}

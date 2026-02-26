@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import {
     approveKiosk, rejectKiosk, assignKioskToAdmin,
-    bindKioskToRoom, updateKioskLabel, deleteKiosk
+    bindKioskToRoom, updateKioskLabel, deleteKiosk, updateKioskPin
 } from "./actions";
 
 interface KioskDevice {
@@ -23,6 +23,7 @@ interface KioskDevice {
     firmware_version: string | null;
     ip_address: string | null;
     approved_at: string | null;
+    admin_pin: string | null;
     rooms?: { name: string; building: string | null } | null;
 }
 
@@ -130,6 +131,16 @@ export default function KioskInventoryPage() {
         const res = await updateKioskLabel(serial, label);
         if (res.error) alert(`Error: ${res.error}`);
         else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, label } : k));
+    };
+
+    const handlePinSave = async (serial: string, pin: string) => {
+        if (!/^\d{4}$/.test(pin)) {
+            alert("PIN must be exactly 4 numeric digits.");
+            return;
+        }
+        const res = await updateKioskPin(serial, pin);
+        if (res.error) alert(`Error: ${res.error}`);
+        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, admin_pin: pin } : k));
     };
 
     const handleDelete = async (serial: string) => {
@@ -289,6 +300,27 @@ export default function KioskInventoryPage() {
                                                 className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none transition text-gray-900 dark:text-white"
                                             />
                                         </div>
+
+                                        {/* Admin PIN */}
+                                        {isSuperAdmin && (
+                                            <div className="lg:w-1/6">
+                                                <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
+                                                    Admin PIN
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    maxLength={4}
+                                                    defaultValue={kiosk.admin_pin || "1234"}
+                                                    placeholder="1234"
+                                                    onBlur={(e) => {
+                                                        if (e.target.value !== (kiosk.admin_pin || "1234")) {
+                                                            handlePinSave(kiosk.device_serial, e.target.value);
+                                                        }
+                                                    }}
+                                                    className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none transition text-gray-900 dark:text-white text-center tracking-widest font-mono"
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Assigned Admin */}
                                         {isSuperAdmin && (

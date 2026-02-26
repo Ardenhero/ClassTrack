@@ -76,14 +76,15 @@ export async function POST(request: Request) {
             }
         }
 
-        // Check for pending commands
+        // Check for pending commands and admin_pin
         const { data: device } = await supabase
             .from('kiosk_devices')
-            .select('pending_command')
+            .select('pending_command, admin_pin')
             .eq('device_serial', device_serial)
             .single();
 
         const pendingCommand = device?.pending_command || null;
+        const adminPin = device?.admin_pin || "1234";
 
         // Clear the command after reading it (one-shot delivery)
         if (pendingCommand) {
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
             success: true,
             timestamp: new Date().toISOString(),
             pending_command: pendingCommand,
+            admin_pin: adminPin,
             provisioning: {
                 status: deviceStatus?.status || 'pending',
                 room_id: deviceStatus?.room_id || null,
