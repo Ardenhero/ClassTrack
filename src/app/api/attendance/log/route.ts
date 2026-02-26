@@ -19,6 +19,25 @@ const LogSchema = z.object({
     corrects_log_id: z.string().uuid().optional(),
 });
 
+// Helper: Insert a scan notification for the instructor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function sendScanNotification(supabase: any, instructorId: string | null, studentName: string, className: string, status: string, action: string, method: string) {
+    if (!instructorId) return;
+    try {
+        const emoji = method === 'biometric' ? '🔏' : method === 'qr_verified' ? '📱' : '📝';
+        const actionLabel = action === 'time_out' ? 'Time Out' : 'Time In';
+        await supabase.from('notifications').insert({
+            instructor_id: instructorId,
+            title: `${emoji} ${studentName} — ${actionLabel}`,
+            message: `${status} in ${className}`,
+            type: status === 'Present' ? 'success' : status === 'Late' ? 'warning' : 'info',
+            read: false,
+        });
+    } catch (err) {
+        console.error('[Notification] Insert error (non-fatal):', err);
+    }
+}
+
 // Use Service Role Key to bypass RLS and Auth requirements for this trusted endpoint
 export async function POST(request: Request) {
     const supabase = createClient(
@@ -304,6 +323,10 @@ export async function POST(request: Request) {
                     }
                 } catch (occErr) { console.error('[Occupancy] Decrement error (non-fatal):', occErr); }
 
+                // Send scan notification to instructor
+                const classInfo = await supabase.from('classes').select('name, instructor_id').eq('id', classIdInput).single();
+                await sendScanNotification(supabase, classInfo.data?.instructor_id, studentInfo.name, classInfo.data?.name || 'Unknown', calculatedStatus, 'time_out', entryMethod);
+
                 return NextResponse.json({ success: true, student_name: studentInfo.name, status: calculatedStatus, action: 'time_out' });
             } else {
                 // Handle Time In for biometric
@@ -345,6 +368,10 @@ export async function POST(request: Request) {
                 } catch (occErr) { console.error('[Occupancy] Increment error (non-fatal):', occErr); }
 
                 // (Auto-ON removed: student scans should not trigger room devices)
+
+                // Send scan notification to instructor
+                const classInfo2 = await supabase.from('classes').select('name, instructor_id').eq('id', classIdInput).single();
+                await sendScanNotification(supabase, classInfo2.data?.instructor_id, studentInfo.name, classInfo2.data?.name || 'Unknown', calculatedStatus, 'time_in', entryMethod);
 
                 return NextResponse.json({ success: true, student_name: studentInfo.name, status: calculatedStatus, action: 'time_in' });
             }
@@ -631,6 +658,9 @@ export async function POST(request: Request) {
                     throw insertError;
                 }
             }
+
+            // Send scan notification to instructor (fallback path)
+            await sendScanNotification(supabase, classRef.instructor_id, student_name || 'Unknown', classRef ? (classRef as unknown as { name?: string }).name || className || 'Unknown' : className || 'Unknown', calculatedStatus, attendance_type === 'Time Out' ? 'time_out' : 'time_in', entryMethod);
 
             return NextResponse.json({ success: true, message: "Attendance Logged (Fallback)" });
         }
