@@ -299,8 +299,16 @@ export async function POST(request: Request) {
                     slot: fingerprint_slot_id
                 }, { status: 404 });
             }
+            // If a student tries to scan in Room Activation mode, block them
+            if (attendance_type === 'Room Control' || rpcStatusInput === 'ROOM_CONTROL') {
+                return NextResponse.json({
+                    error: "student_unauthorized",
+                    message: `Student '${studentInfo.name}' is not an authorized Room Activator.`,
+                    student_name: studentInfo.name
+                }, { status: 403 });
+            }
 
-            // Use the class_id from request body
+            // Use the class_id from request body for standard attendance
             if (!classIdInput) {
                 return NextResponse.json({ error: 'class_id is required for biometric attendance' }, { status: 400 });
             }
