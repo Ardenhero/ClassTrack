@@ -7,12 +7,12 @@ async function checkStudent() {
     const { data: students } = await supabase.from('students').select('*').ilike('name', '%arden hero damaso%');
     console.log(students);
 
-    console.log("\n--- Instructor Data ---");
-    const { data: instructors } = await supabase.from('instructors').select('*').ilike('name', '%arden hero damaso%');
-    console.log(instructors);
-
-    console.log("\n--- Fingerprint Slots Data ---");
-    const { data: slots } = await supabase.from('fingerprint_slots').select('*');
+    console.log("--- Fingerprint Slots Data ---");
+    const { data: slots } = await supabase.from('fingerprint_slots').select('*').order('created_at', { ascending: false }).limit(5);
     console.log(slots);
+
+    console.log("--- Links Data ---");
+    const { data: links } = await supabase.from('fingerprint_device_links').select('*');
+    console.log(links);
 }
 checkStudent();

@@ -55,6 +55,14 @@ async function sendScanNotification(supabase: any, instructorId: string | null, 
     }
 }
 
+// Helper: Get strict 12:00 AM start of the current day in Asia/Manila as a UTC ISO string
+// This prevents timezone drift where "today" overlaps with "yesterday" due to UTC conversion
+function getTodayStartUTC() {
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' });
+    const localDateStr = formatter.format(new Date());
+    return new Date(`${localDateStr}T00:00:00.000+08:00`).toISOString();
+}
+
 // Use Service Role Key to bypass RLS and Auth requirements for this trusted endpoint
 export async function POST(request: Request) {
     const supabase = createClient(
@@ -333,7 +341,7 @@ export async function POST(request: Request) {
             }
 
             // Parallelize database checks to drastically speed up API response
-            const todayStart = new Date().toISOString().split('T')[0];
+            const todayStart = getTodayStartUTC();
             const isTimeOut = attendance_type === 'Time Out' || rpcStatusInput === 'TIME_OUT';
 
             const [enrollmentRes, existingTimeInRes, classRefRes] = await Promise.all([
@@ -476,7 +484,7 @@ export async function POST(request: Request) {
 
         // DUPLICATE PREVENTION: Check before RPC call
         if (classIdInput && student_name) {
-            const todayStart = new Date().toISOString().split('T')[0];
+            const todayStart = getTodayStartUTC();
 
             // Look up student by name to get student_id for the duplicate check
             const { data: studentCheck } = await supabase
@@ -633,7 +641,7 @@ export async function POST(request: Request) {
             // 3. Handle Time In vs Time Out
             if (attendance_type === "Time Out") {
                 // Try to find an efficient open session for this student + class + today
-                const todayStart = new Date().toISOString().split('T')[0]; // YYYY-MM-DD checks
+                const todayStart = getTodayStartUTC();
 
                 const { data: openSession, error: sessionError } = await supabase.from('attendance_logs')
                     .select('id, status, timestamp')
@@ -697,7 +705,7 @@ export async function POST(request: Request) {
             } else {
                 // TIME IN
                 // Duplicate prevention: check if already scanned today for this class
-                const todayStart = new Date().toISOString().split('T')[0];
+                const todayStart = getTodayStartUTC();
                 const { data: existingLog } = await supabase
                     .from('attendance_logs')
                     .select('id')
