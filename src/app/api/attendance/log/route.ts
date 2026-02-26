@@ -233,9 +233,11 @@ export async function POST(request: Request) {
 
                             if (devices && devices.length > 0) {
                                 // Determine if we are turning ON or OFF. 
-                                // Let's simplify: Toggle the room power based on majority state,
-                                // or just turn everything ON for "Time In" and OFF for "Time Out".
-                                const targetState = (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN') ? true : false;
+                                // If attendance_type is "Room Control", we toggle:
+                                // Turn ON only if EVERYTHING is currently OFF. Otherwise, turn OFF.
+                                const isRoomControl = attendance_type === 'Room Control';
+                                const allOff = devices.every(d => !d.is_on);
+                                const targetState = isRoomControl ? allOff : (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN');
 
                                 const updatePromises = devices.map(d => {
                                     return supabase

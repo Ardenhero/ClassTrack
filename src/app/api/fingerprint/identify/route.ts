@@ -34,6 +34,24 @@ export async function GET(request: Request) {
         }
 
         if (!data) {
+            // Check if it's a room activator
+            const { data: activatorData } = await supabase
+                .from('instructors')
+                .select('id, name')
+                .eq('activator_fingerprint_slot', slotIdInt)
+                .maybeSingle();
+
+            if (activatorData) {
+                console.log(`[API] Identify: Found Activator ${activatorData.name} (ID: ${activatorData.id})`);
+                return NextResponse.json({
+                    success: true,
+                    student: {
+                        id: activatorData.id,
+                        name: `${activatorData.name} (Activator)`
+                    }
+                });
+            }
+
             console.warn(`[API] Identify: Slot ${slotIdInt} not found in DB.`);
             return NextResponse.json({ error: "Student not found" }, { status: 404 });
         }
