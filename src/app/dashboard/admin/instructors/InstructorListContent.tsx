@@ -21,6 +21,7 @@ export default async function InstructorListContent({
       pin_code,
       department_id,
       can_activate_room,
+      activator_fingerprint_slot,
       departments (
         name,
         code
@@ -96,6 +97,11 @@ export default async function InstructorListContent({
                                 {inst.can_activate_room && (
                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-bold">
                                         <ShieldCheck className="h-3 w-3" /> Room Activator
+                                    </span>
+                                )}
+                                {inst.can_activate_room && inst.activator_fingerprint_slot && (
+                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-bold">
+                                        🔏 Enrolled (Slot #{inst.activator_fingerprint_slot})
                                     </span>
                                 )}
                             </div>
