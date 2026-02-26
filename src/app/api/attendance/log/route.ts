@@ -24,17 +24,33 @@ const LogSchema = z.object({
 async function sendScanNotification(supabase: any, instructorId: string | null, studentName: string, className: string, status: string, action: string, method: string) {
     if (!instructorId) return;
     try {
+        // Look up the instructor's auth_user_id to set user_id on the notification
+        const { data: instructor } = await supabase
+            .from('instructors')
+            .select('auth_user_id')
+            .eq('id', instructorId)
+            .single();
+
+        const userId = instructor?.auth_user_id || null;
         const emoji = method === 'biometric' ? '🔏' : method === 'qr_verified' ? '📱' : '📝';
         const actionLabel = action === 'time_out' ? 'Time Out' : 'Time In';
-        await supabase.from('notifications').insert({
+
+        const { error } = await supabase.from('notifications').insert({
+            user_id: userId,
             instructor_id: instructorId,
             title: `${emoji} ${studentName} — ${actionLabel}`,
             message: `${status} in ${className}`,
             type: status === 'Present' ? 'success' : status === 'Late' ? 'warning' : 'info',
             read: false,
         });
+
+        if (error) {
+            console.error('[Notification] DB insert error:', error.message, error.details);
+        } else {
+            console.log(`[Notification] Sent: ${studentName} ${actionLabel} in ${className}`);
+        }
     } catch (err) {
-        console.error('[Notification] Insert error (non-fatal):', err);
+        console.error('[Notification] Insert exception:', err);
     }
 }
 
