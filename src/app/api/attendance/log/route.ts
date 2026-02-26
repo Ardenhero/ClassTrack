@@ -479,6 +479,7 @@ export async function POST(request: Request) {
             // 1. Find the Class (using ID or Name+Instructor)
             interface ClassWithInstructor {
                 id: string;
+                name: string;
                 instructor_id: string;
                 start_time: string | null;
                 end_time: string | null;
@@ -676,7 +677,8 @@ export async function POST(request: Request) {
             }
 
             // Send scan notification to instructor (fallback path)
-            await sendScanNotification(supabase, classRef.instructor_id, student_name || 'Unknown', classRef ? (classRef as unknown as { name?: string }).name || className || 'Unknown' : className || 'Unknown', calculatedStatus, attendance_type === 'Time Out' ? 'time_out' : 'time_in', entryMethod);
+            const fallbackClassName = classRef?.name || className || 'Unknown';
+            await sendScanNotification(supabase, classRef.instructor_id, student_name || 'Unknown', fallbackClassName, calculatedStatus, attendance_type === 'Time Out' ? 'time_out' : 'time_in', entryMethod);
 
             return NextResponse.json({ success: true, message: "Attendance Logged (Fallback)" });
         }
