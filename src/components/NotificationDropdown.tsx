@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Bell, Info, AlertTriangle, CheckCircle, Clock, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Bell, Info, AlertTriangle, CheckCircle, Clock, Trash2, Fingerprint } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { markAllAsRead, deleteNotification } from "@/app/notifications/actions";
+import { createClient } from "@/utils/supabase/client";
+import { useProfile } from "@/context/ProfileContext";
 
 export type NotificationType = "info" | "warning" | "success" | "neutral" | "error";
 
@@ -14,6 +16,7 @@ export interface NotificationItem {
     created_at: string;
     type: NotificationType;
     read: boolean;
+    isScanNotif?: boolean;
 }
 
 interface NotificationDropdownProps {
@@ -22,10 +25,13 @@ interface NotificationDropdownProps {
 
 export function NotificationDropdown({ notifications: initialNotifications = [] }: NotificationDropdownProps) {
     const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+    const [scanNotifs, setScanNotifs] = useState<NotificationItem[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const lastSeenIdRef = useRef<string | null>(null);
+    const { profile } = useProfile();
 
-    // Sync props to state if they change (e.g. revalidation from other sources)
+    // Sync props to state if they change
     useEffect(() => {
         setNotifications(initialNotifications);
     }, [initialNotifications]);
@@ -41,20 +47,82 @@ export function NotificationDropdown({ notifications: initialNotifications = [] 
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // Poll for recent attendance logs (scan notifications)
+    const pollAttendance = useCallback(async () => {
+        if (!profile?.id) return;
+        const supabase = createClient();
+
+        // Build query for recent attendance logs belonging to this instructor's classes
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+        const { data: logs } = await supabase
+            .from("attendance_logs")
+            .select(`
+                id, status, timestamp, entry_method,
+                classes!inner ( name, instructor_id ),
+                students ( name )
+            `)
+            .eq("classes.instructor_id", profile.id)
+            .gte("created_at", fiveMinutesAgo)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+        if (!logs || logs.length === 0) return;
+
+        // Convert to notification items
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newNotifs: NotificationItem[] = logs.map((log: any) => {
+            const studentName = log.students?.name || "Unknown";
+            const className = log.classes?.name || "Unknown";
+            const status = log.status || "Present";
+            const method = log.entry_method === "biometric" ? "🔏" : log.entry_method === "qr_verified" ? "📱" : "📝";
+            const time = new Date(log.timestamp).toLocaleTimeString('en-US', {
+                hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
+            });
+
+            return {
+                id: `scan-${log.id}`,
+                title: `${method} ${studentName}`,
+                message: `${status} — ${className} at ${time}`,
+                created_at: log.timestamp,
+                type: status === "Present" ? "success" as NotificationType : status === "Late" ? "warning" as NotificationType : "neutral" as NotificationType,
+                read: false,
+                isScanNotif: true,
+            };
+        });
+
+        // Check if we have new ones since last poll
+        if (newNotifs.length > 0 && newNotifs[0].id !== lastSeenIdRef.current) {
+            lastSeenIdRef.current = newNotifs[0].id;
+            setScanNotifs(newNotifs);
+        }
+    }, [profile?.id]);
+
+    // Start polling
+    useEffect(() => {
+        pollAttendance(); // Initial poll
+        const interval = setInterval(pollAttendance, 5000);
+        return () => clearInterval(interval);
+    }, [pollAttendance]);
+
     const handleMarkAllRead = async () => {
-        // Optimistic update
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        setScanNotifs([]); // Clear scan notifs
         await markAllAsRead();
     };
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        // Optimistic update
-        setNotifications(prev => prev.filter(n => n.id !== id));
-        await deleteNotification(id);
+        if (id.startsWith("scan-")) {
+            setScanNotifs(prev => prev.filter(n => n.id !== id));
+        } else {
+            setNotifications(prev => prev.filter(n => n.id !== id));
+            await deleteNotification(id);
+        }
     };
 
-    const getIcon = (type: NotificationType) => {
+    const getIcon = (type: NotificationType, isScan?: boolean) => {
+        if (isScan) return Fingerprint;
         switch (type) {
             case "warning": return AlertTriangle;
             case "success": return CheckCircle;
@@ -72,8 +140,9 @@ export function NotificationDropdown({ notifications: initialNotifications = [] 
         }
     };
 
-    // Filter unread for badge count
-    const unreadCount = notifications.filter(n => !n.read).length;
+    // Merge scan notifs at the top, then regular notifications
+    const allNotifs = [...scanNotifs, ...notifications];
+    const unreadCount = allNotifs.filter(n => !n.read).length;
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -83,7 +152,9 @@ export function NotificationDropdown({ notifications: initialNotifications = [] 
             >
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"></span>
+                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900 text-[9px] text-white font-bold flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
                 )}
             </button>
 
@@ -97,13 +168,13 @@ export function NotificationDropdown({ notifications: initialNotifications = [] 
                     </div>
 
                     <div className="max-h-[400px] overflow-y-auto">
-                        {notifications.length === 0 ? (
+                        {allNotifs.length === 0 ? (
                             <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                                 No new notifications
                             </div>
                         ) : (
-                            notifications.map((notif) => {
-                                const Icon = getIcon(notif.type);
+                            allNotifs.map((notif) => {
+                                const Icon = getIcon(notif.type, notif.isScanNotif);
                                 return (
                                     <div key={notif.id} className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer flex items-start space-x-4 border-b border-gray-50 dark:border-gray-800/50 last:border-none group ${!notif.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
                                         <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${getColor(notif.type)}`}>

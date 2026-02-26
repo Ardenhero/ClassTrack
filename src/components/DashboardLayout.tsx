@@ -4,7 +4,6 @@ import { Sidebar } from "@/components/Sidebar";
 import { useState, useEffect } from "react";
 import { Menu, Fingerprint, X } from "lucide-react";
 import { cn } from "@/utils/cn";
-import ScanToastProvider from "@/components/ScanToastProvider";
 
 export default function DashboardLayout({
     children,
@@ -75,9 +74,6 @@ export default function DashboardLayout({
                     {children}
                 </div>
             </main>
-
-            {/* Global Scan Toast Notifications */}
-            <ScanToastProvider />
         </div>
     );
 }
