@@ -4,8 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Bell, Info, AlertTriangle, CheckCircle, Clock, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { markAllAsRead, deleteNotification } from "@/app/notifications/actions";
-import { createClient } from "@/utils/supabase/client";
-import { useProfile } from "@/context/ProfileContext";
 
 export type NotificationType = "info" | "warning" | "success" | "neutral" | "error";
 
@@ -26,7 +24,6 @@ export function NotificationDropdown({ notifications: initialNotifications = [] 
     const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const { profile } = useProfile();
 
     // Sync props to state if they change (e.g. revalidation from other sources)
     useEffect(() => {
@@ -44,31 +41,24 @@ export function NotificationDropdown({ notifications: initialNotifications = [] 
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Live polling: fetch new notifications every 10 seconds
+    // Poll for new notifications via server API (bypasses RLS)
     const pollNotifications = useCallback(async () => {
-        if (!profile?.id) return;
-        const supabase = createClient();
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-        const { data } = await supabase
-            .from('notifications')
-            .select('*')
-            .eq('instructor_id', profile.id)
-            .gte('created_at', oneDayAgo)
-            .order('created_at', { ascending: false })
-            .limit(20);
-
-        if (data && data.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setNotifications(data.map((n: any) => ({
-                ...n,
-                timestamp: n.created_at
-            })));
+        try {
+            const res = await fetch('/api/notifications/poll');
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.notifications && data.notifications.length > 0) {
+                setNotifications(data.notifications);
+            }
+        } catch {
+            // Silently ignore poll errors
         }
-    }, [profile?.id]);
+    }, []);
 
     useEffect(() => {
-        const interval = setInterval(pollNotifications, 10000);
+        // Poll immediately, then every 5 seconds
+        pollNotifications();
+        const interval = setInterval(pollNotifications, 5000);
         return () => clearInterval(interval);
     }, [pollNotifications]);
 
