@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import {
     Monitor, CheckCircle2, XCircle, Clock, Wifi, WifiOff,
-    DoorClosed, Tag, Trash2, Loader2, Users, Save
+    DoorClosed, Tag, Trash2, Loader2, Users, Save, Check
 } from "lucide-react";
 import {
     approveKiosk, rejectKiosk, assignKioskToAdmin,
@@ -303,22 +303,34 @@ export default function KioskInventoryPage() {
 
                                         {/* Admin PIN */}
                                         {!isSuperAdmin && (
-                                            <div className="lg:w-1/6">
+                                            <div className="lg:w-1/4">
                                                 <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
                                                     Admin PIN
                                                 </div>
-                                                <input
-                                                    type="text"
-                                                    maxLength={4}
-                                                    defaultValue={kiosk.admin_pin || "1234"}
-                                                    placeholder="1234"
-                                                    onBlur={(e) => {
-                                                        if (e.target.value !== (kiosk.admin_pin || "1234")) {
-                                                            handlePinSave(kiosk.device_serial, e.target.value);
-                                                        }
-                                                    }}
-                                                    className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none transition text-gray-900 dark:text-white text-center tracking-widest font-mono"
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="password"
+                                                        maxLength={4}
+                                                        defaultValue={kiosk.admin_pin || "1234"}
+                                                        placeholder="••••"
+                                                        id={`pin-${kiosk.device_serial}`}
+                                                        className="w-full text-xs px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-transparent focus:border-nwu-red outline-none transition text-gray-900 dark:text-white text-center tracking-widest font-mono"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            const el = document.getElementById(`pin-${kiosk.device_serial}`) as HTMLInputElement;
+                                                            if (el && el.value !== (kiosk.admin_pin || "1234")) {
+                                                                if (confirm("Are you sure you want to change the Admin PIN for this kiosk?")) {
+                                                                    handlePinSave(kiosk.device_serial, el.value);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="p-1.5 rounded bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800 transition-colors"
+                                                        title="Save Admin PIN"
+                                                    >
+                                                        {actionLoading === kiosk.device_serial ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
 

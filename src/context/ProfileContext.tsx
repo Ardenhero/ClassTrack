@@ -90,7 +90,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                     const isAdmin = data.role === 'admin';
                     const hydratedProfile: Profile = {
                         id: data.id,
-                        name: isAdmin ? "System Admin" : data.name,
+                        name: data.name || "Department Admin",
                         role: (data.role as "admin" | "instructor") || "instructor",
                         department_id: data.department_id,
                         has_pin: data.pin_enabled,
@@ -102,7 +102,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                     // Legacy fallback for when the record doesn't exist yet but cookie is present
                     const adminProfile: Profile = {
                         id: "admin-profile",
-                        name: "System Admin",
+                        name: "Department Admin",
                         role: "admin",
                         has_pin: false
                     };
@@ -137,7 +137,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             const isAdmin = data.role === 'admin';
             const updatedProfile: Profile = {
                 id: data.id,
-                name: isAdmin ? "System Admin" : data.name,
+                name: data.name || "Department Admin",
                 role: (data.role as "admin" | "instructor") || "instructor",
                 department_id: data.department_id,
                 has_pin: data.pin_enabled,
