@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Fingerprint, X } from "lucide-react";
 
@@ -23,14 +23,14 @@ function getStatusColor(status: string): string {
 
 /**
  * Global scan notification provider.
- * Listens for:
- * 1. CustomEvent 'classtrack:scan' dispatched by LiveAttendanceTable
- * 2. Its own Supabase Realtime subscription on attendance_logs (for pages without the table)
- * 
+ * Uses polling (every 5s) to detect new attendance_logs inserts.
+ * Also listens for CustomEvent from LiveAttendanceTable for instant feedback.
  * Shows floating toast notifications at the top-right of any page.
  */
 export default function ScanToastProvider() {
     const [toasts, setToasts] = useState<ScanToast[]>([]);
+    const lastSeenIdRef = useRef<string | null>(null);
+    const seenIdsRef = useRef<Set<string>>(new Set());
 
     const addToast = useCallback((detail: Omit<ScanToast, 'id'>) => {
         const id = `toast-${Date.now()}-${Math.random()}`;
@@ -40,60 +40,92 @@ export default function ScanToastProvider() {
         }, 5000);
     }, []);
 
-    // Listen for CustomEvent from LiveAttendanceTable
+    // Listen for CustomEvent from LiveAttendanceTable (instant on attendance page)
     useEffect(() => {
         const handler = (e: Event) => {
             const detail = (e as CustomEvent).detail;
-            if (detail) addToast(detail);
+            if (detail) {
+                // Mark this as seen so polling doesn't duplicate
+                if (detail.recordId) seenIdsRef.current.add(detail.recordId);
+                addToast(detail);
+            }
         };
         window.addEventListener('classtrack:scan', handler);
         return () => window.removeEventListener('classtrack:scan', handler);
     }, [addToast]);
 
-    // Own Supabase Realtime subscription (for pages without LiveAttendanceTable)
+    // Polling-based notification (works without Supabase Realtime enabled)
     useEffect(() => {
         const supabase = createClient();
+        let mounted = true;
 
-        const channel = supabase
-            .channel('global-scan-toasts')
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'attendance_logs' },
-                async (payload: { new: Record<string, unknown> }) => {
-                    const rec = payload.new;
-                    if (!rec?.student_id) return;
+        // Get the latest attendance log ID to establish baseline
+        const initialize = async () => {
+            const { data } = await supabase
+                .from("attendance_logs")
+                .select("id")
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
-                    // Fetch student name and class name
-                    const { data: fullRec } = await supabase
-                        .from("attendance_logs")
-                        .select(`
-                            id, status, timestamp,
-                            classes ( name ),
-                            students ( name )
-                        `)
-                        .eq("id", rec.id)
-                        .single();
+            if (data) lastSeenIdRef.current = data.id;
+        };
 
-                    if (!fullRec) return;
+        const poll = async () => {
+            if (!mounted || !lastSeenIdRef.current) return;
 
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const f = fullRec as any;
-                    const studentName = f.students?.name || "Unknown";
-                    const className = f.classes?.name || "Unknown";
-                    const status = f.status || "Present";
-                    const time = new Date(f.timestamp).toLocaleTimeString('en-US', {
-                        hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
-                    });
+            const { data: newLogs } = await supabase
+                .from("attendance_logs")
+                .select(`
+                    id, status, timestamp, created_at,
+                    classes ( name ),
+                    students ( name )
+                `)
+                .gt("id", lastSeenIdRef.current)
+                .order("created_at", { ascending: true })
+                .limit(5);
 
-                    // Only add if LiveAttendanceTable didn't already dispatch
-                    // Use a dedup check: if we got a CustomEvent for the same student within 2s, skip
-                    addToast({ studentName, className, status, time });
-                }
-            )
-            .subscribe();
+            if (!newLogs || newLogs.length === 0) return;
 
-        return () => { supabase.removeChannel(channel); };
+            for (const log of newLogs) {
+                // Skip if already seen via CustomEvent
+                if (seenIdsRef.current.has(log.id)) continue;
+                seenIdsRef.current.add(log.id);
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const f = log as any;
+                const studentName = f.students?.name || "Unknown";
+                const className = f.classes?.name || "Unknown";
+                const status = f.status || "Present";
+                const time = new Date(f.timestamp).toLocaleTimeString('en-US', {
+                    hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila'
+                });
+
+                addToast({ studentName, className, status, time });
+            }
+
+            // Update last seen to the newest
+            lastSeenIdRef.current = newLogs[newLogs.length - 1].id;
+        };
+
+        initialize().then(() => {
+            // Start polling every 5 seconds
+            const interval = setInterval(poll, 5000);
+            return () => clearInterval(interval);
+        });
+
+        return () => { mounted = false; };
     }, [addToast]);
+
+    // Keep seenIds from growing too large
+    useEffect(() => {
+        const cleanup = setInterval(() => {
+            if (seenIdsRef.current.size > 100) {
+                seenIdsRef.current = new Set(Array.from(seenIdsRef.current).slice(-50));
+            }
+        }, 60000);
+        return () => clearInterval(cleanup);
+    }, []);
 
     if (toasts.length === 0) return null;
 
