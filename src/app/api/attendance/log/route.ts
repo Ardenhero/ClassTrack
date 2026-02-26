@@ -229,7 +229,7 @@ export async function POST(request: Request) {
                             // Fetch all IoT devices in this room
                             const { data: devices } = await supabase
                                 .from('iot_devices')
-                                .select('id, current_state, dp_code, metadata')
+                                .select('id, current_state, dp_code')
                                 .eq('room_id', deviceData.room_id);
 
                             if (devices && devices.length > 0) {
@@ -252,13 +252,7 @@ export async function POST(request: Request) {
                                     const { error } = await supabase
                                         .from('iot_devices')
                                         .update({
-                                            current_state: targetState,
-                                            metadata: {
-                                                ...(d.metadata || {}),
-                                                last_toggled_by: activatorInfo.id,
-                                                last_toggled_at: timestamp,
-                                                toggled_via: 'activator_scan'
-                                            }
+                                            current_state: targetState
                                         })
                                         .eq('id', d.id);
 
