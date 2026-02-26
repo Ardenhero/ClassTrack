@@ -324,13 +324,20 @@ export async function POST(request: Request) {
                 }, { status: 403 });
             }
 
-            // Verify student is enrolled in this class
-            const { data: enrollment } = await supabase
-                .from('enrollments')
-                .select('id')
-                .eq('student_id', studentInfo.id)
-                .eq('class_id', classIdInput)
-                .maybeSingle();
+            // Parallelize database checks to drastically speed up API response
+            const todayStart = new Date().toISOString().split('T')[0];
+            const isTimeOut = attendance_type === 'Time Out' || rpcStatusInput === 'TIME_OUT';
+
+            const [enrollmentRes, existingTimeInRes, classRefRes] = await Promise.all([
+                supabase.from('enrollments').select('id').eq('student_id', studentInfo.id).eq('class_id', classIdInput).maybeSingle(),
+                !isTimeOut ? supabase.from('attendance_logs').select('id').eq('student_id', studentInfo.id).eq('class_id', classIdInput).gte('timestamp', todayStart).limit(1).maybeSingle() : Promise.resolve({ data: null, error: null }),
+                supabase.from('classes').select('id, instructor_id, start_time, end_time, instructors!classes_instructor_id_fkey(user_id)').eq('id', classIdInput).single()
+            ]);
+
+            const enrollment = enrollmentRes.data;
+            const existingTimeIn = existingTimeInRes.data;
+            const classRef = classRefRes.data;
+            const classRefError = classRefRes.error;
 
             if (!enrollment) {
                 return NextResponse.json({
@@ -339,38 +346,14 @@ export async function POST(request: Request) {
                 }, { status: 403 });
             }
 
-            // Duplicate prevention: check if already scanned today for this class
-            const todayStart = new Date().toISOString().split('T')[0];
-
-            const isTimeOut = attendance_type === 'Time Out' || rpcStatusInput === 'TIME_OUT';
-
-            if (!isTimeOut) {
-                // TIME IN: Block if ANY log exists today for this student+class
-                const { data: existingTimeIn } = await supabase
-                    .from('attendance_logs')
-                    .select('id')
-                    .eq('student_id', studentInfo.id)
-                    .eq('class_id', classIdInput)
-                    .gte('timestamp', todayStart)
-                    .limit(1)
-                    .maybeSingle();
-
-                if (existingTimeIn) {
-                    console.log(`[API] BIOMETRIC DUPLICATE Time In blocked: Student=${studentInfo.id}, Class=${classIdInput}`);
-                    return NextResponse.json({
-                        error: "Already Timed In",
-                        student_name: studentInfo.name,
-                        duplicate: true
-                    }, { status: 409 });
-                }
+            if (!isTimeOut && existingTimeIn) {
+                console.log(`[API] BIOMETRIC DUPLICATE Time In blocked: Student=${studentInfo.id}, Class=${classIdInput}`);
+                return NextResponse.json({
+                    error: "Already Timed In",
+                    student_name: studentInfo.name,
+                    duplicate: true
+                }, { status: 409 });
             }
-
-            // Get class info for grading logic
-            const { data: classRef, error: classRefError } = await supabase
-                .from('classes')
-                .select('id, instructor_id, start_time, end_time, instructors!classes_instructor_id_fkey(user_id)')
-                .eq('id', classIdInput)
-                .single();
 
             if (!classRef) {
                 console.error(`[API] BIOMETRIC FAIL: Class not found for classIdInput='${classIdInput}'. DB Error:`, classRefError);
