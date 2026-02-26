@@ -87,7 +87,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                 const { data, error } = await query.maybeSingle();
 
                 if (!error && data) {
-                    const isAdmin = data.role === 'admin';
                     const hydratedProfile: Profile = {
                         id: data.id,
                         name: data.name || "Department Admin",
@@ -134,7 +133,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             .maybeSingle();
 
         if (!error && data) {
-            const isAdmin = data.role === 'admin';
             const updatedProfile: Profile = {
                 id: data.id,
                 name: data.name || "Department Admin",
