@@ -181,12 +181,19 @@ export function AdminBiometricMatrix() {
         const supabase = createClient();
 
         try {
-            const { error } = await supabase
-                .from("students")
-                .update({ fingerprint_slot_id: null })
-                .eq("id", slot.student_id);
-
-            if (error) throw error;
+            if (slot.is_activator) {
+                const { error } = await supabase
+                    .from("instructors")
+                    .update({ activator_fingerprint_slot: null, activator_device_serial: null })
+                    .eq("id", slot.student_id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from("students")
+                    .update({ fingerprint_slot_id: null })
+                    .eq("id", slot.student_id);
+                if (error) throw error;
+            }
 
             // Optimistic update will be handled by realtime subscription, but we can also reload
             // loadMatrix(); // Let realtime handle it? Or explicit reload to be safe.
