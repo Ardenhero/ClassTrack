@@ -84,7 +84,7 @@ export function AdminBiometricMatrix() {
             // If no kiosk is bound to this room, show empty matrix
             if (!deviceId) {
                 const emptyMatrix: SlotData[] = [];
-                for (let i = 1; i <= 250; i++) {
+                for (let i = 1; i <= 127; i++) {
                     emptyMatrix.push({ slot_id: i, status: "empty" });
                 }
                 setSlots(emptyMatrix);
@@ -130,10 +130,10 @@ export function AdminBiometricMatrix() {
 
             if (activatorError) throw activatorError;
 
-            // 6. Build the 1-250 Matrix
+            // 6. Build the 1-127 Matrix
             const matrix: SlotData[] = [];
 
-            for (let i = 1; i <= 250; i++) {
+            for (let i = 1; i <= 127; i++) {
                 const student = allOccupiedStudents?.find(s => s.fingerprint_slot_id === i);
                 const activator = activatorInstructors?.find((a: { activator_fingerprint_slot: number }) => a.activator_fingerprint_slot === i);
 
