@@ -204,6 +204,86 @@ export async function POST(request: Request) {
                 .maybeSingle();
 
             if (!studentInfo) {
+                // Check if this fingerprint belongs to a Room Activator
+                const { data: activatorInfo } = await supabase
+                    .from('instructors')
+                    .select('id, name')
+                    .eq('activator_fingerprint_slot', fingerprint_slot_id)
+                    .eq('activator_device_serial', device_id)
+                    .maybeSingle();
+
+                if (activatorInfo) {
+                    console.log(`[API] Activator Recognized: ${activatorInfo.name} (Slot ${fingerprint_slot_id})`);
+
+                    // Trigger IoT Devices for this room
+                    // 1. Find the room this device is in
+                    const { data: deviceData } = await supabase
+                        .from('kiosk_devices')
+                        .select('room_id')
+                        .eq('device_serial', device_id)
+                        .maybeSingle();
+
+                    if (deviceData?.room_id) {
+                        try {
+                            // Fetch all IoT devices in this room
+                            const { data: devices } = await supabase
+                                .from('iot_devices')
+                                .select('id, is_on, metadata')
+                                .eq('room_id', deviceData.room_id);
+
+                            if (devices && devices.length > 0) {
+                                // Determine if we are turning ON or OFF. 
+                                // Let's simplify: Toggle the room power based on majority state,
+                                // or just turn everything ON for "Time In" and OFF for "Time Out".
+                                const targetState = (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN') ? true : false;
+
+                                const updatePromises = devices.map(d => {
+                                    return supabase
+                                        .from('iot_devices')
+                                        .update({
+                                            is_on: targetState,
+                                            metadata: {
+                                                ...(d.metadata || {}),
+                                                last_toggled_by: activatorInfo.id,
+                                                last_toggled_at: timestamp,
+                                                toggled_via: 'activator_scan'
+                                            }
+                                        })
+                                        .eq('id', d.id);
+                                });
+
+                                await Promise.all(updatePromises);
+                                console.log(`[API] Toggled ${devices.length} IoT devices to ${targetState ? 'ON' : 'OFF'} in room ${deviceData.room_id}`);
+
+                                // Return successful "Scan OK" feedback for the ESP32 screen
+                                return NextResponse.json({
+                                    success: true,
+                                    student_name: `${activatorInfo.name} (Room ${targetState ? 'ON' : 'OFF'})`,
+                                    status: targetState ? 'Power On' : 'Power Off',
+                                    action: 'activator_trigger'
+                                });
+                            } else {
+                                return NextResponse.json({
+                                    success: true,
+                                    student_name: activatorInfo.name,
+                                    error: "No IoT devices found in this room",
+                                    status: "Active",
+                                    action: 'activator_trigger'
+                                });
+                            }
+                        } catch (iotErr) {
+                            console.error('[API] Failed to update IoT devices:', iotErr);
+                        }
+                    }
+
+                    return NextResponse.json({
+                        success: true,
+                        student_name: activatorInfo.name,
+                        status: "Activator Verified",
+                        action: 'activator_trigger'
+                    });
+                }
+
                 console.warn(`[API] Unregistered Fingerprint: Slot ${fingerprint_slot_id} on ${device_id} - No Student Linked`);
 
                 return NextResponse.json({
