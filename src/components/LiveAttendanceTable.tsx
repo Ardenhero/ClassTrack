@@ -1,20 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { format, parseISO } from "date-fns";
-import { CheckCircle, Clock, AlertCircle, Ghost, TimerOff, LucideIcon, Radio, Snowflake, MessageSquare, X, Fingerprint } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle, Ghost, TimerOff, LucideIcon, Radio, Snowflake, MessageSquare, X } from "lucide-react";
 import { useProfile } from "@/context/ProfileContext";
-
-/** Toast notification for live scans */
-interface ScanToast {
-    id: string;
-    studentName: string;
-    className: string;
-    status: string;
-    time: string;
-    isTimeOut: boolean;
-}
 
 /** Row shape passed from the server component */
 export interface AttendanceRow {
@@ -89,17 +79,8 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
     const [noteModal, setNoteModal] = useState<{ rowId: string; studentName: string; status: string } | null>(null);
     const [noteText, setNoteText] = useState("");
     const [saving, setSaving] = useState(false);
-    const [toasts, setToasts] = useState<ScanToast[]>([]);
     const { profile } = useProfile();
     const isAdmin = profile?.role === "admin" || profile?.is_super_admin;
-
-    const addToast = useCallback((toast: Omit<ScanToast, 'id'>) => {
-        const id = `toast-${Date.now()}-${Math.random()}`;
-        setToasts(prev => [{ ...toast, id }, ...prev].slice(0, 5)); // Max 5 toasts
-        setTimeout(() => {
-            setToasts(prev => prev.filter(t => t.id !== id));
-        }, 5000);
-    }, []);
 
     // Keep rows in sync if server re-renders with new initialRows (e.g. filter change)
     useEffect(() => {
@@ -166,14 +147,15 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                     setFlash(rec.id);
                     setTimeout(() => setFlash(null), 2000);
 
-                    // Anti-ghost toast notification
-                    addToast({
-                        studentName: newRow.studentName,
-                        className: newRow.className,
-                        status: newRow.status,
-                        time: newRow.timeIn,
-                        isTimeOut: false,
-                    });
+                    // Dispatch global scan event for notification provider
+                    window.dispatchEvent(new CustomEvent('classtrack:scan', {
+                        detail: {
+                            studentName: newRow.studentName,
+                            className: newRow.className,
+                            status: newRow.status,
+                            time: newRow.timeIn,
+                        }
+                    }));
                 }
             )
             .on(
@@ -370,33 +352,15 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
         setNoteText("");
     };
 
-    // Compute scan stats per class for the counter
-    const classStats = rows.reduce((acc, row) => {
-        if (!acc[row.className]) acc[row.className] = { scanned: 0, total: 0 };
-        acc[row.className].total++;
-        if (row.status !== 'Absent' && row.status !== 'No Class') {
-            acc[row.className].scanned++;
-        }
-        return acc;
-    }, {} as Record<string, { scanned: number; total: number }>);
 
     return (
         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
-            {/* Live indicator + scan counter */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
-                <div className="flex items-center gap-2">
-                    <Radio className={`h-4 w-4 ${isLive ? "text-green-500 animate-pulse" : "text-gray-400"}`} />
-                    <span className={`text-xs font-medium ${isLive ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
-                        {isLive ? "Live — Listening for scans" : "Connecting..."}
-                    </span>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                    {Object.entries(classStats).map(([cls, stats]) => (
-                        <span key={cls} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-nwu-red/10 text-nwu-red">
-                            {cls}: {stats.scanned}/{stats.total}
-                        </span>
-                    ))}
-                </div>
+            {/* Live indicator */}
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
+                <Radio className={`h-4 w-4 ${isLive ? "text-green-500 animate-pulse" : "text-gray-400"}`} />
+                <span className={`text-xs font-medium ${isLive ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
+                    {isLive ? "Live — Listening for scans" : "Connecting..."}
+                </span>
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -547,39 +511,6 @@ export default function LiveAttendanceTable({ initialRows, dayString }: Props) {
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
-            {/* Anti-Ghost Toast Notifications */}
-            {toasts.length > 0 && (
-                <div className="fixed top-4 right-4 z-[60] flex flex-col gap-2 pointer-events-none" style={{ maxWidth: '360px' }}>
-                    {toasts.map((toast) => {
-                        const { badgeColor } = getStatusBadge(toast.status);
-                        return (
-                            <div
-                                key={toast.id}
-                                className="pointer-events-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-3 flex items-start gap-3 animate-in slide-in-from-right-5 duration-300"
-                            >
-                                <div className="flex-shrink-0 h-9 w-9 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                    <Fingerprint className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-gray-900 dark:text-white truncate">{toast.studentName}</span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badgeColor}`}>{toast.status}</span>
-                                    </div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                        {toast.className} · {toast.time}
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
-                                    className="flex-shrink-0 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400"
-                                >
-                                    <X className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                        );
-                    })}
                 </div>
             )}
         </div>
