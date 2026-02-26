@@ -139,9 +139,15 @@ export default function KioskInventoryPage() {
             alert("PIN must be exactly 4 numeric digits.");
             return;
         }
+        setActionLoading(serial);
         const res = await updateKioskPin(serial, pin);
-        if (res.error) alert(`Error: ${res.error}`);
-        else setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, admin_pin: pin } : k));
+        if (res.error) {
+            alert(`Error: ${res.error}`);
+        } else {
+            setKiosks(prev => prev.map(k => k.device_serial === serial ? { ...k, admin_pin: pin } : k));
+            alert("Admin PIN updated successfully!");
+        }
+        setActionLoading(null);
     };
 
     const handleDelete = async (serial: string) => {
