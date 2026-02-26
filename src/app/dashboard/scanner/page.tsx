@@ -140,6 +140,7 @@ export default function ScannerPage() {
     useEffect(() => {
         import("jsqr").then((module) => {
             jsQrRef.current = module.default;
+            console.log("[QR] jsQR loaded successfully");
         }).catch(err => console.error("Failed to load jsQR:", err));
     }, []);
 
@@ -164,22 +165,20 @@ export default function ScannerPage() {
 
         try {
             if (jsQrRef.current) {
-                // Use the pre-loaded jsQR instance instead of importing on every frame (which causes massive lag)
                 const code = jsQrRef.current(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "dontInvert", // Speed up scanning by not trying to invert brightness
+                    inversionAttempts: "attemptBoth", // Try both normal and inverted for dark mode screens
                 });
 
                 if (code && code.data) {
-                    // Found a QR code - verify it
+                    console.log("[QR] Detected:", code.data.substring(0, 50) + "...");
                     await verifyQR(code.data);
                     return; // Stop scanning after finding code
                 }
             }
-        } catch {
-            // Silently catch scan errors per frame
+        } catch (err) {
+            console.error("[QR] Scan error:", err);
         }
 
-        // Throttle slightly if needed, but requestAnimationFrame is generally fine if computation is light
         animationRef.current = requestAnimationFrame(scanFrame);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
