@@ -13,6 +13,8 @@ type SlotData = {
     instructor_id?: string; // Added for isolation check
     fingerprint_locked?: boolean;
     is_activator?: boolean;
+    is_primary?: boolean;
+    device_id?: string;
     status: "occupied" | "empty" | "restricted";
 };
 
@@ -110,12 +112,12 @@ export function AdminBiometricMatrix() {
                 .eq("device_serial", deviceId);
 
             // Merge: build a combined list, deduplicating by student id
-            const studentMap = new Map<string, { id: string; name: string; fingerprint_slot_id: number; instructor_id: string; fingerprint_locked: boolean }>();
-            primaryStudents?.forEach(s => studentMap.set(s.id, s));
+            const studentMap = new Map<string, { id: string; name: string; fingerprint_slot_id: number; instructor_id: string; fingerprint_locked: boolean; is_primary?: boolean }>();
+            primaryStudents?.forEach(s => studentMap.set(s.id, { ...s, is_primary: true }));
             linkedStudents?.forEach((link: { student_id: number; fingerprint_slot_id: number; students: { id: string; name: string; instructor_id: string; fingerprint_locked: boolean } }) => {
                 const s = link.students;
                 if (s && currentAccountScope.includes(s.instructor_id) && !studentMap.has(s.id)) {
-                    studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id, fingerprint_locked: s.fingerprint_locked });
+                    studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id, fingerprint_locked: s.fingerprint_locked, is_primary: false });
                 }
             });
 
@@ -146,6 +148,8 @@ export function AdminBiometricMatrix() {
                         instructor_id: student.instructor_id,
                         fingerprint_locked: student.fingerprint_locked,
                         is_activator: false,
+                        is_primary: student.is_primary,
+                        device_id: deviceId || undefined,
                         status: isMine ? "occupied" : "restricted"
                     });
                 } else if (activator) {
@@ -156,6 +160,8 @@ export function AdminBiometricMatrix() {
                         student_name: isMine ? `${activator.name} (Activator)` : "Restricted",
                         instructor_id: activator.id,
                         is_activator: true,
+                        is_primary: true,
+                        device_id: deviceId || undefined,
                         status: isMine ? "occupied" : "restricted"
                     });
                 } else {
@@ -188,11 +194,20 @@ export function AdminBiometricMatrix() {
                     .eq("id", slot.student_id);
                 if (error) throw error;
             } else {
-                const { error } = await supabase
-                    .from("students")
-                    .update({ fingerprint_slot_id: null })
-                    .eq("id", slot.student_id);
-                if (error) throw error;
+                if (slot.is_primary) {
+                    const { error } = await supabase
+                        .from("students")
+                        .update({ fingerprint_slot_id: null })
+                        .eq("id", slot.student_id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase
+                        .from("fingerprint_device_links")
+                        .delete()
+                        .eq("student_id", slot.student_id)
+                        .eq("device_serial", slot.device_id);
+                    if (error) throw error;
+                }
             }
 
             // Optimistic update will be handled by realtime subscription, but we can also reload
@@ -421,7 +436,7 @@ export function AdminBiometricMatrix() {
                                 {selectedSlot.status === 'occupied' ? (
                                     <div className="space-y-1">
                                         <p className="text-gray-600 dark:text-gray-300 truncate">
-                                            <span className="font-medium text-gray-500 text-xs uppercase block">Student</span>
+                                            <span className="font-medium text-gray-500 text-xs uppercase block">{selectedSlot.is_activator ? "Activator" : "Student"}</span>
                                             {selectedSlot.student_name}
                                         </p>
                                         <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
