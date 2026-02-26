@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { controlDevice } from "@/lib/tuya";
 
 const LogSchema = z.object({
     student_name: z.string().optional(),
@@ -228,7 +229,7 @@ export async function POST(request: Request) {
                             // Fetch all IoT devices in this room
                             const { data: devices } = await supabase
                                 .from('iot_devices')
-                                .select('id, is_on, metadata')
+                                .select('id, current_state, dp_code, metadata')
                                 .eq('room_id', deviceData.room_id);
 
                             if (devices && devices.length > 0) {
@@ -236,14 +237,22 @@ export async function POST(request: Request) {
                                 // If attendance_type is "Room Control", we toggle:
                                 // Turn ON only if EVERYTHING is currently OFF. Otherwise, turn OFF.
                                 const isRoomControl = attendance_type === 'Room Control';
-                                const allOff = devices.every(d => !d.is_on);
+                                const allOff = devices.every(d => !d.current_state);
                                 const targetState = isRoomControl ? allOff : (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN');
 
-                                const updatePromises = devices.map(d => {
+                                const updatePromises = devices.map(async (d) => {
+                                    // Actually command the physical device using Tuya API
+                                    const realDeviceId = d.id.replace(/_ch\d+$/, '');
+                                    try {
+                                        await controlDevice(realDeviceId, d.dp_code || 'switch_1', targetState);
+                                    } catch (err) {
+                                        console.error(`[API] Failed to toggle physical Tuya device ${d.id}:`, err);
+                                    }
+
                                     return supabase
                                         .from('iot_devices')
                                         .update({
-                                            is_on: targetState,
+                                            current_state: targetState,
                                             metadata: {
                                                 ...(d.metadata || {}),
                                                 last_toggled_by: activatorInfo.id,

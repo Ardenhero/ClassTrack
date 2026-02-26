@@ -48,8 +48,20 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: linkErr.message }, { status: 500 });
         }
 
-        // 3. Combine and Deduplicate by slot_index
-        type SlotEntry = { slot_index: number; student_id: string; student_name: string };
+        // 3. Fetch Activator slots from instructors table
+        const { data: activatorInstructors, error: activatorErr } = await supabase
+            .from('instructors')
+            .select('id, name, activator_fingerprint_slot')
+            .eq('activator_device_serial', device_id)
+            .not('activator_fingerprint_slot', 'is', null);
+
+        if (activatorErr) {
+            console.error("[SyncTemplates] Activator query error:", activatorErr);
+            return NextResponse.json({ error: activatorErr.message }, { status: 500 });
+        }
+
+        // 4. Combine and Deduplicate by slot_index
+        type SlotEntry = { slot_index: number; student_id: string; student_name: string; is_activator?: boolean };
         const slotMap = new Map<number, SlotEntry>();
 
         primaryStudents?.forEach(s => {
@@ -69,6 +81,17 @@ export async function GET(request: Request) {
                     slot_index: link.fingerprint_slot_id,
                     student_id: link.student_id,
                     student_name: link.students?.name || "Unknown",
+                });
+            }
+        });
+
+        activatorInstructors?.forEach(inst => {
+            if (inst.activator_fingerprint_slot !== null && !slotMap.has(inst.activator_fingerprint_slot)) {
+                slotMap.set(inst.activator_fingerprint_slot, {
+                    slot_index: inst.activator_fingerprint_slot,
+                    student_id: inst.id,
+                    student_name: `${inst.name} (Activator)`,
+                    is_activator: true
                 });
             }
         });
