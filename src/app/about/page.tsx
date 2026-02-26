@@ -147,7 +147,7 @@ export default function AboutPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 {[
-                                    { label: "Roles", value: "4", sub: "Super Admin, Admin, Instructor, Student" },
+                                    { label: "Roles", value: "4", sub: "Administrator, Dept Admin, Instructor, Student" },
                                     { label: "Departments", value: "Multi", sub: "Fully scoped data isolation" },
                                     { label: "IoT Devices", value: "ESP32", sub: "Lights, Fans, ACs via Tuya" },
                                     { label: "Notifications", value: "Auto", sub: "Email parents on absences" },
@@ -269,12 +269,12 @@ export default function AboutPage() {
                                     <div className="flex items-center justify-between mb-4">
                                         <feature.icon className={`h-6 w-6 ${feature.color}`} />
                                         <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full border ${feature.status === "In Progress"
-                                                ? "text-green-400 border-green-400/30 bg-green-400/10"
-                                                : feature.status === "Planned"
-                                                    ? "text-blue-400 border-blue-400/30 bg-blue-400/10"
-                                                    : feature.status === "Researching"
-                                                        ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10"
-                                                        : "text-gray-400 border-gray-400/30 bg-gray-400/10"
+                                            ? "text-green-400 border-green-400/30 bg-green-400/10"
+                                            : feature.status === "Planned"
+                                                ? "text-blue-400 border-blue-400/30 bg-blue-400/10"
+                                                : feature.status === "Researching"
+                                                    ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10"
+                                                    : "text-gray-400 border-gray-400/30 bg-gray-400/10"
                                             }`}>
                                             {feature.status}
                                         </span>

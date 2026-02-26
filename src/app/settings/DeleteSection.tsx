@@ -16,7 +16,7 @@ export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
             <section className="bg-gray-50 dark:bg-gray-800/50 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">Account Management</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Profile and account deletion is managed by your System Administrator. Contact your department admin if changes are needed.
+                    Profile and account deletion is managed by your Department Administrator. Contact your department admin if changes are needed.
                 </p>
             </section>
         );

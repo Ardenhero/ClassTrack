@@ -67,7 +67,7 @@ export default function ProfilePage() {
                             .from("instructors")
                             .insert({
                                 user_id: user.id,
-                                name: "System Admin",
+                                name: "Department Admin",
                                 role: "admin",
                                 is_visible_on_kiosk: false
                             })

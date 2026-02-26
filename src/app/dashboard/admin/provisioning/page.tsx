@@ -159,14 +159,14 @@ export default function AdminManagementPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{admin.name}</p>
-                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest leading-none mt-0.5">{admin.is_super_admin ? "Super Admin" : admin.role}</p>
+                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest leading-none mt-0.5">{admin.is_super_admin ? "Administrator" : "Department Admin"}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                                                 <Building2 className="h-3 w-3 mr-1.5 text-gray-400" />
-                                                {/* Allow Super Admin to change department */}
+                                                {/* Allow Administrator to change department */}
                                                 {!admin.is_super_admin && admin.auth_user_id !== currentUserId ? (
                                                     <select
                                                         className="bg-transparent focus:ring-2 focus:ring-nwu-red rounded py-1 px-2 text-xs w-32 border-none"
@@ -229,7 +229,7 @@ export default function AdminManagementPage() {
                                                                 ? "text-blue-400 hover:text-blue-500 hover:bg-blue-50"
                                                                 : "text-gray-400 hover:text-red-500 hover:bg-red-50"
                                                     )}
-                                                    title={admin.is_super_admin ? "Super Admin Protective Lock" : admin.is_locked ? "Unlock Account" : "Lock Account"}
+                                                    title={admin.is_super_admin ? "Administrator Protective Lock" : admin.is_locked ? "Unlock Account" : "Lock Account"}
                                                 >
                                                     {admin.is_locked ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldOff className="h-3.5 w-3.5" />}
                                                 </button>
@@ -355,7 +355,7 @@ export default function AdminManagementPage() {
                                     className="mt-0.5 rounded border-red-300 text-nwu-red focus:ring-nwu-red"
                                 />
                                 <div>
-                                    <p className="text-sm font-bold text-nwu-red">Super Admin Privileges</p>
+                                    <p className="text-sm font-bold text-nwu-red">Administrator Privileges</p>
                                     <p className="text-[10px] text-gray-600 mt-0.5 leading-tight">Grants unfettered access to all university data, user accounts, and infrastructure controls. Use with caution.</p>
                                 </div>
                             </label>

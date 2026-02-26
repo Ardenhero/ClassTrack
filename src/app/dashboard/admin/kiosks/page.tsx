@@ -302,7 +302,7 @@ export default function KioskInventoryPage() {
                                         </div>
 
                                         {/* Admin PIN */}
-                                        {isSuperAdmin && (
+                                        {!isSuperAdmin && (
                                             <div className="lg:w-1/6">
                                                 <div className="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold mb-1">
                                                     Admin PIN

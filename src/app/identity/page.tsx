@@ -187,7 +187,7 @@ export default function IdentityPage() {
                                 onClick={() => {
                                     selectProfile({
                                         id: "sys_admin",
-                                        name: "System Administrator",
+                                        name: "Department Administrator",
                                         role: "admin",
                                         has_pin: false
                                     });
@@ -196,7 +196,7 @@ export default function IdentityPage() {
                                 className="flex items-center justify-center w-full px-4 py-3 bg-red-50 text-red-700 font-bold rounded-xl border border-red-100 hover:bg-red-100 transition-colors shadow-sm mb-4 cursor-pointer"
                             >
                                 <Settings className="mr-2 h-5 w-5" />
-                                Access System Administration
+                                Access Department Administration
                             </button>
 
                             <div>

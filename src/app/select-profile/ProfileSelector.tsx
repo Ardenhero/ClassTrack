@@ -75,7 +75,7 @@ export function ProfileSelector({ profiles }: { profiles: Profile[] }) {
                         </span>
                         {profile.role === 'admin' && (
                             <span className={`text-xs uppercase tracking-widest mt-1 ${profile.is_super_admin ? 'text-red-400' : 'text-nwu-gold'}`}>
-                                {profile.is_super_admin ? 'Super Admin' : 'Admin'}
+                                {profile.is_super_admin ? 'Administrator' : 'Department Admin'}
                             </span>
                         )}
                     </div>

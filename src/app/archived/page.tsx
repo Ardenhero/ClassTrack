@@ -146,7 +146,7 @@ export default function ArchivedPage() {
         setRequestSubmitting(false);
         setRequestModal(null);
         setRequestReason("");
-        alert("Deletion request sent to your System Administrator for approval.");
+        alert("Deletion request sent to your Department Administrator for approval.");
     };
 
     const timeAgo = (dateStr: string | null) => {
@@ -301,7 +301,7 @@ export default function ArchivedPage() {
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Request Permanent Deletion</h3>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                This will send a request to your System Administrator to permanently delete
+                                This will send a request to your Department Administrator to permanently delete
                                 <strong className="text-gray-900 dark:text-white"> {requestModal.name}</strong>.
                             </p>
                             <div className="mb-4">

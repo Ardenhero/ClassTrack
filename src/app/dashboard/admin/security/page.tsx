@@ -171,7 +171,7 @@ export default function SecurityPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Password Reset Card — Super Admin Only */}
+                {/* Password Reset Card — Administrator Only */}
                 {isSuperAdmin && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                         <div className="bg-gradient-to-r from-red-600 to-red-700 p-5 text-white">
@@ -179,7 +179,7 @@ export default function SecurityPage() {
                                 <KeyRound className="h-6 w-6" />
                                 <div>
                                     <h2 className="text-lg font-bold">Password Reset</h2>
-                                    <p className="text-red-200 text-xs">Super Admin • {pwdRemaining !== null ? `${pwdRemaining}/10 remaining` : "10 resets per month"}</p>
+                                    <p className="text-red-200 text-xs">Administrator • {pwdRemaining !== null ? `${pwdRemaining}/10 remaining` : "10 resets per month"}</p>
                                 </div>
                             </div>
                         </div>

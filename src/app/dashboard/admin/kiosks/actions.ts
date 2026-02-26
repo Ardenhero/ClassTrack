@@ -130,10 +130,25 @@ export async function deleteKiosk(deviceSerial: string) {
 }
 
 export async function updateKioskPin(deviceSerial: string, pin: string) {
-    const { isSuperAdmin } = await requireSuperAdmin();
-    if (!isSuperAdmin) return { success: false, error: "Forbidden" };
+    const { isSuperAdmin, user } = await requireSuperAdmin();
+
+    // As requested, only System Admins (Department Admins) can change PINs
+    if (isSuperAdmin) {
+        return { success: false, error: "Only Department Admins can set device PINs." };
+    }
 
     const supabase = createAdminClient();
+
+    // Check admin assignment match
+    const { data: kiosk } = await supabase
+        .from('kiosk_devices')
+        .select('assigned_admin_id')
+        .eq('device_serial', deviceSerial)
+        .single();
+
+    if (!kiosk || kiosk.assigned_admin_id !== user.id) {
+        return { success: false, error: "Cannot change PIN of a kiosk not assigned to you." };
+    }
 
     // Validate PIN is exactly 4 digits
     if (!/^\d{4}$/.test(pin)) {
