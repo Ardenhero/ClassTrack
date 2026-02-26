@@ -190,15 +190,8 @@ export function AdminBiometricMatrix() {
 
         if (!isAdmin && profile) {
             const currentAccountScope: string[] = [profile.id];
-            if (profile.role === "department_admin" && profile.department_id) {
-                const { data: deptInstructors } = await supabase
-                    .from("instructors")
-                    .select("id")
-                    .eq("department_id", profile.department_id);
-                if (deptInstructors) {
-                    currentAccountScope.push(...deptInstructors.map((i: { id: string }) => i.id));
-                }
-            }
+            // Since we know they are not an admin here (isAdmin is false), they must be an instructor.
+            // Instructors only have their own scope.
             isMine = slot.instructor_id ? currentAccountScope.includes(slot.instructor_id) : false;
         }
 
