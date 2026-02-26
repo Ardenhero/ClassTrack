@@ -18,10 +18,10 @@ const redis = hasRedis
 
 // Rate limiter configurations using Upstash
 export const rateLimiters = {
-    // General API rate limit: 60 requests per minute
+    // General API rate limit: 300 requests per minute (increased for shared WiFi)
     api: redis ? new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(60, "1 m"),
+        limiter: Ratelimit.slidingWindow(300, "1 m"),
         analytics: true,
         prefix: "ratelimit:api",
     }) : null,
@@ -34,10 +34,10 @@ export const rateLimiters = {
         prefix: "ratelimit:auth",
     }) : null,
 
-    // Attendance API: 30 requests per minute (for IoT devices)
+    // Attendance API: 200 requests per minute (for IoT devices)
     attendance: redis ? new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(30, "1 m"),
+        limiter: Ratelimit.slidingWindow(200, "1 m"),
         analytics: true,
         prefix: "ratelimit:attendance",
     }) : null,
@@ -91,7 +91,7 @@ export class RateLimiter {
 }
 
 // Global fallback instance for when Redis is not available
-export const globalLimiter = new RateLimiter(100, 15 * 60 * 1000);
+export const globalLimiter = new RateLimiter(500, 15 * 60 * 1000);
 
 // ============================================
 // UNIFIED RATE LIMIT CHECK

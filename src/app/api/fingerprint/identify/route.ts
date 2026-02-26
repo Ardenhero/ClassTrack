@@ -4,9 +4,10 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slot_id = searchParams.get('slot_id');
+    const device_id = searchParams.get('device_id');
 
-    if (!slot_id) {
-        return NextResponse.json({ error: "Missing slot_id" }, { status: 400 });
+    if (!slot_id || !device_id) {
+        return NextResponse.json({ error: "Missing slot_id or device_id" }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -22,10 +23,28 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Invalid Slot ID" }, { status: 400 });
         }
 
+        // Look up the instructor_id connected to this device_id
+        const { data: deviceData, error: deviceError } = await supabase
+            .from('kiosk_devices')
+            .select('instructor_id')
+            .eq('device_serial', device_id)
+            .maybeSingle();
+
+        if (deviceError) {
+            console.error("[API] Identify Device Lookup Error:", deviceError);
+            return NextResponse.json({ error: "Device Database Error" }, { status: 500 });
+        }
+
+        if (!deviceData || !deviceData.instructor_id) {
+            console.warn(`[API] Identify: Device ${device_id} is not linked to any instructor.`);
+            return NextResponse.json({ error: "Device Configuration Error" }, { status: 400 });
+        }
+
         const { data, error } = await supabase
             .from('students')
             .select('id, name')
             .eq('fingerprint_slot_id', slotIdInt) // Query as INT
+            .eq('instructor_id', deviceData.instructor_id) // Isolate to this instructor
             .maybeSingle(); // Use maybeSingle to avoid errors on duplicates
 
         if (error) {
@@ -39,6 +58,7 @@ export async function GET(request: Request) {
                 .from('instructors')
                 .select('id, name')
                 .eq('activator_fingerprint_slot', slotIdInt)
+                .eq('activator_device_serial', device_id)
                 .maybeSingle();
 
             if (activatorData) {
