@@ -94,13 +94,12 @@ export function AdminBiometricMatrix() {
                 return;
             }
 
-            // 4. Get students ONLY within my scope AND on this specific device
+            // 4. Get all students on this specific device
             // Check both students.device_id (primary) and fingerprint_device_links (copies)
             const { data: primaryStudents, error } = await supabase
                 .from("students")
                 .select("id, name, fingerprint_slot_id, instructor_id, fingerprint_locked")
                 .not("fingerprint_slot_id", "is", null)
-                .in("instructor_id", currentAccountScope)
                 .eq("device_id", deviceId) as { data: { id: string; name: string; fingerprint_slot_id: number; instructor_id: string; fingerprint_locked: boolean }[] | null; error: PostgrestError | null };
 
             if (error) throw error;
@@ -116,7 +115,7 @@ export function AdminBiometricMatrix() {
             primaryStudents?.forEach(s => studentMap.set(s.id, { ...s, is_primary: true }));
             linkedStudents?.forEach((link: { student_id: number; fingerprint_slot_id: number; students: { id: string; name: string; instructor_id: string; fingerprint_locked: boolean } }) => {
                 const s = link.students;
-                if (s && currentAccountScope.includes(s.instructor_id) && !studentMap.has(s.id)) {
+                if (s && !studentMap.has(s.id)) {
                     studentMap.set(s.id, { id: s.id, name: s.name, fingerprint_slot_id: link.fingerprint_slot_id, instructor_id: s.instructor_id, fingerprint_locked: s.fingerprint_locked, is_primary: false });
                 }
             });
@@ -139,11 +138,13 @@ export function AdminBiometricMatrix() {
                 const student = allOccupiedStudents?.find(s => s.fingerprint_slot_id === i);
                 const activator = activatorInstructors?.find((a: { activator_fingerprint_slot: number }) => a.activator_fingerprint_slot === i);
 
+                const isAdmin = profile?.role === "admin";
+
                 if (student) {
-                    const isMine = currentAccountScope.includes(student.instructor_id);
+                    const isMine = isAdmin || currentAccountScope.includes(student.instructor_id);
                     matrix.push({
                         slot_id: i,
-                        student_id: isMine ? student.id : undefined,
+                        student_id: isMine ? student.id : student.id, // Keep ID for admins to unlink even if technically restricted
                         student_name: isMine ? student.name : "Restricted",
                         instructor_id: student.instructor_id,
                         fingerprint_locked: student.fingerprint_locked,
@@ -153,10 +154,10 @@ export function AdminBiometricMatrix() {
                         status: isMine ? "occupied" : "restricted"
                     });
                 } else if (activator) {
-                    const isMine = currentAccountScope.includes(activator.id);
+                    const isMine = isAdmin || currentAccountScope.includes(activator.id);
                     matrix.push({
                         slot_id: i,
-                        student_id: isMine ? activator.id : undefined, // Using student_id field conceptually for the entity ID
+                        student_id: isMine ? activator.id : activator.id, // Using student_id field conceptually for the entity ID
                         student_name: isMine ? `${activator.name} (Activator)` : "Restricted",
                         instructor_id: activator.id,
                         is_activator: true,
@@ -181,10 +182,34 @@ export function AdminBiometricMatrix() {
     }, [profile, selectedRoomId]);
 
     const unlinkSlot = async (slot: SlotData) => {
+        const isAdmin = profile?.role === "admin";
+
+        // Rebuild scope for permission check
+        const supabase = createClient();
+        let isMine = isAdmin;
+
+        if (!isAdmin && profile) {
+            const currentAccountScope: string[] = [profile.id];
+            if (profile.role === "department_admin" && profile.department_id) {
+                const { data: deptInstructors } = await supabase
+                    .from("instructors")
+                    .select("id")
+                    .eq("department_id", profile.department_id);
+                if (deptInstructors) {
+                    currentAccountScope.push(...deptInstructors.map((i: { id: string }) => i.id));
+                }
+            }
+            isMine = slot.instructor_id ? currentAccountScope.includes(slot.instructor_id) : false;
+        }
+
+        if (!isMine) {
+            alert("You cannot unlink a fingerprint enrolled by another instructor.");
+            return;
+        }
+
         if (!slot.student_id || !confirm(`Are you sure you want to unlink ${slot.student_name}? This will remove their fingerprint association from the database.`)) return;
 
         setUnlinking(true);
-        const supabase = createClient();
 
         try {
             if (slot.is_activator) {
@@ -442,9 +467,20 @@ export function AdminBiometricMatrix() {
                                         <p className="text-xs text-gray-400 font-mono truncate">{selectedSlot.student_id}</p>
                                     </div>
                                 ) : selectedSlot.status === 'restricted' ? (
-                                    <p className="text-gray-500 text-xs italic">
-                                        This slot is occupied by another instructor&apos;s student.
-                                    </p>
+                                    <div className="space-y-1">
+                                        <p className="text-gray-500 text-xs italic">
+                                            This slot is occupied by {selectedSlot.student_name === "Restricted" ? "another instructor's user" : selectedSlot.student_name}.
+                                        </p>
+                                        {profile?.role === "admin" && (
+                                            <button
+                                                onClick={() => unlinkSlot(selectedSlot)}
+                                                disabled={unlinking}
+                                                className="text-xs text-red-600 hover:text-red-700 hover:underline mt-2 disabled:opacity-50 inline-block"
+                                            >
+                                                {unlinking ? 'Force Unlinking...' : 'Force Unlink as Admin'}
+                                            </button>
+                                        )}
+                                    </div>
                                 ) : (
                                     <p className="text-gray-400 text-xs italic">Empty slot available for enrollment.</p>
                                 )}
