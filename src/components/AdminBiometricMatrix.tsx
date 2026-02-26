@@ -6,14 +6,15 @@ import { useProfile } from "@/context/ProfileContext";
 import { Fingerprint, RefreshCw, Loader2, Copy, Lock, Unlock } from "lucide-react";
 import { PostgrestError, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
-interface SlotData {
+type SlotData = {
     slot_id: number;
     student_id?: string;
     student_name?: string;
     instructor_id?: string; // Added for isolation check
     fingerprint_locked?: boolean;
+    is_activator?: boolean;
     status: "occupied" | "empty" | "restricted";
-}
+};
 
 export function AdminBiometricMatrix() {
     const { profile } = useProfile();
@@ -83,7 +84,7 @@ export function AdminBiometricMatrix() {
             // If no kiosk is bound to this room, show empty matrix
             if (!deviceId) {
                 const emptyMatrix: SlotData[] = [];
-                for (let i = 1; i <= 127; i++) {
+                for (let i = 1; i <= 250; i++) {
                     emptyMatrix.push({ slot_id: i, status: "empty" });
                 }
                 setSlots(emptyMatrix);
@@ -120,11 +121,21 @@ export function AdminBiometricMatrix() {
 
             const allOccupiedStudents = Array.from(studentMap.values());
 
-            // 4. Build the 1-127 Matrix
+            // 5. Get Activators (instructors) on this device
+            const { data: activatorInstructors, error: activatorError } = await supabase
+                .from("instructors")
+                .select("id, name, activator_fingerprint_slot")
+                .eq("activator_device_serial", deviceId)
+                .not("activator_fingerprint_slot", "is", null);
+
+            if (activatorError) throw activatorError;
+
+            // 6. Build the 1-250 Matrix
             const matrix: SlotData[] = [];
 
-            for (let i = 1; i <= 127; i++) {
+            for (let i = 1; i <= 250; i++) {
                 const student = allOccupiedStudents?.find(s => s.fingerprint_slot_id === i);
+                const activator = activatorInstructors?.find((a: { activator_fingerprint_slot: number }) => a.activator_fingerprint_slot === i);
 
                 if (student) {
                     const isMine = currentAccountScope.includes(student.instructor_id);
@@ -134,6 +145,17 @@ export function AdminBiometricMatrix() {
                         student_name: isMine ? student.name : "Restricted",
                         instructor_id: student.instructor_id,
                         fingerprint_locked: student.fingerprint_locked,
+                        is_activator: false,
+                        status: isMine ? "occupied" : "restricted"
+                    });
+                } else if (activator) {
+                    const isMine = currentAccountScope.includes(activator.id);
+                    matrix.push({
+                        slot_id: i,
+                        student_id: isMine ? activator.id : undefined, // Using student_id field conceptually for the entity ID
+                        student_name: isMine ? `${activator.name} (Activator)` : "Restricted",
+                        instructor_id: activator.id,
+                        is_activator: true,
                         status: isMine ? "occupied" : "restricted"
                     });
                 } else {
@@ -292,7 +314,7 @@ export function AdminBiometricMatrix() {
                         Sensor Memory Map
                     </h2>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span className="text-green-600 font-bold">Linked</span> • <span className="text-gray-400">Empty</span>
+                        <span className="text-green-600 font-bold">Students</span> • <span className="text-blue-600 font-bold">Activators</span> • <span className="text-gray-400">Empty</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
@@ -333,9 +355,11 @@ export function AdminBiometricMatrix() {
                                     relative p-1 rounded border text-center transition-all hover:scale-110 focus:ring-2 focus:ring-offset-1 focus:outline-none
                                     ${selectedSlot?.slot_id === slot.slot_id ? 'ring-2 ring-blue-500 ring-offset-1 z-10' : ''}
                                     ${slot.status === 'occupied'
-                                        ? slot.fingerprint_locked
-                                            ? 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/40 dark:border-orange-700 dark:text-orange-300'
-                                            : 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
+                                        ? slot.is_activator
+                                            ? 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300'
+                                            : slot.fingerprint_locked
+                                                ? 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-900/40 dark:border-orange-700 dark:text-orange-300'
+                                                : 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
                                         : slot.status === 'restricted'
                                             ? 'bg-gray-200 border-gray-300 text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed'
                                             : 'bg-gray-50 border-gray-100 text-gray-300 dark:bg-gray-800/30 dark:border-gray-700 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
