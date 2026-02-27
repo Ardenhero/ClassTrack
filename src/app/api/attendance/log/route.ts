@@ -248,11 +248,22 @@ export async function POST(request: Request) {
                                 const allOn = devices.every(d => d.current_state);
                                 const targetState = isRoomControl ? !allOn : (attendance_type === 'Time In' || rpcStatusInput === 'TIME_IN');
 
+                                const LOCK_CODES = ['unlock_ble', 'unlock_fingerprint', 'unlock_temporary', 'unlock_card'];
                                 const updatePromises = devices.map(async (d) => {
-                                    // Actually command the physical device using Tuya API
                                     const realDeviceId = d.id.replace(/_ch\d+$/, '');
+                                    const isLock = LOCK_CODES.includes(d.dp_code || '');
+
                                     try {
-                                        await controlDevice(realDeviceId, d.dp_code || 'switch_1', targetState);
+                                        if (isLock) {
+                                            // Locks: only unlock on room activation, skip on deactivation (auto-locks)
+                                            if (targetState) {
+                                                await controlDevice(realDeviceId, d.dp_code || 'unlock_ble', true);
+                                            }
+                                            // Don't try to "lock" — locks auto-lock
+                                        } else {
+                                            // Normal devices (lights, fans, etc.): toggle normally
+                                            await controlDevice(realDeviceId, d.dp_code || 'switch_1', targetState);
+                                        }
                                     } catch (err) {
                                         console.error(`[API] Failed to toggle physical Tuya device ${d.id}:`, err);
                                     }
@@ -260,7 +271,7 @@ export async function POST(request: Request) {
                                     const { error } = await supabase
                                         .from('iot_devices')
                                         .update({
-                                            current_state: targetState
+                                            current_state: isLock ? (targetState ? true : d.current_state) : targetState
                                         })
                                         .eq('id', d.id);
 
