@@ -39,12 +39,41 @@ export async function controlDevice(deviceId: string, code: string, value: boole
     const tuya = getTuyaClient();
     const isLockCmd = LOCK_DP_CODES.includes(code);
 
-    // For lock commands, try the lock-specific remote unlock API first
+    // For lock commands, use Tuya's Smart Lock API (2-step ticket flow)
     if (isLockCmd && value === true) {
         try {
-            console.log(`[Tuya] Trying lock-specific API for ${deviceId}, code=${code}`);
+            console.log(`[Tuya] Smart lock unlock for ${deviceId}, code=${code}`);
 
-            // Method 1: Try the standard commands API with the lock DP code
+            // Step 1: Get a password ticket
+            const ticketRes = await tuya.request({
+                method: 'POST',
+                path: `/v1.0/smart-lock/devices/${deviceId}/password-ticket`,
+                body: {},
+            });
+
+            if (ticketRes.success && ticketRes.result) {
+                const ticketId = (ticketRes.result as { ticket_id: string }).ticket_id;
+                console.log(`[Tuya] Got ticket: ${ticketId}`);
+
+                // Step 2: Use ticket to open the door
+                const openRes = await tuya.request({
+                    method: 'POST',
+                    path: `/v1.0/smart-lock/devices/${deviceId}/password-free/door-open`,
+                    body: { ticket_id: ticketId },
+                });
+
+                if (openRes.success) {
+                    console.log('[Tuya] Smart lock unlocked successfully via ticket!');
+                    return { success: true };
+                }
+
+                console.error('[Tuya] Door-open with ticket failed:', openRes);
+                return { success: false, msg: openRes.msg || 'Unlock failed after getting ticket' };
+            }
+
+            console.log(`[Tuya] Ticket API failed (${ticketRes.code}: ${ticketRes.msg}), trying standard commands...`);
+
+            // Fallback: Try standard commands API (works for some Wi-Fi locks)
             const cmdResult = await tuya.request({
                 method: 'POST',
                 path: `/v1.0/iot-03/devices/${deviceId}/commands`,
@@ -58,22 +87,8 @@ export async function controlDevice(deviceId: string, code: string, value: boole
                 return { success: true };
             }
 
-            console.log(`[Tuya] Standard API failed for lock (${cmdResult.msg}), trying password-free unlock...`);
-
-            // Method 2: Try the password-free temporary unlock API
-            const ticketResult = await tuya.request({
-                method: 'POST',
-                path: `/v1.0/smart-lock/devices/${deviceId}/password-free/open-door`,
-                body: {},
-            });
-
-            if (ticketResult.success) {
-                console.log('[Tuya] Password-free unlock succeeded');
-                return { success: true };
-            }
-
-            console.error('[Tuya] All lock unlock methods failed:', { cmdResult, ticketResult });
-            return { success: false, msg: ticketResult.msg || cmdResult.msg || 'Lock command failed — check if device is online and supports cloud unlock' };
+            console.error('[Tuya] All lock unlock methods failed:', { ticketRes, cmdResult });
+            return { success: false, msg: cmdResult.msg || ticketRes.msg || 'Lock does not support cloud unlock' };
         } catch (err) {
             console.error('[Tuya] Lock request error:', err);
             return { success: false, msg: `Lock error: ${String(err)}` };
