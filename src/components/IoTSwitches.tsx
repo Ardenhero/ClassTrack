@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Lightbulb, Fan, Snowflake, Loader2, Wifi, WifiOff, Zap } from "lucide-react";
+import { Lightbulb, Fan, Snowflake, Loader2, Wifi, WifiOff, Zap, Lock } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "@/context/ProfileContext";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
@@ -20,6 +20,7 @@ interface IoTDevice {
 // Map device names to appropriate icons/colors
 function getDeviceVisuals(name: string) {
     const lower = name.toLowerCase();
+    if (lower.includes("lock") || lower.includes("door")) return { Icon: Lock, colorOn: "purple", colorClass: "bg-purple-500 shadow-purple-200", bgOn: "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700/50" };
     if (lower.includes("light")) return { Icon: Lightbulb, colorOn: "yellow", colorClass: "bg-yellow-500 shadow-yellow-200", bgOn: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700/50" };
     if (lower.includes("fan")) return { Icon: Fan, colorOn: "blue", colorClass: "bg-blue-500 shadow-blue-200", bgOn: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700/50", spin: true };
     if (lower.includes("ac") || lower.includes("air")) return { Icon: Snowflake, colorOn: "cyan", colorClass: "bg-cyan-500 shadow-cyan-200", bgOn: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-700/50" };

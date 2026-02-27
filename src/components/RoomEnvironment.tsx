@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useProfile } from "@/context/ProfileContext";
 import { createClient } from "@/utils/supabase/client";
-import { Power, Wifi, WifiOff, Loader2, Zap } from "lucide-react";
+import { Power, Wifi, WifiOff, Loader2, Zap, Lock, Lightbulb, Fan, Snowflake } from "lucide-react";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 interface IoTDevice {
@@ -15,6 +15,16 @@ interface IoTDevice {
     current_state: boolean;
     online: boolean;
     updated_at: string;
+}
+
+// Map device names to appropriate icons
+function getDeviceVisuals(name: string) {
+    const lower = name.toLowerCase();
+    if (lower.includes("lock") || lower.includes("door")) return Lock;
+    if (lower.includes("light")) return Lightbulb;
+    if (lower.includes("fan")) return Fan;
+    if (lower.includes("ac") || lower.includes("air")) return Snowflake;
+    return Power;
 }
 
 export default function RoomEnvironment() {
@@ -127,68 +137,71 @@ export default function RoomEnvironment() {
             </div>
 
             <div className="space-y-3">
-                {devices.map((device) => (
-                    <div
-                        key={device.id}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${device.current_state
-                            ? "bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800"
-                            : "bg-gray-50 border-gray-200 dark:bg-gray-700/30 dark:border-gray-600"
-                            }`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div
-                                className={`p-2 rounded-lg ${device.current_state
-                                    ? "bg-green-100 dark:bg-green-900/30"
-                                    : "bg-gray-200 dark:bg-gray-600"
-                                    }`}
-                            >
-                                <Power
-                                    className={`h-4 w-4 ${device.current_state
-                                        ? "text-green-600 dark:text-green-400"
-                                        : "text-gray-400 dark:text-gray-500"
+                {devices.map((device) => {
+                    const DeviceIcon = getDeviceVisuals(device.name);
+                    return (
+                        <div
+                            key={device.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border transition-all ${device.current_state
+                                ? "bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800"
+                                : "bg-gray-50 border-gray-200 dark:bg-gray-700/30 dark:border-gray-600"
+                                }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`p-2 rounded-lg ${device.current_state
+                                        ? "bg-green-100 dark:bg-green-900/30"
+                                        : "bg-gray-200 dark:bg-gray-600"
                                         }`}
-                                />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {device.name}
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                    {device.online ? (
-                                        <Wifi className="h-3 w-3 text-green-500" />
-                                    ) : (
-                                        <WifiOff className="h-3 w-3 text-red-400" />
-                                    )}
-                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-                                        {device.current_state ? "ON" : "OFF"}
-                                    </span>
+                                >
+                                    <DeviceIcon
+                                        className={`h-4 w-4 ${device.current_state
+                                            ? "text-green-600 dark:text-green-400"
+                                            : "text-gray-400 dark:text-gray-500"
+                                            }`}
+                                    />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {device.name}
+                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                        {device.online ? (
+                                            <Wifi className="h-3 w-3 text-green-500" />
+                                        ) : (
+                                            <WifiOff className="h-3 w-3 text-red-400" />
+                                        )}
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                            {device.current_state ? "ON" : "OFF"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Toggle Switch */}
-                        <button
-                            onClick={() => handleToggle(device)}
-                            disabled={toggling === device.id}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${device.current_state
-                                ? "bg-green-500"
-                                : "bg-gray-300 dark:bg-gray-600"
-                                } ${toggling === device.id ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
-                        >
-                            <span className="sr-only">Toggle {device.name}</span>
-                            {toggling === device.id ? (
-                                <span className="absolute inset-0 flex items-center justify-center">
-                                    <Loader2 className="h-3 w-3 animate-spin text-white" />
-                                </span>
-                            ) : (
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${device.current_state ? "translate-x-6" : "translate-x-1"
-                                        }`}
-                                />
-                            )}
-                        </button>
-                    </div>
-                ))}
+                            {/* Toggle Switch */}
+                            <button
+                                onClick={() => handleToggle(device)}
+                                disabled={toggling === device.id}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${device.current_state
+                                    ? "bg-green-500"
+                                    : "bg-gray-300 dark:bg-gray-600"
+                                    } ${toggling === device.id ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
+                            >
+                                <span className="sr-only">Toggle {device.name}</span>
+                                {toggling === device.id ? (
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                        <Loader2 className="h-3 w-3 animate-spin text-white" />
+                                    </span>
+                                ) : (
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${device.current_state ? "translate-x-6" : "translate-x-1"
+                                            }`}
+                                    />
+                                )}
+                            </button>
+                        </div>
+                    )
+                })}
             </div>
 
             {/* Last updated */}

@@ -73,6 +73,8 @@ export default async function DevicesPage() {
                                 <option value="FAN">Smart Fan</option>
                                 <option value="LIGHT">Smart Light</option>
                                 <option value="AC">Air Conditioner</option>
+                                <option value="DOOR_LOCK">Door Lock</option>
+                                <option value="FINGERPRINT_DOOR_LOCK">Fingerprint Door Lock</option>
                             </select>
                         </div>
                         <div className="md:col-span-1">
