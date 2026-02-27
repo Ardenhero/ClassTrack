@@ -56,18 +56,44 @@ export async function controlDevice(deviceId: string, code: string, value: boole
                 const ticketId = (ticketRes.result as { ticket_id: string }).ticket_id;
                 console.log(`[Tuya] Got ticket: ${ticketId}`);
 
-                // Step 2: Open door with ticket
+                // Step 2a: Try v1.0 open-door with open:true
                 const openRes = await tuya.request({
                     method: 'POST',
                     path: `/v1.0/devices/${deviceId}/door-lock/password-free/open-door`,
-                    body: { ticket_id: ticketId },
+                    body: { ticket_id: ticketId, open: true },
                 });
 
                 if (openRes.success) {
-                    console.log('[Tuya] Lock unlocked via password-ticket flow!');
+                    console.log('[Tuya] Lock unlocked via v1.0 open-door!');
                     return { success: true };
                 }
-                console.warn('[Tuya] open-door failed:', openRes.code, openRes.msg);
+                console.warn('[Tuya] v1.0 open-door failed:', openRes.code, openRes.msg);
+
+                // Step 2b: Try v1.1 endpoint  
+                const openRes2 = await tuya.request({
+                    method: 'POST',
+                    path: `/v1.1/devices/${deviceId}/door-lock/password-free/open-door`,
+                    body: { ticket_id: ticketId },
+                });
+
+                if (openRes2.success) {
+                    console.log('[Tuya] Lock unlocked via v1.1 open-door!');
+                    return { success: true };
+                }
+                console.warn('[Tuya] v1.1 open-door failed:', openRes2.code, openRes2.msg);
+
+                // Step 2c: Try remote-unlock with ticket
+                const remoteRes = await tuya.request({
+                    method: 'POST',
+                    path: `/v1.0/devices/${deviceId}/door-lock/open-door`,
+                    body: { ticket_id: ticketId, open: true },
+                });
+
+                if (remoteRes.success) {
+                    console.log('[Tuya] Lock unlocked via door-lock/open-door!');
+                    return { success: true };
+                }
+                console.warn('[Tuya] door-lock/open-door failed:', remoteRes.code, remoteRes.msg);
             } else {
                 console.warn('[Tuya] password-ticket failed:', ticketRes.code, ticketRes.msg);
             }
