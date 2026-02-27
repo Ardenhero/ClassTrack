@@ -22,9 +22,9 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { device_id, code, value, source, class_id, profile_id } = body;
 
-        if (!device_id || !code || typeof value !== 'boolean') {
+        if (!device_id || !code || value === undefined || value === null) {
             return NextResponse.json(
-                { error: "Missing required fields: device_id, code, value (boolean)" },
+                { error: "Missing required fields: device_id, code, value" },
                 { status: 400 }
             );
         }

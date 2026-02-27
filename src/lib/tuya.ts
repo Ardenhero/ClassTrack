@@ -28,10 +28,10 @@ function getTuyaClient(): TuyaContext {
 /**
  * Send a command to a Tuya device.
  * @param deviceId  Tuya device ID
- * @param code      Data point code (e.g. "switch_1", "switch")
- * @param value     Boolean true=ON, false=OFF
+ * @param code      Data point code (e.g. "switch_1", "switch", "unlock_ble")
+ * @param value     Boolean true=ON, false=OFF, or string/number for special dp_codes
  */
-export async function controlDevice(deviceId: string, code: string, value: boolean): Promise<{ success: boolean; msg?: string }> {
+export async function controlDevice(deviceId: string, code: string, value: boolean | string | number): Promise<{ success: boolean; msg?: string }> {
     try {
         const tuya = getTuyaClient();
         const result = await tuya.request({

@@ -79,13 +79,19 @@ export function IoTSwitches() {
         };
     }, [loadDevices]);
 
+    // dp_codes that are momentary triggers, not persistent on/off toggles
+    const MOMENTARY_DP_CODES = ['unlock_ble', 'unlock_fingerprint', 'unlock_temporary'];
+
     const toggleDevice = async (device: IoTDevice) => {
         setToggling(device.id);
+
+        const dpCode = device.dp_code || "switch_1";
+        const isMomentary = MOMENTARY_DP_CODES.includes(dpCode);
 
         // Optimistic update
         setDevices((prev) =>
             prev.map((d) =>
-                d.id === device.id ? { ...d, current_state: !d.current_state } : d
+                d.id === device.id ? { ...d, current_state: isMomentary ? true : !d.current_state } : d
             )
         );
 
@@ -97,8 +103,8 @@ export function IoTSwitches() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         device_id: device.id,
-                        code: device.dp_code || "switch_1",
-                        value: !device.current_state,
+                        code: dpCode,
+                        value: isMomentary ? true : !device.current_state,
                         source: "web",
                         profile_id: profile?.id,
                     }),
@@ -113,6 +119,15 @@ export function IoTSwitches() {
                     )
                 );
                 console.error("Toggle failed:", await res.json());
+            } else if (isMomentary) {
+                // For momentary triggers (door locks), auto-reset UI back to OFF after 3s
+                setTimeout(() => {
+                    setDevices((prev) =>
+                        prev.map((d) =>
+                            d.id === device.id ? { ...d, current_state: false } : d
+                        )
+                    );
+                }, 3000);
             }
         } catch (err) {
             // Revert on error
