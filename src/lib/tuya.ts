@@ -25,15 +25,63 @@ function getTuyaClient(): TuyaContext {
     return _tuyaClient;
 }
 
+// DP codes that are lock-specific and may need special API handling
+const LOCK_DP_CODES = ['unlock_ble', 'unlock_fingerprint', 'unlock_temporary', 'unlock_card'];
+
 /**
  * Send a command to a Tuya device.
+ * For BLE smart locks, tries the lock-specific API first, then standard commands.
  * @param deviceId  Tuya device ID
  * @param code      Data point code (e.g. "switch_1", "switch", "unlock_ble")
  * @param value     Boolean true=ON, false=OFF, or string/number for special dp_codes
  */
 export async function controlDevice(deviceId: string, code: string, value: boolean | string | number): Promise<{ success: boolean; msg?: string }> {
+    const tuya = getTuyaClient();
+    const isLockCmd = LOCK_DP_CODES.includes(code);
+
+    // For lock commands, try the lock-specific remote unlock API first
+    if (isLockCmd && value === true) {
+        try {
+            console.log(`[Tuya] Trying lock-specific API for ${deviceId}, code=${code}`);
+
+            // Method 1: Try the standard commands API with the lock DP code
+            const cmdResult = await tuya.request({
+                method: 'POST',
+                path: `/v1.0/iot-03/devices/${deviceId}/commands`,
+                body: {
+                    commands: [{ code, value: true }],
+                },
+            });
+
+            if (cmdResult.success) {
+                console.log('[Tuya] Lock command succeeded via standard API');
+                return { success: true };
+            }
+
+            console.log(`[Tuya] Standard API failed for lock (${cmdResult.msg}), trying password-free unlock...`);
+
+            // Method 2: Try the password-free temporary unlock API
+            const ticketResult = await tuya.request({
+                method: 'POST',
+                path: `/v1.0/smart-lock/devices/${deviceId}/password-free/open-door`,
+                body: {},
+            });
+
+            if (ticketResult.success) {
+                console.log('[Tuya] Password-free unlock succeeded');
+                return { success: true };
+            }
+
+            console.error('[Tuya] All lock unlock methods failed:', { cmdResult, ticketResult });
+            return { success: false, msg: ticketResult.msg || cmdResult.msg || 'Lock command failed — check if device is online and supports cloud unlock' };
+        } catch (err) {
+            console.error('[Tuya] Lock request error:', err);
+            return { success: false, msg: `Lock error: ${String(err)}` };
+        }
+    }
+
+    // Standard command for non-lock devices
     try {
-        const tuya = getTuyaClient();
         const result = await tuya.request({
             method: 'POST',
             path: `/v1.0/iot-03/devices/${deviceId}/commands`,
