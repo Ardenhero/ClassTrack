@@ -39,15 +39,16 @@ export async function controlDevice(deviceId: string, code: string, value: boole
     const tuya = getTuyaClient();
     const isLockCmd = LOCK_DP_CODES.includes(code);
 
-    // For lock commands, use Tuya's Smart Lock API (2-step ticket flow)
+    // For lock commands, use Tuya's Smart Lock API
     if (isLockCmd && value === true) {
         try {
             console.log(`[Tuya] Smart lock unlock for ${deviceId}, code=${code}`);
 
-            // Step 1: Get a password ticket
+            // Method 1: Password ticket flow (most common)
+            // Step 1: Get ticket from /v1.0/devices/{id}/door-lock/password-ticket
             const ticketRes = await tuya.request({
                 method: 'POST',
-                path: `/v1.0/smart-lock/devices/${deviceId}/password-ticket`,
+                path: `/v1.0/devices/${deviceId}/door-lock/password-ticket`,
                 body: {},
             });
 
@@ -55,40 +56,47 @@ export async function controlDevice(deviceId: string, code: string, value: boole
                 const ticketId = (ticketRes.result as { ticket_id: string }).ticket_id;
                 console.log(`[Tuya] Got ticket: ${ticketId}`);
 
-                // Step 2: Use ticket to open the door
+                // Step 2: Open door with ticket
                 const openRes = await tuya.request({
                     method: 'POST',
-                    path: `/v1.0/smart-lock/devices/${deviceId}/password-free/door-open`,
+                    path: `/v1.0/devices/${deviceId}/door-lock/password-free/open-door`,
                     body: { ticket_id: ticketId },
                 });
 
                 if (openRes.success) {
-                    console.log('[Tuya] Smart lock unlocked successfully via ticket!');
+                    console.log('[Tuya] Lock unlocked via password-ticket flow!');
                     return { success: true };
                 }
-
-                console.error('[Tuya] Door-open with ticket failed:', openRes);
-                return { success: false, msg: openRes.msg || 'Unlock failed after getting ticket' };
+                console.warn('[Tuya] open-door failed:', openRes.code, openRes.msg);
+            } else {
+                console.warn('[Tuya] password-ticket failed:', ticketRes.code, ticketRes.msg);
             }
 
-            console.log(`[Tuya] Ticket API failed (${ticketRes.code}: ${ticketRes.msg}), trying standard commands...`);
+            // Method 2: door-operate (alternate path for some lock models)
+            const operateRes = await tuya.request({
+                method: 'POST',
+                path: `/v1.0/smart-lock/devices/${deviceId}/password-free/door-operate`,
+                body: { action: true },
+            });
+            if (operateRes.success) {
+                console.log('[Tuya] Lock unlocked via door-operate!');
+                return { success: true };
+            }
+            console.warn('[Tuya] door-operate failed:', operateRes.code, operateRes.msg);
 
-            // Fallback: Try standard commands API (works for some Wi-Fi locks)
+            // Method 3: Standard commands fallback (some Wi-Fi locks)
             const cmdResult = await tuya.request({
                 method: 'POST',
                 path: `/v1.0/iot-03/devices/${deviceId}/commands`,
-                body: {
-                    commands: [{ code, value: true }],
-                },
+                body: { commands: [{ code, value: true }] },
             });
-
             if (cmdResult.success) {
-                console.log('[Tuya] Lock command succeeded via standard API');
+                console.log('[Tuya] Lock unlocked via standard commands!');
                 return { success: true };
             }
 
-            console.error('[Tuya] All lock unlock methods failed:', { ticketRes, cmdResult });
-            return { success: false, msg: cmdResult.msg || ticketRes.msg || 'Lock does not support cloud unlock' };
+            console.error('[Tuya] ALL lock methods failed. This lock may not support cloud unlock.');
+            return { success: false, msg: 'Lock does not support remote cloud unlock. Try using the Tuya app via Bluetooth.' };
         } catch (err) {
             console.error('[Tuya] Lock request error:', err);
             return { success: false, msg: `Lock error: ${String(err)}` };
