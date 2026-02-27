@@ -251,10 +251,40 @@ export async function GET(request: Request) {
             return false;
         });
 
-        // Optionally refresh from Tuya (Optimistic/Basic status)
-        const enriched = devices.map((device: DeviceWithAssignments) => {
-            return { ...device, live: true };
-        });
+        // Refresh actual device state from Tuya and sync to DB
+        const { getDeviceStatus } = await import("@/lib/tuya");
+
+        const enriched = await Promise.all(
+            devices.map(async (device: DeviceWithAssignments) => {
+                try {
+                    const realDeviceId = (device.id as string).replace(/_ch\d+$/, '');
+                    const status = await getDeviceStatus(realDeviceId);
+
+                    if (status.success && status.data) {
+                        const dpCode = (device as unknown as { dp_code?: string }).dp_code || 'switch_1';
+                        const dp = status.data.find((d: Record<string, unknown>) => d.code === dpCode);
+
+                        if (dp !== undefined) {
+                            const actualState = Boolean(dp.value);
+                            const dbState = Boolean((device as unknown as { current_state?: boolean }).current_state);
+
+                            // If Tuya state differs from DB, update DB
+                            if (actualState !== dbState) {
+                                await adminClient
+                                    .from('iot_devices')
+                                    .update({ current_state: actualState, updated_at: new Date().toISOString() })
+                                    .eq('id', device.id);
+                            }
+
+                            return { ...device, current_state: actualState, online: true, live: true };
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[IoT] Could not poll Tuya status for ${device.id}:`, err);
+                }
+                return { ...device, live: true };
+            })
+        );
 
         return NextResponse.json({
             devices: enriched
