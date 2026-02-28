@@ -55,8 +55,8 @@ export async function GET(request: Request) {
                     .not('students.fingerprint_slot_id', 'is', null);
 
                 if (enrolledStudents) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const seen = new Set<string>();
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     enrolledStudents.forEach((e: any) => {
                         const s = e.students;
                         if (s && s.fingerprint_slot_id !== null && !seen.has(s.id)) {
