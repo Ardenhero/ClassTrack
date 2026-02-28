@@ -57,6 +57,11 @@ export function IoTSwitches() {
     useEffect(() => {
         loadDevices();
 
+        // Poll Tuya status every 10s to catch physical switch changes
+        const pollInterval = setInterval(() => {
+            loadDevices();
+        }, 10000);
+
         // Realtime: update toggles instantly when DB changes
         const supabase = createClient();
         const channel = supabase
@@ -75,6 +80,7 @@ export function IoTSwitches() {
             .subscribe();
 
         return () => {
+            clearInterval(pollInterval);
             supabase.removeChannel(channel);
         };
     }, [loadDevices]);

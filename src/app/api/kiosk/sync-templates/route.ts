@@ -37,14 +37,13 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: primaryErr.message }, { status: 500 });
         }
 
-        // 1b. Fallback: students with fingerprint_slot_id set but device_id doesn't match
+        // 1b. Fallback: students with fingerprint_slot_id set but NO device_id
         // (handles students enrolled before device_id tracking was added)
-        const primarySlotIds = (primaryStudents || []).map(s => s.fingerprint_slot_id);
         const { data: fallbackStudents, error: fallbackErr } = await supabase
             .from('students')
             .select('id, name, fingerprint_slot_id')
             .not('fingerprint_slot_id', 'is', null)
-            .not('fingerprint_slot_id', 'in', `(${primarySlotIds.length > 0 ? primarySlotIds.join(',') : '0'})`);
+            .is('device_id', null);
 
         if (fallbackErr) {
             console.error("[SyncTemplates] Fallback query error:", fallbackErr);
