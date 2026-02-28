@@ -291,19 +291,61 @@ export function AdminBiometricMatrix() {
                 return;
             }
 
-            // Insert a copy link (not move — keeps original device_id intact)
+            const targetDevice = targetKiosk.device_serial;
+
+            // Find all occupied slots on the target device
+            const occupiedSlots = new Set<number>();
+
+            // Students with device_id matching target
+            const { data: targetStudents } = await supabase
+                .from("students")
+                .select("fingerprint_slot_id")
+                .eq("device_id", targetDevice)
+                .not("fingerprint_slot_id", "is", null);
+            targetStudents?.forEach((s: { fingerprint_slot_id: number }) => occupiedSlots.add(s.fingerprint_slot_id));
+
+            // Device links on target
+            const { data: targetLinks } = await supabase
+                .from("fingerprint_device_links")
+                .select("fingerprint_slot_id")
+                .eq("device_serial", targetDevice);
+            targetLinks?.forEach((l: { fingerprint_slot_id: number }) => occupiedSlots.add(l.fingerprint_slot_id));
+
+            // Activator slots on target
+            const { data: targetActivators } = await supabase
+                .from("instructors")
+                .select("activator_fingerprint_slot")
+                .eq("activator_device_serial", targetDevice)
+                .not("activator_fingerprint_slot", "is", null);
+            targetActivators?.forEach((a: { activator_fingerprint_slot: number }) => occupiedSlots.add(a.activator_fingerprint_slot));
+
+            // Find first empty slot (1-127)
+            let emptySlot = -1;
+            for (let i = 1; i <= 127; i++) {
+                if (!occupiedSlots.has(i)) {
+                    emptySlot = i;
+                    break;
+                }
+            }
+
+            if (emptySlot === -1) {
+                alert("No empty slots available on the target device (all 127 slots are full).");
+                return;
+            }
+
+            // Insert a copy link with the empty slot assigned
             const { error } = await supabase
                 .from("fingerprint_device_links")
                 .upsert({
                     student_id: slot.student_id,
-                    device_serial: targetKiosk.device_serial,
-                    fingerprint_slot_id: slot.slot_id,
+                    device_serial: targetDevice,
+                    fingerprint_slot_id: emptySlot,
                 }, { onConflict: 'student_id,device_serial' });
 
             if (error) throw error;
 
             setMoveTargetRoom("");
-            alert(`✓ Fingerprint template copied to the selected room's kiosk.`);
+            alert(`✓ Fingerprint copied to slot #${emptySlot} on the target room's kiosk.`);
         } catch (err) {
             console.error("Failed to copy fingerprint:", err);
             alert("Failed to copy fingerprint template. Please try again.");
