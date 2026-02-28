@@ -23,64 +23,77 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log(`[Unlink] Clearing fingerprint_slot_id=${fingerprint_slot_id}`);
+        const slot = Number(fingerprint_slot_id);
+        console.log(`[Unlink] Clearing slot ${slot}`);
 
-        // 1. Find the student with this slot
-        const { data: student } = await supabase
-            .from('students')
-            .select('id, name')
-            .eq('fingerprint_slot_id', fingerprint_slot_id)
-            .maybeSingle();
+        // Use raw SQL via RPC to bypass any type coercion issues
+        // Clear from students table
+        const { data: studentResult, error: studentErr } = await supabase.rpc('clear_fingerprint_slot', {
+            p_slot_id: slot
+        });
 
-        if (student) {
-            console.log(`[Unlink] Found student: ${student.name} (${student.id})`);
+        console.log(`[Unlink] RPC result:`, studentResult, studentErr);
 
-            // 2. Clear it
-            const { error } = await supabase
+        // If RPC doesn't exist, fall back to direct updates
+        if (studentErr) {
+            console.log(`[Unlink] RPC not found, using direct queries`);
+
+            // Try clearing students - cast slot to match column type
+            const { data: students } = await supabase
                 .from('students')
-                .update({ fingerprint_slot_id: null, device_id: null })
-                .eq('id', student.id);
+                .select('id, name, fingerprint_slot_id')
+                .filter('fingerprint_slot_id', 'eq', slot);
 
-            if (error) {
-                console.error("[Unlink] Update error:", error);
-                return NextResponse.json({ error: error.message }, { status: 500 });
+            console.log(`[Unlink] Found students:`, students);
+
+            if (students && students.length > 0) {
+                for (const s of students) {
+                    await supabase
+                        .from('students')
+                        .update({ fingerprint_slot_id: null, device_id: null })
+                        .eq('id', s.id);
+                    console.log(`[Unlink] Cleared student ${s.name} (${s.id})`);
+                }
             }
 
-            console.log(`[Unlink] Cleared slot ${fingerprint_slot_id} from ${student.name}`);
-        } else {
-            console.log(`[Unlink] No student found with slot ${fingerprint_slot_id}`);
-        }
+            // Clean fingerprint_device_links
+            const { data: links } = await supabase
+                .from('fingerprint_device_links')
+                .select('*')
+                .filter('fingerprint_slot_id', 'eq', slot);
 
-        // 3. Clean fingerprint_device_links (try both number and string)
-        const slotNum = Number(fingerprint_slot_id);
-        const { data: deletedLinks, error: linkDelErr } = await supabase
-            .from('fingerprint_device_links')
-            .delete()
-            .eq('fingerprint_slot_id', slotNum)
-            .select();
+            console.log(`[Unlink] Found device_links:`, links);
 
-        console.log(`[Unlink] Deleted ${deletedLinks?.length || 0} device_links for slot ${slotNum}`, linkDelErr);
+            if (links && links.length > 0) {
+                for (const link of links) {
+                    await supabase
+                        .from('fingerprint_device_links')
+                        .delete()
+                        .eq('id', link.id);
+                    console.log(`[Unlink] Deleted link ${link.id}`);
+                }
+            }
 
-        // 4. Also clean instructors activator slots
-        const { data: instructor } = await supabase
-            .from('instructors')
-            .select('id, name')
-            .eq('activator_fingerprint_slot', slotNum)
-            .maybeSingle();
-
-        if (instructor) {
-            await supabase
+            // Clean instructor activator slots
+            const { data: instructors } = await supabase
                 .from('instructors')
-                .update({ activator_fingerprint_slot: null, activator_device_serial: null })
-                .eq('id', instructor.id);
-            console.log(`[Unlink] Also cleared activator slot from instructor ${instructor.name}`);
+                .select('id, name, activator_fingerprint_slot')
+                .filter('activator_fingerprint_slot', 'eq', slot);
+
+            if (instructors && instructors.length > 0) {
+                for (const inst of instructors) {
+                    await supabase
+                        .from('instructors')
+                        .update({ activator_fingerprint_slot: null, activator_device_serial: null })
+                        .eq('id', inst.id);
+                    console.log(`[Unlink] Cleared activator ${inst.name}`);
+                }
+            }
         }
 
         return NextResponse.json({
             success: true,
-            cleared_slot: fingerprint_slot_id,
-            student_cleared: student?.name || null,
-            links_deleted: deletedLinks?.length || 0,
+            cleared_slot: slot,
         });
 
     } catch (err) {
