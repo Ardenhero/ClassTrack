@@ -25,7 +25,7 @@ export async function GET(request: Request) {
             );
         }
 
-        // 1. Fetch primary allocations from students table (Device 1)
+        // 1. Fetch primary allocations from students table (matched by device_id)
         const { data: primaryStudents, error: primaryErr } = await supabase
             .from('students')
             .select('id, name, fingerprint_slot_id')
@@ -35,6 +35,20 @@ export async function GET(request: Request) {
         if (primaryErr) {
             console.error("[SyncTemplates] Primary query error:", primaryErr);
             return NextResponse.json({ error: primaryErr.message }, { status: 500 });
+        }
+
+        // 1b. Fallback: students with fingerprint_slot_id set but device_id doesn't match
+        // (handles students enrolled before device_id tracking was added)
+        const primarySlotIds = (primaryStudents || []).map(s => s.fingerprint_slot_id);
+        const { data: fallbackStudents, error: fallbackErr } = await supabase
+            .from('students')
+            .select('id, name, fingerprint_slot_id')
+            .not('fingerprint_slot_id', 'is', null)
+            .not('fingerprint_slot_id', 'in', `(${primarySlotIds.length > 0 ? primarySlotIds.join(',') : '0'})`);
+
+        if (fallbackErr) {
+            console.error("[SyncTemplates] Fallback query error:", fallbackErr);
+            // Non-fatal — continue with primary results
         }
 
         // 2. Fetch copy links from fingerprint_device_links table
@@ -66,6 +80,17 @@ export async function GET(request: Request) {
 
         primaryStudents?.forEach(s => {
             if (s.fingerprint_slot_id !== null) {
+                slotMap.set(s.fingerprint_slot_id, {
+                    slot_index: s.fingerprint_slot_id,
+                    student_id: s.id,
+                    student_name: s.name,
+                });
+            }
+        });
+
+        // Add fallback students (enrolled without matching device_id)
+        fallbackStudents?.forEach(s => {
+            if (s.fingerprint_slot_id !== null && !slotMap.has(s.fingerprint_slot_id)) {
                 slotMap.set(s.fingerprint_slot_id, {
                     slot_index: s.fingerprint_slot_id,
                     student_id: s.id,
