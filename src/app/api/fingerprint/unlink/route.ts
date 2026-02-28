@@ -24,22 +24,18 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log(`[Unlink] Clearing slot ${fingerprint_slot_id} from student ${student_id}`);
+        console.log(`[Unlink] Clearing slot ${fingerprint_slot_id} (student ref: ${student_id})`);
 
-        // Clear the fingerprint_slot_id and device_id from the student
-        const { error } = await supabase
+        // Clear the fingerprint_slot_id by matching the slot directly
+        const { error, count } = await supabase
             .from('students')
             .update({
                 fingerprint_slot_id: null,
                 device_id: null,
             })
-            .eq('id', student_id)
             .eq('fingerprint_slot_id', fingerprint_slot_id);
 
-        if (error) {
-            console.error("[Unlink] Error:", error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
+        console.log(`[Unlink] Updated ${count} students, error:`, error);
 
         // Also remove from fingerprint_device_links if exists
         await supabase
