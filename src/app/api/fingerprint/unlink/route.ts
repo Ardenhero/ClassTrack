@@ -51,17 +51,21 @@ export async function POST(request: Request) {
             console.log(`[Unlink] No student found with slot ${fingerprint_slot_id}`);
         }
 
-        // 3. Also clean fingerprint_device_links
-        await supabase
+        // 3. Clean fingerprint_device_links (try both number and string)
+        const slotNum = Number(fingerprint_slot_id);
+        const { data: deletedLinks, error: linkDelErr } = await supabase
             .from('fingerprint_device_links')
             .delete()
-            .eq('fingerprint_slot_id', fingerprint_slot_id);
+            .eq('fingerprint_slot_id', slotNum)
+            .select();
+
+        console.log(`[Unlink] Deleted ${deletedLinks?.length || 0} device_links for slot ${slotNum}`, linkDelErr);
 
         // 4. Also clean instructors activator slots
         const { data: instructor } = await supabase
             .from('instructors')
             .select('id, name')
-            .eq('activator_fingerprint_slot', fingerprint_slot_id)
+            .eq('activator_fingerprint_slot', slotNum)
             .maybeSingle();
 
         if (instructor) {
@@ -76,6 +80,7 @@ export async function POST(request: Request) {
             success: true,
             cleared_slot: fingerprint_slot_id,
             student_cleared: student?.name || null,
+            links_deleted: deletedLinks?.length || 0,
         });
 
     } catch (err) {
