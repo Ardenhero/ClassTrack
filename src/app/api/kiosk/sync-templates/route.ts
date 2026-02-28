@@ -25,29 +25,16 @@ export async function GET(request: Request) {
             );
         }
 
-        // 1. Fetch primary allocations from students table (matched by device_id)
-        const { data: primaryStudents, error: primaryErr } = await supabase
+        // 1. Fetch ALL students with fingerprint slots assigned
+        // No device_id filter — the ESP32 sensor scan handles matching
+        const { data: allStudents, error: studentErr } = await supabase
             .from('students')
             .select('id, name, fingerprint_slot_id')
-            .eq('device_id', device_id)
             .not('fingerprint_slot_id', 'is', null);
 
-        if (primaryErr) {
-            console.error("[SyncTemplates] Primary query error:", primaryErr);
-            return NextResponse.json({ error: primaryErr.message }, { status: 500 });
-        }
-
-        // 1b. Fallback: students with fingerprint_slot_id set but NO device_id
-        // (handles students enrolled before device_id tracking was added)
-        const { data: fallbackStudents, error: fallbackErr } = await supabase
-            .from('students')
-            .select('id, name, fingerprint_slot_id')
-            .not('fingerprint_slot_id', 'is', null)
-            .is('device_id', null);
-
-        if (fallbackErr) {
-            console.error("[SyncTemplates] Fallback query error:", fallbackErr);
-            // Non-fatal — continue with primary results
+        if (studentErr) {
+            console.error("[SyncTemplates] Student query error:", studentErr);
+            return NextResponse.json({ error: studentErr.message }, { status: 500 });
         }
 
         // 2. Fetch copy links from fingerprint_device_links table
@@ -77,7 +64,7 @@ export async function GET(request: Request) {
         type SlotEntry = { slot_index: number; student_id: string; student_name: string; is_activator?: boolean };
         const slotMap = new Map<number, SlotEntry>();
 
-        primaryStudents?.forEach(s => {
+        allStudents?.forEach(s => {
             if (s.fingerprint_slot_id !== null) {
                 slotMap.set(s.fingerprint_slot_id, {
                     slot_index: s.fingerprint_slot_id,
@@ -87,16 +74,7 @@ export async function GET(request: Request) {
             }
         });
 
-        // Add fallback students (enrolled without matching device_id)
-        fallbackStudents?.forEach(s => {
-            if (s.fingerprint_slot_id !== null && !slotMap.has(s.fingerprint_slot_id)) {
-                slotMap.set(s.fingerprint_slot_id, {
-                    slot_index: s.fingerprint_slot_id,
-                    student_id: s.id,
-                    student_name: s.name,
-                });
-            }
-        });
+
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         linkedStudents?.forEach((link: any) => {
