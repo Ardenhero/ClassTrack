@@ -25,17 +25,63 @@ export async function GET(request: Request) {
             );
         }
 
-        // 1. Fetch ALL students with fingerprint slots assigned
-        // No device_id filter — the ESP32 sensor scan handles matching
-        const { data: allStudents, error: studentErr } = await supabase
-            .from('students')
-            .select('id, name, fingerprint_slot_id')
-            .not('fingerprint_slot_id', 'is', null);
+        // 1. Find the room this kiosk is in
+        const { data: kioskData } = await supabase
+            .from('kiosk_devices')
+            .select('room_id')
+            .eq('device_serial', device_id)
+            .maybeSingle();
 
-        if (studentErr) {
-            console.error("[SyncTemplates] Student query error:", studentErr);
-            return NextResponse.json({ error: studentErr.message }, { status: 500 });
+        const roomId = kioskData?.room_id;
+
+        // 2. Fetch students with fingerprint slots enrolled in classes in this room
+        let roomStudents: { id: string; name: string; fingerprint_slot_id: number }[] = [];
+
+        if (roomId) {
+            // Get all classes in this room
+            const { data: roomClasses } = await supabase
+                .from('classes')
+                .select('id')
+                .eq('room_id', roomId);
+
+            if (roomClasses && roomClasses.length > 0) {
+                const classIds = roomClasses.map(c => c.id);
+
+                // Get all enrolled students in those classes with fingerprint slots
+                const { data: enrolledStudents } = await supabase
+                    .from('enrollments')
+                    .select('student_id, students!inner(id, name, fingerprint_slot_id)')
+                    .in('class_id', classIds)
+                    .not('students.fingerprint_slot_id', 'is', null);
+
+                if (enrolledStudents) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const seen = new Set<string>();
+                    enrolledStudents.forEach((e: any) => {
+                        const s = e.students;
+                        if (s && s.fingerprint_slot_id !== null && !seen.has(s.id)) {
+                            seen.add(s.id);
+                            roomStudents.push({
+                                id: s.id,
+                                name: s.name,
+                                fingerprint_slot_id: s.fingerprint_slot_id,
+                            });
+                        }
+                    });
+                }
+            }
         }
+
+        // Fallback: if no room found, get all students with fingerprint slots (backwards compat)
+        if (!roomId || roomStudents.length === 0) {
+            const { data: allStudents } = await supabase
+                .from('students')
+                .select('id, name, fingerprint_slot_id')
+                .not('fingerprint_slot_id', 'is', null);
+            roomStudents = allStudents || [];
+        }
+
+        console.log(`[SyncTemplates] Device=${device_id}, Room=${roomId || 'none'}, Students=${roomStudents.length}`);
 
         // 2. Fetch copy links from fingerprint_device_links table
         const { data: linkedStudents, error: linkErr } = await supabase
@@ -64,7 +110,7 @@ export async function GET(request: Request) {
         type SlotEntry = { slot_index: number; student_id: string; student_name: string; is_activator?: boolean };
         const slotMap = new Map<number, SlotEntry>();
 
-        allStudents?.forEach(s => {
+        roomStudents?.forEach(s => {
             if (s.fingerprint_slot_id !== null) {
                 slotMap.set(s.fingerprint_slot_id, {
                     slot_index: s.fingerprint_slot_id,
