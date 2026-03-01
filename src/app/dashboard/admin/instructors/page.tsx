@@ -5,6 +5,8 @@ import { checkIsSuperAdmin } from "@/lib/auth-utils";
 import { Suspense } from "react";
 import InstructorListContent from "./InstructorListContent";
 
+import { cookies } from "next/headers";
+
 function InstructorsSkeleton() {
     return (
         <div className="flex flex-col items-center justify-center p-8 space-y-4">
@@ -18,16 +20,35 @@ export default async function InstructorsPage() {
     const isSuperAdmin = await checkIsSuperAdmin();
     const supabase = createClient();
 
-    // Get the current auth user
+    // Get the current auth user and active profile
     const { data: { user } } = await supabase.auth.getUser();
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
 
     // Fetch current user's instructor profile to get their Department Name (for display)
-    // and Department ID (for assignment)
-    const { data: currentUserProfile } = await supabase
-        .from('instructors')
-        .select('department_id, departments(name, code)')
-        .eq('auth_user_id', user?.id)
-        .maybeSingle();
+    // and Department ID (for assignment). We prefer to match the active profileId.
+    let currentUserProfile = null;
+
+    if (profileId && profileId !== 'admin-profile') {
+        const { data } = await supabase
+            .from('instructors')
+            .select('department_id, departments(name, code)')
+            .eq('id', profileId)
+            .maybeSingle();
+        currentUserProfile = data;
+    }
+
+    if (!currentUserProfile && user) {
+        // Fallback: Just grab any admin profile for this auth user
+        const { data } = await supabase
+            .from('instructors')
+            .select('department_id, departments(name, code)')
+            .eq('auth_user_id', user.id)
+            .not('department_id', 'is', null)
+            .limit(1)
+            .maybeSingle();
+        currentUserProfile = data;
+    }
 
     // @ts-expect-error: Supabase inference
     const currentUserDeptName = currentUserProfile?.departments?.name;
@@ -63,13 +84,35 @@ export default async function InstructorsPage() {
         // If Super Admin, use selected dept.
         // If Dept Admin, force use of their own dept.
         let finalDept = dept;
-        if (!isSuperAdmin) {
-            const { data: creator } = await supabase
-                .from('instructors')
-                .select('department_id')
-                .eq('auth_user_id', user?.id)
-                .single();
-            finalDept = creator?.department_id || null;
+        if (!isSuperAdmin && dept) {
+            // Already safely populated by the hidden input on the client
+            finalDept = dept;
+        } else if (!isSuperAdmin && !dept) {
+            // Fallback: fetch department from the creator's profile robustly
+            const cookieStore = cookies();
+            const pId = cookieStore.get("sc_profile_id")?.value;
+            let creatorDept = null;
+
+            if (pId && pId !== 'admin-profile') {
+                const { data: creator } = await supabase
+                    .from('instructors')
+                    .select('department_id')
+                    .eq('id', pId)
+                    .maybeSingle();
+                creatorDept = creator?.department_id;
+            }
+
+            if (!creatorDept && user) {
+                const { data: creator } = await supabase
+                    .from('instructors')
+                    .select('department_id')
+                    .eq('auth_user_id', user.id)
+                    .not('department_id', 'is', null)
+                    .limit(1)
+                    .maybeSingle();
+                creatorDept = creator?.department_id;
+            }
+            finalDept = creatorDept || null;
         }
 
         const { error } = await supabase.from("instructors").insert({

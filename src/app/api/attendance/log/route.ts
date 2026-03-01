@@ -222,6 +222,16 @@ export async function POST(request: Request) {
                     .maybeSingle();
 
                 if (activatorInfo) {
+                    // Check if the Kiosk is actually in Room Control Mode
+                    if (attendance_type !== 'Room Control' && rpcStatusInput !== 'ROOM_CONTROL') {
+                        console.warn(`[API] Instructor ${activatorInfo.name} scanned during Student Attendance. Ignored for room activation.`);
+                        return NextResponse.json({
+                            error: "instructor_scan_ignored",
+                            message: `Instructor fingerprint recognized, but the Kiosk is not in Room Activation Mode.`,
+                            student_name: activatorInfo.name
+                        }, { status: 403 });
+                    }
+
                     console.log(`[API] Activator Recognized: ${activatorInfo.name} (Slot ${fingerprint_slot_id})`);
 
                     // Trigger IoT Devices for this room
