@@ -215,7 +215,7 @@ export function AdminBiometricMatrix() {
                 throw new Error(data.error || "Failed to trigger remote delete");
             }
 
-            alert(`Delete command sent to kiosk for ${slot.student_name}. It will be removed within 60 seconds.`);
+            alert(`Delete command sent to kiosk for ${slot.student_name}. It will be removed within 5 seconds.`);
             setSelectedSlot(null); // Deselect after unlink
 
         } catch (err) {

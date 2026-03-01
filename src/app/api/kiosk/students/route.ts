@@ -1,14 +1,16 @@
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
-    const supabase = createClient();
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     try {
-        // const { searchParams } = new URL(request.url);
         // The RPC returns unenrolled students directly
         const { data: students, error } = await supabase.rpc('get_unenrolled_students');
 
