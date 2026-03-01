@@ -185,7 +185,6 @@ export function AdminBiometricMatrix() {
         const isAdmin = profile?.role === "admin";
 
         // Rebuild scope for permission check
-        const supabase = createClient();
         let isMine = isAdmin;
 
         if (!isAdmin && profile) {
@@ -200,43 +199,28 @@ export function AdminBiometricMatrix() {
             return;
         }
 
-        if (!slot.student_id || !confirm(`Are you sure you want to unlink ${slot.student_name}? This will remove their fingerprint association from the database.`)) return;
+        if (!slot.student_id || !confirm(`Are you sure you want to permanently delete ${slot.student_name}'s fingerprint? This will wipe it from the hardware and database.`)) return;
 
         setUnlinking(true);
 
         try {
-            if (slot.is_activator) {
-                const { error } = await supabase
-                    .from("instructors")
-                    .update({ activator_fingerprint_slot: null, activator_device_serial: null })
-                    .eq("id", slot.student_id);
-                if (error) throw error;
-            } else {
-                if (slot.is_primary) {
-                    const { error } = await supabase
-                        .from("students")
-                        .update({ fingerprint_slot_id: null })
-                        .eq("id", slot.student_id);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabase
-                        .from("fingerprint_device_links")
-                        .delete()
-                        .eq("student_id", slot.student_id)
-                        .eq("device_serial", slot.device_id);
-                    if (error) throw error;
-                }
+            const res = await fetch("/api/kiosk/delete-fingerprint", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ device_serial: slot.device_id, slot_id: slot.slot_id })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to trigger remote delete");
             }
 
-            // Optimistic update will be handled by realtime subscription, but we can also reload
-            // loadMatrix(); // Let realtime handle it? Or explicit reload to be safe.
-            // Explicit reload is safer for now until realtime checks out
-            await loadMatrix();
+            alert(`Delete command sent to kiosk for ${slot.student_name}. It will be removed within 60 seconds.`);
             setSelectedSlot(null); // Deselect after unlink
 
         } catch (err) {
-            console.error("Failed to unlink slot:", err);
-            alert("Failed to unlink fingerprint. Please try again.");
+            console.error("Failed to delete slot:", err);
+            alert("Failed to send delete command. Please try again.");
         } finally {
             setUnlinking(false);
         }
@@ -487,7 +471,7 @@ export function AdminBiometricMatrix() {
                                                 disabled={unlinking}
                                                 className="text-xs text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
                                             >
-                                                {unlinking ? 'Unlinking...' : 'Unlink'}
+                                                {unlinking ? 'Deleting...' : 'Delete'}
                                             </button>
                                         </div>
                                     )}
