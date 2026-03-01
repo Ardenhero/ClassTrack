@@ -27,7 +27,6 @@ export async function GET(request: Request) {
             .from('students')
             .select('id, name')
             .eq('fingerprint_slot_id', slotIdInt) // Query as INT
-            .eq('device_id', device_id) // Match the exact device
             .maybeSingle(); // Use maybeSingle to avoid errors on duplicates
 
         if (error) {
@@ -41,7 +40,6 @@ export async function GET(request: Request) {
                 .from('instructors')
                 .select('id, name')
                 .eq('activator_fingerprint_slot', slotIdInt)
-                .eq('activator_device_serial', device_id)
                 .maybeSingle();
 
             if (activatorData) {

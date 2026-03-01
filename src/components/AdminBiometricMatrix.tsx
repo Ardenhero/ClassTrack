@@ -25,7 +25,7 @@ export function AdminBiometricMatrix() {
     const [selectedRoomId, setSelectedRoomId] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
-    const [unlinking, setUnlinking] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [moveTargetRoom, setMoveTargetRoom] = useState<string>("");
     const [moving, setMoving] = useState(false);
     const [togglingLock, setTogglingLock] = useState(false);
@@ -181,10 +181,11 @@ export function AdminBiometricMatrix() {
         }
     }, [profile, selectedRoomId]);
 
-    const unlinkSlot = async (slot: SlotData) => {
+    const deleteSlot = async (slot: SlotData) => {
         const isAdmin = profile?.role === "admin";
 
         // Rebuild scope for permission check
+        const supabase = createClient();
         let isMine = isAdmin;
 
         if (!isAdmin && profile) {
@@ -195,13 +196,13 @@ export function AdminBiometricMatrix() {
         }
 
         if (!isMine) {
-            alert("You cannot unlink a fingerprint enrolled by another instructor.");
+            alert("You cannot delete a fingerprint enrolled by another instructor.");
             return;
         }
 
-        if (!slot.student_id || !confirm(`Are you sure you want to permanently delete ${slot.student_name}'s fingerprint? This will wipe it from the hardware and database.`)) return;
+        if (!slot.student_id || !confirm(`Are you sure you want to permanently delete ${slot.student_name}? This will wipe their fingerprint from the hardware and database.`)) return;
 
-        setUnlinking(true);
+        setDeleting(true);
 
         try {
             const res = await fetch("/api/kiosk/delete-fingerprint", {
@@ -216,13 +217,13 @@ export function AdminBiometricMatrix() {
             }
 
             alert(`Delete command sent to kiosk for ${slot.student_name}. It will be removed within 5 seconds.`);
-            setSelectedSlot(null); // Deselect after unlink
+            setSelectedSlot(null); // Deselect after delete
 
         } catch (err) {
             console.error("Failed to delete slot:", err);
-            alert("Failed to send delete command. Please try again.");
+            alert("Failed to delete fingerprint. Please try again.");
         } finally {
-            setUnlinking(false);
+            setDeleting(false);
         }
     };
 
@@ -467,11 +468,11 @@ export function AdminBiometricMatrix() {
                                             </button>
                                             <div className="w-px h-3 bg-gray-300 dark:bg-gray-600"></div>
                                             <button
-                                                onClick={() => unlinkSlot(selectedSlot)}
-                                                disabled={unlinking}
+                                                onClick={() => deleteSlot(selectedSlot)}
+                                                disabled={deleting}
                                                 className="text-xs text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
                                             >
-                                                {unlinking ? 'Deleting...' : 'Delete'}
+                                                {deleting ? 'Deleting...' : 'Delete'}
                                             </button>
                                         </div>
                                     )}
@@ -492,11 +493,11 @@ export function AdminBiometricMatrix() {
                                         </p>
                                         {profile?.role === "admin" && (
                                             <button
-                                                onClick={() => unlinkSlot(selectedSlot)}
-                                                disabled={unlinking}
+                                                onClick={() => deleteSlot(selectedSlot)}
+                                                disabled={deleting}
                                                 className="text-xs text-red-600 hover:text-red-700 hover:underline mt-2 disabled:opacity-50 inline-block"
                                             >
-                                                {unlinking ? 'Force Unlinking...' : 'Force Unlink as Admin'}
+                                                {deleting ? 'Force Deleting...' : 'Force Delete as Admin'}
                                             </button>
                                         )}
                                     </div>

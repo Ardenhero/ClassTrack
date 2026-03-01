@@ -1,28 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
-    const { device_serial, slot_id } = await req.json();
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        const { device_serial, slot_id } = body;
 
-    if (!device_serial || slot_id === undefined) {
-        return NextResponse.json({ error: "device_serial and slot_id are required" }, { status: 400 });
+        if (!device_serial || !slot_id) {
+            return NextResponse.json({ error: "Missing device_serial or slot_id" }, { status: 400 });
+        }
+
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Queue the delete command on the kiosk
+        const { error: cmdError } = await supabase
+            .from("kiosk_devices")
+            .update({ pending_command: `delete_finger:${slot_id}` })
+            .eq("device_serial", device_serial);
+
+        if (cmdError) {
+            console.error("Set pending command error:", cmdError);
+            return NextResponse.json({ error: "Failed to set pending command" }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, message: "Delete command queued" });
+    } catch (e: any) {
+        console.error("Delete fingerprint error:", e);
+        return NextResponse.json({ error: e.message }, { status: 500 });
     }
-
-    const command = `delete_finger:${slot_id}`;
-
-    const { error } = await supabase
-        .from("kiosk_devices")
-        .update({ pending_command: command })
-        .eq("device_serial", device_serial);
-
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
 }
