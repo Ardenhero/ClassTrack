@@ -56,8 +56,9 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Delete callback error:", e);
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        const errorMessage = e instanceof Error ? e.message : "Unknown error";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

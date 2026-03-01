@@ -185,7 +185,6 @@ export function AdminBiometricMatrix() {
         const isAdmin = profile?.role === "admin";
 
         // Rebuild scope for permission check
-        const supabase = createClient();
         let isMine = isAdmin;
 
         if (!isAdmin && profile) {
