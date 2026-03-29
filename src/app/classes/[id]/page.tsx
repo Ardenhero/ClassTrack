@@ -98,7 +98,8 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
     const viewerProfile = viewerResult.data;
     if (viewerProfile && viewerProfileId) {
-        isInstructor = (viewerProfile as { role: string }).role === "instructor" && classData.instructor_id === viewerProfileId && !isReadOnly;
+        const viewerRole = (viewerProfile as { role: string }).role;
+        isInstructor = (viewerRole === "instructor" || viewerRole === "admin") && classData.instructor_id === viewerProfileId && !isReadOnly;
     }
 
     const enrollments = enrollmentResult.data as unknown as Enrollment[];

@@ -460,17 +460,25 @@ export function AdminBiometricMatrix() {
                 .channel('biometric-matrix-updates')
                 .on(
                     'postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'students' },
+                    { event: '*', schema: 'public', table: 'students' },
                     (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-                        console.log("Realtime: Student update/unlink detected", payload);
+                        console.log("Realtime: Student change detected", payload);
                         loadMatrix();
                     }
                 )
                 .on(
                     'postgres_changes',
-                    { event: 'UPDATE', schema: 'public', table: 'instructors' },
+                    { event: '*', schema: 'public', table: 'fingerprint_device_links' },
                     (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-                        console.log("Realtime: Instructor/Activator update detected", payload);
+                        console.log("Realtime: Fingerprint device link change detected", payload);
+                        loadMatrix();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'instructors' },
+                    (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+                        console.log("Realtime: Instructor change detected", payload);
                         loadMatrix();
                     }
                 )
@@ -524,17 +532,34 @@ export function AdminBiometricMatrix() {
             ) : (
                 <>
                     <div className="flex justify-between items-center mb-2">
-                        <button
-                            onClick={() => {
-                                setSelectionMode(!selectionMode);
-                                if (selectionMode) setSelectedSlots([]); // Clear if turning off
-                            }}
-                            className={`text-xs px-3 py-1.5 rounded-md border font-medium transition-colors ${selectionMode
-                                ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300'
-                                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700'}`}
-                        >
-                            {selectionMode ? 'Cancel Selection' : 'Select Multiple'}
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => {
+                                    setSelectionMode(!selectionMode);
+                                    if (selectionMode) setSelectedSlots([]); // Clear if turning off
+                                }}
+                                className={`text-xs px-3 py-1.5 rounded-md border font-medium transition-colors ${selectionMode
+                                    ? 'bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300'
+                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700'}`}
+                            >
+                                {selectionMode ? 'Cancel Selection' : 'Select Multiple'}
+                            </button>
+                            {selectionMode && (
+                                <button
+                                    onClick={() => {
+                                        const selectable = slots.filter(s => s.status === 'occupied');
+                                        if (selectedSlots.length === selectable.length && selectable.length > 0) {
+                                            setSelectedSlots([]); // Deselect all
+                                        } else {
+                                            setSelectedSlots(selectable); // Select all
+                                        }
+                                    }}
+                                    className="text-xs px-3 py-1.5 rounded-md border font-medium transition-colors bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
+                                >
+                                    {selectedSlots.length === slots.filter(s => s.status === 'occupied').length && slots.filter(s => s.status === 'occupied').length > 0 ? 'Deselect All' : 'Select All'}
+                                </button>
+                            )}
+                        </div>
 
                         {selectionMode && selectedSlots.length > 0 && (
                             <div className="flex items-center gap-2">

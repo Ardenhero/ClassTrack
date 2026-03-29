@@ -272,9 +272,9 @@ export async function GET(request: NextRequest) {
         // Build distinct instructors list for the dropdown
         const instructorMap = new Map<string, string>();
         classesWithInstructor.forEach(cls => {
-            // Filter: Must have ID, Name, AND NOT BE AN ADMIN
+            // Filter: Must have ID and Name
             if (cls.instructor_id && cls.instructor_name !== "Unknown Instructor") {
-                if (cls.instructor_role === 'admin') return; // Skip System Admins
+                // Removed the 'admin' role restriction since Dept Admins also teach
 
                 if (!instructorMap.has(String(cls.instructor_id))) {
                     instructorMap.set(String(cls.instructor_id), String(cls.instructor_name));
