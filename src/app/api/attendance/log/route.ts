@@ -265,7 +265,8 @@ export async function POST(request: Request) {
 
             if (studentInfo) {
                 if (attendance_type === 'Room Control' || rpcStatusInput === 'ROOM_CONTROL') {
-                    return NextResponse.json({ error: "student_unauthorized", student_name: studentInfo.name }, { status: 403 });
+                    // Fallback: If a student scans during Room Activation mode, treat it as a normal attendance log
+                    console.log(`[API] Student ${studentInfo.name} scanned during Room Activation. Proceeding with attendance.`);
                 }
                 if (!classIdInput) return NextResponse.json({ error: 'class_id required' }, { status: 400 });
                 if (studentInfo.fingerprint_locked) return NextResponse.json({ error: "fingerprint_locked", student_name: studentInfo.name }, { status: 403 });
