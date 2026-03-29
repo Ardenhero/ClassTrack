@@ -1,0 +1,39 @@
+
+> classtrack@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+Error: supabaseUrl is required.
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/chunks/7374.js:37:48129
+    at new rg (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/chunks/7374.js:37:48380)
+    at ry (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/chunks/7374.js:37:52119)
+    at 96845 (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/enroll-activator/route.js:1:514)
+    at t (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/webpack-runtime.js:1:128)
+    at r (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/enroll-activator/route.js:1:2551)
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/enroll-activator/route.js:1:2589
+    at t.X (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/webpack-runtime.js:1:1206)
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/enroll-activator/route.js:1:2564
+    at Object.<anonymous> (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/enroll-activator/route.js:1:2617)
+Error: supabaseUrl is required.
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/chunks/7374.js:37:48129
+    at new rg (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/chunks/7374.js:37:48380)
+    at ry (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/chunks/7374.js:37:52119)
+    at 31859 (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/suspension/route.js:1:513)
+    at t (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/webpack-runtime.js:1:128)
+    at t (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/suspension/route.js:1:1684)
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/suspension/route.js:1:1722
+    at t.X (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/webpack-runtime.js:1:1206)
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/suspension/route.js:1:1697
+    at Object.<anonymous> (/Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/.next/server/app/api/kiosk/suspension/route.js:1:1750)
+
+> Build error occurred
+Error: Failed to collect page data for /api/kiosk/enroll-activator
+    at /Users/heroo/Downloads/ClassTrack-b8c3af31b81f294653283ea531d9cf4eecbba548/node_modules/next/dist/build/utils.js:1269:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  type: 'Error'
+}

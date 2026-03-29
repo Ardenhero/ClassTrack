@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #2D2F31;
+  /* Deep Indigo for text */
+}
+
+/* Optional Dark Mode overrides if requested later, but for now stick to "Udemy" look which is light */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1C1D1F;
+    /* Darker Indigo/Gray */
+    --foreground: #FFFFFF;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-inter), sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes snowfall {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+.animate-snowfall {
+  animation: snowfall 2s linear infinite;
+}
+
+/* ── Print-Ready Styles ── */
+@media print {
+
+  nav,
+  aside,
+  .print\\:hidden,
+  button,
+  [data-testid],
+  .sidebar {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11px !important;
+  }
+
+  .rounded-xl,
+  .rounded-lg,
+  .rounded-2xl {
+    border-radius: 0 !important;
+  }
+
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  .dark\\:bg-gray-800 {
+    background: white !important;
+  }
+
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "ClassTrack",
+  "short_name": "ClassTrack",
+  "description": "Professional Attendance Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5e0d0e",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "100x100",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

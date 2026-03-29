@@ -1,0 +1,12 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/absent-notify?secret=${CRON_SECRET}",
+            "schedule": "0 23 * * *"
+        },
+        {
+            "path": "/api/cron/auto-finalize?secret=${CRON_SECRET}",
+            "schedule": "0 14 * * *"
+        }
+    ]
+}
