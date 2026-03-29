@@ -280,7 +280,14 @@ export async function POST(request: Request) {
                     supabase.from('classes').select('id, instructor_id, start_time, end_time, name, instructors!classes_instructor_id_fkey(user_id)').eq('id', classIdInput).single()
                 ]);
 
-                if (!enrollmentRes.data) return NextResponse.json({ error: `Not enrolled`, student_name: studentInfo.name }, { status: 403 });
+                if (!enrollmentRes.data) {
+                    console.error(`[API] 403 Forbidden: Student ${studentInfo.name} (ID: ${studentInfo.id}) is NOT enrolled in Class ID: ${classIdInput}`);
+                    return NextResponse.json({ 
+                        error: "Not enrolled", 
+                        student_name: studentInfo.name,
+                        details: `Student is not enrolled in the requested class (ID: ${classIdInput})`
+                    }, { status: 403 });
+                }
                 const classRef = classRefRes.data;
                 if (!classRef) return NextResponse.json({ error: "Class not found" }, { status: 404 });
 
