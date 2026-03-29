@@ -22,39 +22,7 @@ const LogSchema = z.object({
     corrects_log_id: z.string().uuid().optional(),
 });
 
-// Helper: Insert a scan notification for the instructor
-async function sendScanNotification(supabase: SupabaseClient, instructorId: string | null, studentName: string, className: string, status: string, action: string, method: string) {
-    if (!instructorId) return;
-    try {
-        // Look up the instructor's auth_user_id to set user_id on the notification
-        const { data: instructor } = await supabase
-            .from('instructors')
-            .select('auth_user_id')
-            .eq('id', instructorId)
-            .single();
 
-        const userId = instructor?.auth_user_id || null;
-        const emoji = method === 'biometric' ? '🔏' : method === 'qr_verified' ? '📱' : '📝';
-        const actionLabel = action === 'time_out' ? 'Time Out' : 'Time In';
-
-        const { error } = await supabase.from('notifications').insert({
-            user_id: userId,
-            instructor_id: instructorId,
-            title: `${emoji} ${studentName} — ${actionLabel}`,
-            message: `${status} in ${className}`,
-            type: status === 'Present' ? 'success' : status === 'Late' ? 'warning' : 'info',
-            read: false,
-        });
-
-        if (error) {
-            console.error('[Notification] DB insert error:', error.message, error.details);
-        } else {
-            console.log(`[Notification] Sent: ${studentName} ${actionLabel} in ${className}`);
-        }
-    } catch (err) {
-        console.error('[Notification] Insert exception:', err);
-    }
-}
 
 // Helper: Get strict 12:00 AM start of the current day in Asia/Manila as a UTC ISO string
 function getTodayStartUTC() {
@@ -142,26 +110,17 @@ export async function POST(request: Request) {
             .eq('device_serial', body.device_id)
             .maybeSingle();
 
-        // --- ☢️ NUCLEAR INTERCEPT: ROOM CONTROL (HIGHEST PRIORITY) ---
+        // --- ☢️ NUCLEAR INTERCEPT: ROOM CONTROL (REFINED v3.2) ---
+        // Only triggers on PIN or explicit room activation commands.
+        // Biometric (fingerprint) scans are now EXCLUDED from this intercept to avoid 403 errors for students.
         const typeStr = (body.attendance_type || "").toString().toLowerCase();
         const methodStr = (body.entry_method || "").toString().toLowerCase();
         const rpcStatus = typeStr.toUpperCase().replace(" ", "_");
 
-        const isRoomIntent = typeStr.includes("room") || typeStr.includes("activation") || rpcStatus === "ROOM_CONTROL";
+        const isRoomIntent = (typeStr.includes("room") || typeStr.includes("activation") || rpcStatus === "ROOM_CONTROL") && methodStr !== 'biometric';
 
         if (isRoomIntent && body.device_id) {
-            console.log(`[NUCLEAR INTERCEPT] Device=${body.device_id}, Email=${email || 'none'}, Type=${typeStr}`);
-
-            // Resolve Identity (Optional if email is missing)
-            let instructor = null;
-            if (email) {
-                instructor = await resolveInstructorByEmail(supabase, email);
-            } else if (body.fingerprint_slot_id) {
-                // Future: Resolve instructor by fingerprint slot if needed
-            }
-
-            const triggerId = instructor?.id || 'system-authorized';
-            const triggerName = instructor?.name || 'Authorized User';
+            console.log(`[ROOM CONTROL] PIN/System Trigger: Device=${body.device_id}, Action=${typeStr}`);
 
             // 2. Resolve Room (Primary: assigned kiosk room)
             const targetRoomId = kioskInfo?.room_id || body.room_id || null;
@@ -169,25 +128,29 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: "no_room_assigned", device_serial: body.device_id }, { status: 404 });
             }
 
+            // Resolve Instructor for logging (PIN entry method always provides email in query)
+            let instructor = null;
+            if (email) {
+                instructor = await resolveInstructorByEmail(supabase, email);
+            }
+
+            const triggerId = instructor?.id || 'system-authorized';
+            const triggerName = instructor?.name || 'Authorized User';
+
             // 3. Resolve Devices in this room
             const { data: devices } = await supabase.from('iot_devices').select('id, current_state, dp_code').eq('room_id', targetRoomId);
             if (!devices || devices.length === 0) {
                 return NextResponse.json({ error: "no_devices_in_room", room_id: targetRoomId }, { status: 404 });
             }
 
-
             // 4. Power Toggle (Handle explicit ON/OFF if provided)
             const explicitAction = body.room_action; // "ON" or "OFF"
             const anyOff = devices.some((d: { current_state: boolean }) => !d.current_state);
 
             let newState: boolean;
-            if (explicitAction === "ON") {
-                newState = true;
-            } else if (explicitAction === "OFF") {
-                newState = false;
-            } else {
-                newState = anyOff; // Fallback to toggle
-            }
+            if (explicitAction === "ON") newState = true;
+            else if (explicitAction === "OFF") newState = false;
+            else newState = anyOff; // Fallback to toggle
 
             const results = await Promise.all(devices.map(async (dev: { id: string; dp_code: string }) => {
                 const realId = dev.id.replace(/_ch\d+$/, '');
@@ -199,7 +162,7 @@ export async function POST(request: Request) {
                         device_id: dev.id,
                         code: dCode,
                         value: newState,
-                        source: methodStr === 'biometric' ? 'activator' : 'pin',
+                        source: 'pin',
                         triggered_by: triggerId
                     });
                 }
@@ -335,8 +298,6 @@ export async function POST(request: Request) {
                         if ((endM - currentMinutes) > 15 || (currentMinutes - endM) > 60) status = 'Absent';
                     }
                     await supabase.from('attendance_logs').update({ time_out: timestamp, status: status, entry_method: entryMethod }).eq('id', openSession.id);
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await sendScanNotification(supabase, classRef.instructor_id, studentInfo.name, (classRef as any).name || 'Class', status, 'time_out', entryMethod);
                     return NextResponse.json({ success: true, student_name: studentInfo.name, status, action: 'time_out' });
                 } else {
                     if (existingLogRes.data) return NextResponse.json({ error: "Already Timed In", student_name: studentInfo.name, duplicate: true }, { status: 409 });
@@ -350,8 +311,6 @@ export async function POST(request: Request) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const targetOwnerId = Array.isArray((classRef as any).instructors) ? (classRef as any).instructors[0]?.user_id : (classRef as any).instructors?.user_id;
                     await supabase.from('attendance_logs').insert({ student_id: studentInfo.id, class_id: classIdInput, user_id: targetOwnerId, status, timestamp, entry_method: entryMethod });
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await sendScanNotification(supabase, classRef.instructor_id, studentInfo.name, (classRef as any).name || 'Class', status, 'time_in', entryMethod);
                     return NextResponse.json({ success: true, student_name: studentInfo.name, status, action: 'time_in' });
                 }
             }
