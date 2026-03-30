@@ -29,12 +29,13 @@ interface StudentGridProps {
     selectedIds: string[];
     onToggleSelect: (id: string) => void;
     onSelectAll: () => void;
+    folderInstructorId?: string;
 }
 
-export default function StudentGrid({ students, isSuperAdmin, isAdmin, departments = [], selectedIds, onToggleSelect, onSelectAll }: StudentGridProps) {
+export default function StudentGrid({ students, isSuperAdmin, isAdmin, departments = [], selectedIds, onToggleSelect, onSelectAll, folderInstructorId }: StudentGridProps) {
     const router = useRouter();
     const { profile } = useProfile();
-    const canEdit = !isSuperAdmin && !isAdmin;
+    const canEdit = !isSuperAdmin && (!isAdmin || profile?.id === folderInstructorId);
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;

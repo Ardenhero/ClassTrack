@@ -325,6 +325,7 @@ export function StudentsDirectory({
                                                 selectedIds={selectedIds}
                                                 onToggleSelect={toggleSelect}
                                                 onSelectAll={() => handleSelectAll(instructorStudents)}
+                                                folderInstructorId={instructorId}
                                             />
                                         </div>
                                     </AdminDirectoryGroup>
@@ -368,6 +369,7 @@ export function StudentsDirectory({
                                                                 selectedIds={selectedIds}
                                                                 onToggleSelect={toggleSelect}
                                                                 onSelectAll={() => handleSelectAll(instructorStudents)}
+                                                                folderInstructorId={instructorId}
                                                             />
                                                         </div>
                                                     </AdminDirectoryGroup>

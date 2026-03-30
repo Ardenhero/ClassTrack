@@ -60,30 +60,16 @@ export function AssignStudentDialog({ classId, className, instructorId, onAssign
         const enrolledIds = new Set((enrolledData || []).map((e: { student_id: string }) => e.student_id));
         const enrolledDetails = (enrolledData || []).map((e: { students: Student | null }) => e.students).filter(Boolean) as Student[];
 
-        // 2. Fetch students the instructor CREATED
-        const createdQuery = supabase
-            .from('students')
-            .select('id, name, sin, year_level, department, is_archived, archived_by')
-            .eq('instructor_id', instructorId || '');
+        // Check if user is an admin to determine fetch scope
+        const { data: profile } = await supabase
+            .from('instructors')
+            .select('role, departments(code)')
+            .eq('id', instructorId || '')
+            .single();
 
-        // 3. Fetch students ENROLLED in any of this instructor's classes (Directory parity)
-        const associatedQuery = supabase
-            .from('students')
-            .select(`
-                id, name, sin, year_level, department, is_archived, archived_by,
-                enrollments!inner (
-                    classes!inner (
-                        instructor_id
-                    )
-                )
-            `)
-            .eq('enrollments.classes.instructor_id', instructorId || '');
+        const isAdmin = profile?.role === 'admin';
+        const deptCode = (profile?.departments as any)?.code;
 
-        const [createdRes, associatedRes] = await Promise.all([createdQuery, associatedQuery]);
-
-        // Combine and deduplicate
-        const studentMap = new Map<string, Student>();
-        
         type RawStudent = {
             id: string;
             name: string;
@@ -94,7 +80,40 @@ export function AssignStudentDialog({ classId, className, instructorId, onAssign
             archived_by: string | null;
         };
 
-        const allFetched = [...(createdRes.data as RawStudent[] || []), ...(associatedRes.data as RawStudent[] || [])];
+        let allFetched: RawStudent[] = [];
+
+        if (isAdmin && deptCode) {
+            // Admins can assign any student in their department
+            const { data } = await supabase
+                .from('students')
+                .select('id, name, sin, year_level, department, is_archived, archived_by')
+                .eq('department', deptCode);
+            allFetched = (data as RawStudent[]) || [];
+        } else {
+            // 2. Fetch students the instructor CREATED
+            const createdQuery = supabase
+                .from('students')
+                .select('id, name, sin, year_level, department, is_archived, archived_by')
+                .eq('instructor_id', instructorId || '');
+
+            // 3. Fetch students ENROLLED in any of this instructor's classes (Directory parity)
+            const associatedQuery = supabase
+                .from('students')
+                .select(`
+                    id, name, sin, year_level, department, is_archived, archived_by,
+                    enrollments!inner (
+                        classes!inner (
+                            instructor_id
+                        )
+                    )
+                `)
+                .eq('enrollments.classes.instructor_id', instructorId || '');
+
+            const [createdRes, associatedRes] = await Promise.all([createdQuery, associatedQuery]);
+            allFetched = [...(createdRes.data as RawStudent[] || []), ...(associatedRes.data as RawStudent[] || [])];
+        }
+
+        const studentMap = new Map<string, Student>();
 
         allFetched.forEach((s) => {
             // Respect the directory's archive logic: Only hide if the CURRENT instructor archived them

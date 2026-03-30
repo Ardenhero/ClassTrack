@@ -249,6 +249,16 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                                                 >
                                                     {isSuperAdmin ? "Read-Only Students" : "Students"}
                                                 </Link>
+                                                <Link
+                                                    href="/archived"
+                                                    onClick={onLinkClick}
+                                                    className={cn(
+                                                        "block py-2 text-sm transition-colors",
+                                                        pathname === "/archived" ? "text-nwu-gold font-bold" : "text-white/60 hover:text-white"
+                                                    )}
+                                                >
+                                                    {isSuperAdmin ? "Read-Only Archived" : "Archived"}
+                                                </Link>
                                             </div>
                                         )}
                                     </div>
