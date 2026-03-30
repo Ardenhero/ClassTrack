@@ -34,7 +34,14 @@ const ParticleBackground = () => {
     );
 };
 
-const TechDetailCard = ({ icon: Icon, title, specs, delay }: any) => (
+interface TechCardProps {
+    icon: any;
+    title: string;
+    specs: string[];
+    delay: number;
+}
+
+const TechDetailCard = ({ icon: Icon, title, specs, delay }: TechCardProps) => (
     <div 
         className="group relative bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/20 dark:border-gray-800 shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(151,13,11,0.2)] dark:hover:shadow-[0_20px_50px_rgba(255,255,255,0.05)] overflow-hidden"
         style={{ animationDelay: `${delay}ms` }}
