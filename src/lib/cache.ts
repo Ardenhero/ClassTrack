@@ -74,7 +74,10 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
                 if (yearFilter) queryBuilder = queryBuilder.eq('year_level', yearFilter);
                 const { data, error } = await queryBuilder;
                 if (error) throw error;
-                return (data || []) as unknown as StudentData[];
+                
+                // Filter out students archived by this exact user
+                const result = (data || []) as unknown as StudentData[];
+                return result.filter((s: StudentData) => !(s.is_archived && s.archived_by === actualProfileId));
             } else {
                 // SYSTEM ADMIN: See students from THEIR account only
                 // ⚡ PARALLEL: Fetch admin record, then created + enrolled IDs in parallel
@@ -120,7 +123,10 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
 
                 const { data, error } = await queryBuilder;
                 if (error) throw error;
-                return (data || []) as unknown as StudentData[];
+                
+                // Filter out students archived by this exact user
+                const result = (data || []) as unknown as StudentData[];
+                return result.filter((s: StudentData) => !(s.is_archived && s.archived_by === actualProfileId));
             }
         } else {
             // INSTRUCTOR: Use complex query with enrollment-based visibility

@@ -53,10 +53,9 @@ export default function ArchivedPage() {
     const isSuperAdmin = profile?.is_super_admin;
     const isInstructor = profile?.role === "instructor";
 
-    // Dept Admins are read-only on the archive page (no restore, delete, or request)
-    const isReadOnly = isAdmin;
-    // Both Super Admin and Instructors can permanently delete from their archive
-    const canPermanentlyDelete = !isReadOnly;
+    // Dept Admins are fully authorized to manage their department's archive
+    const isReadOnly = false; 
+    const canPermanentlyDelete = true;
 
 
 
