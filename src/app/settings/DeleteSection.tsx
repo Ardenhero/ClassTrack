@@ -37,7 +37,7 @@ export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
         setConfirmConfig({
             isOpen: true,
             title: "Request Deletion",
-            message: "Are you sure you want to request permanent account deletion? This will be reviewed by the Super Admin.",
+            message: "Are you sure you want to request permanent account deletion? This will be reviewed by the Administrator.",
             onConfirm: async () => {
                 setConfirmConfig(prev => ({ ...prev, isOpen: false }));
                 setRequestPending(true);
@@ -45,7 +45,7 @@ export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
                     await requestAccountDeletion(deleteReason);
                     setShowDeleteModal(false);
                     setDeleteReason("");
-                    alert("Your deletion request has been submitted. The Super Admin will review it.");
+                    alert("Your deletion request has been submitted. The Administrator will review it.");
                 } catch (err) {
                     alert(err instanceof Error ? err.message : "Failed to submit request");
                 }
@@ -59,7 +59,7 @@ export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
         return null;
     }
 
-    // Super Admins: Direct Delete Account
+    // Administrators: Direct Delete Account
     if (isSuperAdmin) {
         return (
             <section className="bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-100 dark:border-red-900/20 p-6">
@@ -100,7 +100,7 @@ export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
             <section className="bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-100 dark:border-red-900/20 p-6">
                 <h2 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">Danger Zone</h2>
                 <p className="text-sm text-red-600/80 dark:text-red-400/70 mb-6">
-                    Permanently delete your account. This requires approval from the Super Admin.
+                    Permanently delete your account. This requires approval from the Administrator.
                 </p>
                 <div className="flex flex-wrap gap-3">
                     <button
@@ -123,7 +123,7 @@ export function DeleteSection({ isAdmin, isSuperAdmin }: DeleteSectionProps) {
                             </div>
                             <div>
                                 <h3 className="text-base font-bold text-gray-900 dark:text-gray-100">Request Account Deletion</h3>
-                                <p className="text-xs text-gray-500">Requires Super Admin approval</p>
+                                <p className="text-xs text-gray-500">Requires Administrator approval</p>
                             </div>
                         </div>
                         <div className="space-y-4">

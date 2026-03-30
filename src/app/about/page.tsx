@@ -94,7 +94,7 @@ export default function AboutPage() {
                 <div className="text-center mb-24 relative">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-nwu-red/10 rounded-full blur-[100px] -z-10 animate-pulse"></div>
                     <span className="inline-block py-1.5 px-4 rounded-full bg-nwu-red/10 text-nwu-red text-xs font-extrabold tracking-widest mb-6 uppercase border border-nwu-red/20 shadow-sm">
-                        Smart Classroom Attendance System • v2.0
+                        Smart Classroom Attendance System • v1
                     </span>
                     <h1 className="text-5xl md:text-7xl font-black text-gray-900 dark:text-white mb-8 tracking-tight leading-tight">
                         We Build <br />
@@ -121,15 +121,14 @@ export default function AboutPage() {
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-4">
                                     ClassTrack is a <strong>Smart Classroom Attendance System</strong> designed for Northwestern University.
-                                    It combines <strong>biometric fingerprint scanning</strong>, <strong>IoT device control</strong>,
-                                    and <strong>real-time analytics</strong> to automate attendance tracking across the entire campus.
+                                    It combines <strong>biometric fingerprint scanning</strong>, <strong>IoT infrastructure monitoring</strong>,
+                                    and <strong>real-time analytics</strong> to automate attendance tracking across the campus.
                                 </p>
                                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
-                                    No more paper-based roll calls. No more manual data entry. Students scan a QR code
-                                    on their portal or use the ESP32-powered kiosk to log their attendance instantly.
+                                    Instructors generate dynamic QR codes on their dashboard, which students scan using their personal portal to log attendance instantly. Alternatively, students can use the ESP32-powered kiosks for biometric verification.
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {["Biometric Auth", "IoT Control", "Real-time Analytics", "QR Scanning", "Role-Based Access"].map(tag => (
+                                    {["Biometric Auth", "Infrastructure Health", "Real-time Analytics", "QR Verification", "Administrator Control"].map(tag => (
                                         <span key={tag} className="px-3 py-1 bg-nwu-red/10 text-nwu-red text-xs font-bold rounded-full border border-nwu-red/20">
                                             {tag}
                                         </span>
@@ -140,8 +139,8 @@ export default function AboutPage() {
                                 {[
                                     { label: "Roles", value: "4", sub: "Administrator, Dept Admin, Instructor, Student" },
                                     { label: "Departments", value: "Multi", sub: "Fully scoped data isolation" },
-                                    { label: "IoT Devices", value: "ESP32", sub: "Hardware Management" },
-                                    { label: "Notifications", value: "Live", sub: "Instant In-App Alerts" },
+                                    { label: "IoT Kiosks", value: "ESP32", sub: "Hardware Biometric Logging" },
+                                    { label: "Notifications", value: "Live", sub: "Instant Attendance Alerts" },
                                 ].map((item, i) => (
                                     <div key={i} className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 text-center">
                                         <div className="text-xl font-black text-nwu-red mb-1">{item.value}</div>

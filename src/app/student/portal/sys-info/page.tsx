@@ -18,7 +18,8 @@ import {
     Sparkles,
     Layers,
     ShieldCheck,
-    Code
+    Code,
+    QrCode
 } from "lucide-react";
 import Image from "next/image";
 
@@ -55,10 +56,10 @@ export default function SysInfoPage() {
     }
 
     const FEATURES = [
-        { title: "4 ROLES", desc: "Administrator, Dept Admin, Instructor, Student", icon: Users, color: "text-red-500" },
-        { title: "MULTI", desc: "Fully scoped data isolation", icon: Layers, color: "text-blue-500" },
-        { title: "ESP32", desc: "Lights, Fans, ACs via Tuya", icon: Cpu, color: "text-orange-500" },
-        { title: "AUTO", desc: "Email parents on absences", icon: Bell, color: "text-red-500" },
+        { title: "ROLES", desc: "Administrator, Instructor, Student", icon: Users, color: "text-red-500" },
+        { title: "BIOMETRIC", desc: "Secure ESP32 Fingerprint Kiosk", icon: Zap, color: "text-orange-500" },
+        { title: "QR SCAN", desc: "Instant mobile session verification", icon: QrCode, color: "text-blue-500" },
+        { title: "HISTORY", desc: "Real-time attendance analytics", icon: Database, color: "text-red-500" },
     ];
 
     const TEAM = [
@@ -201,7 +202,7 @@ export default function SysInfoPage() {
                                                 alt={member.name} 
                                                 width={160}
                                                 height={160}
-                                                className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100 relative z-10" 
+                                                className="h-full w-full object-cover transition-all duration-700 scale-110 group-hover:scale-100 relative z-10" 
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).style.display = 'none';
                                                 }}
@@ -245,7 +246,7 @@ export default function SysInfoPage() {
                 {/* Footer Section */}
                 <div className="text-center pt-24 border-t border-gray-100 dark:border-gray-800">
                     <p className="text-[10px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[1em] mb-8">AUTHENTIC PRODUCT OF</p>
-                    <div className="flex flex-col md:flex-row items-center justify-center gap-12 opacity-40 grayscale group hover:grayscale-0 hover:opacity-100 transition-all duration-1000 cursor-default">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-12 group transition-all duration-1000 cursor-default">
                         <div className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-[0.2em] flex items-center gap-4">
                         ICPEP.SE
                             <div className="h-3 w-3 rounded-full bg-nwu-red animate-pulse" />

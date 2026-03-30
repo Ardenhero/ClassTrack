@@ -229,7 +229,7 @@ export function AddClassDialog({ trigger }: AddClassDialogProps) {
 
                 <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create New Class</h2>
 
-                {/* ─── Tab Switcher (hidden for Super Admin) ──────────────── */}
+                {/* ─── Tab Switcher (hidden for Administrator) ──────────────── */}
                 {!isSuperAdmin && (
                     <div className="flex mb-5 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                         <button

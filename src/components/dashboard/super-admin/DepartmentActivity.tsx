@@ -90,7 +90,7 @@ export function DepartmentActivity({ departments }: { departments: DeptStat[] })
 
             <div className="mt-6 pt-4 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center text-[10px]">
                 <span className="text-gray-400 font-bold uppercase tracking-widest">Total Active Nodes: {departments.reduce((acc, d) => acc + d.sessions, 0)}</span>
-                <span className="text-nwu-red font-black">Super Admin View</span>
+                <span className="text-nwu-red font-black">Administrator View</span>
             </div>
         </div>
     );
