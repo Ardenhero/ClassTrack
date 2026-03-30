@@ -5,7 +5,7 @@ import {
     Code, Database, Rocket, Sparkles,
     Server, Globe, Cpu, Shield, Fingerprint, Wifi,
     BarChart3, Users, MonitorSmartphone, Activity, Box,
-    CpuIcon, Layers, Network, Terminal
+    CpuIcon, Layers, Network, Terminal, LucideIcon
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -35,7 +35,7 @@ const ParticleBackground = () => {
 };
 
 interface TechCardProps {
-    icon: any;
+    icon: LucideIcon;
     title: string;
     specs: string[];
     delay: number;

@@ -12,7 +12,8 @@ import {
     Network,
     Fingerprint,
     Wifi,
-    Server
+    Server,
+    LucideIcon
 } from "lucide-react";
 import Image from "next/image";
 
@@ -40,7 +41,7 @@ const ParticleBackground = () => {
 };
 
 interface TechCardProps {
-    icon: any;
+    icon: LucideIcon;
     title: string;
     specs: string[];
     delay: number;
