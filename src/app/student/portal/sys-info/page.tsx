@@ -12,11 +12,9 @@ import {
     Code2,
     Users,
     Zap,
-    Bell,
     Heart,
     Coffee,
     Sparkles,
-    Layers,
     ShieldCheck,
     Code,
     QrCode

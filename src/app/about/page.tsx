@@ -3,8 +3,8 @@
 import DashboardLayout from "../../components/DashboardLayout";
 import {
     Code, Database, Zap, Heart, Rocket, Coffee, Sparkles,
-    Server, Globe, Cpu, Shield, Fingerprint, Wifi, Mail,
-    BarChart3, Users, BookOpen, MonitorSmartphone
+    Server, Globe, Cpu, Shield, Fingerprint, Wifi,
+    BarChart3, Users, MonitorSmartphone
 } from "lucide-react";
 import Image from "next/image";
 
