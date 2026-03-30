@@ -30,7 +30,7 @@ const NAV_ITEMS = [
 
 const SECONDARY_NAV = [
     { name: "Settings", href: "/student/portal/settings", icon: Settings },
-    { name: "System Info", href: "/student/portal/sys-info", icon: Info },
+    { name: "About", href: "/student/portal/sys-info", icon: Info },
 ];
 
 export function StudentSidebar({ studentName, sin, imageUrl, status }: { studentName: string; sin: string; imageUrl?: string | null; status?: string }) {

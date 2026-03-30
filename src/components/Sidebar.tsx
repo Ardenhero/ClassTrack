@@ -36,7 +36,7 @@ const instructorNavigation = [
     { name: "QR Attendance", href: "/dashboard/scanner", icon: QrCode },
 
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "System Info", href: "/about", icon: Info },
+    { name: "About", href: "/about", icon: Info },
 ];
 
 // System Admin Navigation (with Dashboard, no Evidence)
@@ -49,7 +49,7 @@ const adminNavigation = [
 
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "System Info", href: "/about", icon: Info },
+    { name: "About", href: "/about", icon: Info },
 ];
 
 // Administrator "Unpacked" Navigation (focused on System & IoT)
@@ -58,7 +58,7 @@ const superAdminNavigation = [
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "System Info", href: "/about", icon: Info },
+    { name: "About", href: "/about", icon: Info },
 ];
 
 import { User as SupabaseUser } from "@supabase/supabase-js";
