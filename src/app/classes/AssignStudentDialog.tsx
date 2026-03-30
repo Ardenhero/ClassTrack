@@ -68,7 +68,7 @@ export function AssignStudentDialog({ classId, className, instructorId, onAssign
             .single();
 
         const isAdmin = profile?.role === 'admin';
-        const deptCode = (profile?.departments as any)?.code;
+        const deptCode = (profile?.departments as { code?: string })?.code;
 
         type RawStudent = {
             id: string;
