@@ -49,14 +49,12 @@ export default function ArchivedPage() {
         variant: "danger"
     });
 
-    const isAdmin = profile?.role === "admin" && !profile?.is_super_admin;
     const isSuperAdmin = profile?.is_super_admin;
     const isInstructor = profile?.role === "instructor";
 
     // Dept Admins are fully authorized to manage their department's archive
     const isReadOnly = false; 
     const canPermanentlyDelete = true;
-
 
 
 
