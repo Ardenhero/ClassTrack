@@ -43,10 +43,9 @@ export default function AboutPage() {
         { label: "Platform", value: "Next.js 14 (App Router)", icon: Globe },
         { label: "Database", value: "Supabase (PostgreSQL)", icon: Database },
         { label: "Authentication", value: "Supabase Auth + RLS", icon: Shield },
-        { label: "IoT Integration", value: "ESP32 + Tuya Cloud", icon: Cpu },
+        { label: "IoT Integration", value: "ESP32 (Kiosk Control)", icon: Cpu },
         { label: "Biometrics", value: "AS608 Fingerprint Sensor", icon: Fingerprint },
         { label: "Real-time", value: "Supabase Realtime (WebSocket)", icon: Wifi },
-        { label: "Email", value: "Resend API (Auto Notifications)", icon: Mail },
         { label: "Hosting", value: "Vercel (Edge Network)", icon: Server },
     ];
 
@@ -71,13 +70,6 @@ export default function AboutPage() {
             icon: Users,
             color: "text-purple-400",
             status: "Exploring",
-        },
-        {
-            title: "Parent/Guardian Portal",
-            desc: "Dedicated web portal for parents to view their child's attendance history, receive reports, and communicate with instructors.",
-            icon: BookOpen,
-            color: "text-orange-400",
-            status: "Planned",
         },
         {
             title: "Multi-Campus Support",
@@ -133,12 +125,11 @@ export default function AboutPage() {
                                     and <strong>real-time analytics</strong> to automate attendance tracking across the entire campus.
                                 </p>
                                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
-                                    No more paper-based roll calls. No more manual data entry. Students scan their fingerprint
-                                    on an ESP32-powered kiosk, and their attendance is instantly logged, analyzed, and reported
-                                    to both instructors and parents — all in real-time.
+                                    No more paper-based roll calls. No more manual data entry. Students scan a QR code
+                                    on their portal or use the ESP32-powered kiosk to log their attendance instantly.
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {["Biometric Auth", "IoT Control", "Real-time Analytics", "Auto Notifications", "QR Scanning", "Role-Based Access"].map(tag => (
+                                    {["Biometric Auth", "IoT Control", "Real-time Analytics", "QR Scanning", "Role-Based Access"].map(tag => (
                                         <span key={tag} className="px-3 py-1 bg-nwu-red/10 text-nwu-red text-xs font-bold rounded-full border border-nwu-red/20">
                                             {tag}
                                         </span>
@@ -149,8 +140,8 @@ export default function AboutPage() {
                                 {[
                                     { label: "Roles", value: "4", sub: "Administrator, Dept Admin, Instructor, Student" },
                                     { label: "Departments", value: "Multi", sub: "Fully scoped data isolation" },
-                                    { label: "IoT Devices", value: "ESP32", sub: "Lights, Fans, ACs via Tuya" },
-                                    { label: "Notifications", value: "Auto", sub: "Email parents on absences" },
+                                    { label: "IoT Devices", value: "ESP32", sub: "Hardware Management" },
+                                    { label: "Notifications", value: "Live", sub: "Instant In-App Alerts" },
                                 ].map((item, i) => (
                                     <div key={i} className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 text-center">
                                         <div className="text-xl font-black text-nwu-red mb-1">{item.value}</div>
