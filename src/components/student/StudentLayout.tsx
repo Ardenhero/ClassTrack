@@ -17,7 +17,7 @@ export function StudentLayout({
     status?: string;
 }) {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+        <div className="min-h-screen bg-transparent flex">
             {/* Sidebar */}
             <StudentSidebar studentName={studentName} sin={sin} imageUrl={imageUrl} status={status} />
 

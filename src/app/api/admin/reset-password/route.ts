@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (!actor?.is_super_admin) {
-            return NextResponse.json({ error: "Forbidden: Administrator only" }, { status: 403 });
+            return NextResponse.json({ error: "Forbidden: Super Admin only" }, { status: 403 });
         }
 
         const { target_user_id, new_password } = await request.json();

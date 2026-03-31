@@ -182,7 +182,7 @@ export function ClassesDirectory({
                         })}
                     </div>
                 ) : isSuperAdmin ? (
-                    // ADMINISTRATOR VIEW: Department -> Instructor Folders
+                    // SUPER ADMIN VIEW: Department -> Instructor Folders
                     <div className="space-y-6">
                         {Array.from(superAdminGroups.entries()).map(([dept, instMap], deptIndex) => {
                             const instructorEntries = Array.from(instMap.entries()).sort((a, b) => {

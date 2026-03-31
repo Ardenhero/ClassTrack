@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { useState, useEffect } from "react";
 import { Menu, Fingerprint, X } from "lucide-react";
 import { cn } from "../utils/cn";
+import GlobalExperience from "./GlobalExperience";
 
 export default function DashboardLayout({
     children,
@@ -31,7 +32,8 @@ export default function DashboardLayout({
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row">
+        <div className="min-h-screen bg-transparent flex flex-col md:flex-row relative">
+            
             {/* Mobile Header */}
             <div className="md:hidden bg-udemy-indigo text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
                 <div className="flex items-center">

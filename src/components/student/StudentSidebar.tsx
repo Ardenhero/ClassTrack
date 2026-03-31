@@ -30,7 +30,7 @@ const NAV_ITEMS = [
 
 const SECONDARY_NAV = [
     { name: "Settings", href: "/student/portal/settings", icon: Settings },
-    { name: "About", href: "/student/portal/sys-info", icon: Info },
+    { name: "System Info", href: "/student/portal/sys-info", icon: Info },
 ];
 
 export function StudentSidebar({ studentName, sin, imageUrl, status }: { studentName: string; sin: string; imageUrl?: string | null; status?: string }) {
@@ -62,8 +62,8 @@ export function StudentSidebar({ studentName, sin, imageUrl, status }: { student
                 href={item.href}
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
-                        ? "bg-nwu-red text-white shadow-lg shadow-red-200 dark:shadow-red-900/20"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-nwu-red"
+                    ? "bg-nwu-red text-white shadow-lg shadow-red-200 dark:shadow-red-900/20"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-nwu-red"
                     }`}
             >
                 <Icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-110" : "group-hover:scale-110"}`} />
@@ -111,7 +111,7 @@ export function StudentSidebar({ studentName, sin, imageUrl, status }: { student
 
             {/* Sidebar */}
             <aside className={`
-                fixed top-0 left-0 bottom-0 w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50
+                fixed top-0 left-0 bottom-0 w-72 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 z-50
                 transition-transform duration-300 ease-in-out lg:translate-x-0
                 ${isOpen ? "translate-x-0" : "-translate-x-full"}
             `}>
@@ -154,13 +154,12 @@ export function StudentSidebar({ studentName, sin, imageUrl, status }: { student
                                 <div className="flex items-center gap-2">
                                     <p className="text-[10px] text-gray-500 font-mono">{sin}</p>
                                     {status && (
-                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter ${
-                                            status.toLowerCase() === 'active' || status.toLowerCase() === 'enrolled' 
-                                            ? 'bg-green-100 text-green-700' 
-                                            : status.toLowerCase() === 'graduated'
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'bg-red-100 text-red-700'
-                                        }`}>
+                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter ${status.toLowerCase() === 'active' || status.toLowerCase() === 'enrolled'
+                                                ? 'bg-green-100 text-green-700'
+                                                : status.toLowerCase() === 'graduated'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'bg-red-100 text-red-700'
+                                            }`}>
                                             {status}
                                         </span>
                                     )}

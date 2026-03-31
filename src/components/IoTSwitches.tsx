@@ -75,7 +75,7 @@ export function IoTSwitches() {
             setLoading(false);
         }
         if (data?.groups) setGroups(data.groups);
-        
+
         // Sync selectedRoomId
         if (selectedRoom !== 'all' && data?.rooms) {
             const r = data.rooms.find((rm: { name: string, id: string }) => rm.name === selectedRoom);
@@ -314,14 +314,14 @@ export function IoTSwitches() {
                                             <div
                                                 key={device.id}
                                                 className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl border border-gray-100 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-700 transition-all group ${isOn
-                                                        ? visuals.bgOn
-                                                        : "bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-700/50 shadow-sm"
+                                                    ? visuals.bgOn
+                                                    : "bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-700/50 shadow-sm"
                                                     } ${!isOnline && "opacity-60 grayscale-[0.5]"}`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isOn
-                                                            ? `${visuals.colorClass} text-white shadow-md`
-                                                            : "bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-gray-700"
+                                                        ? `${visuals.colorClass} text-white shadow-md`
+                                                        : "bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-gray-700"
                                                         }`}>
                                                         <Icon className={`h-4 w-4 ${isOn && visuals.spin ? "animate-spin" : ""}`} />
                                                     </div>

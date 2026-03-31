@@ -34,14 +34,14 @@ export default function LoginPage() {
 
         setLoading(true);
         setError(null);
-        
+
         try {
             const formData = new FormData();
             formData.append("sin", sin);
             formData.append("password", password);
-            
+
             const result = await loginStudent(formData);
-            
+
             if (result.success) {
                 router.push("/student/portal/dashboard");
                 router.refresh();
@@ -79,7 +79,7 @@ export default function LoginPage() {
                         />
                     </div>
                     <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Student Portal</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">ClassTrack Verification System v1</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">ClassTrack Verification System v3.3</p>
                 </div>
 
                 <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-8 shadow-2xl shadow-gray-200/50 dark:shadow-none animate-in fade-in slide-in-from-bottom-8 duration-700">

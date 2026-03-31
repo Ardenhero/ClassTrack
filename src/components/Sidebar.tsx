@@ -36,7 +36,7 @@ const instructorNavigation = [
     { name: "QR Attendance", href: "/dashboard/scanner", icon: QrCode },
 
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "About", href: "/about", icon: Info },
+    { name: "System Info", href: "/about", icon: Info },
 ];
 
 // System Admin Navigation (with Dashboard, no Evidence)
@@ -49,16 +49,16 @@ const adminNavigation = [
 
     { name: "Admin Console", href: "/dashboard/admin", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "About", href: "/about", icon: Info },
+    { name: "System Info", href: "/about", icon: Info },
 ];
 
-// Administrator "Unpacked" Navigation (focused on System & IoT)
+// Super Admin "Unpacked" Navigation (focused on System & IoT)
 const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
     { name: "Settings", href: "/settings", icon: Settings },
-    { name: "About", href: "/about", icon: Info },
+    { name: "System Info", href: "/about", icon: Info },
 ];
 
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -181,7 +181,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
 
                 <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                     {navItems.map((item) => {
-                        // Only System Admin gets the Directory dropdown. Administrator is purely System/IoT focused now.
+                        // Only System Admin gets the Directory dropdown. Super Admin is purely System/IoT focused now.
                         const isSystemAdmin = !isSuperAdmin && profile?.role === 'admin';
                         const shouldRenderDropdown = isSystemAdmin && item.name === 'Attendance';
 
@@ -407,7 +407,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                         </div>
                         <div className="ml-3 transition-opacity duration-200" style={{ opacity: isCollapsed ? 0 : 1, width: isCollapsed ? 0 : 'auto', overflow: 'hidden' }}>
                             <p className="text-sm font-medium text-white group-hover:text-nwu-gold transition-colors whitespace-nowrap">
-                                {isSwitching ? "Switching..." : (profile?.name === 'Super Admin' ? 'Administrator' : (profile?.name || user?.user_metadata?.full_name || "User"))}
+                                {isSwitching ? "Switching..." : (profile?.name || user?.user_metadata?.full_name || "User")}
                             </p>
                             <p className="text-xs text-gray-400 whitespace-nowrap">View Profile</p>
                         </div>

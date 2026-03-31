@@ -4,73 +4,24 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStudentSession } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
-import { 
-    Cpu, 
-    Loader2, 
-    Activity,
-    Box,
-    Network,
-    Fingerprint,
-    Wifi,
-    Server,
-    LucideIcon
+import {
+    Cpu,
+    Database,
+    Loader2,
+    Globe,
+    Code2,
+    Users,
+    Zap,
+    Bell,
+    Heart,
+    Coffee,
+    Sparkles,
+    Layers,
+    ShieldCheck,
+    Code
 } from "lucide-react";
 import Image from "next/image";
-
-// --- Crazy UI Components ---
-
-const ParticleBackground = () => {
-    return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-            {[...Array(15)].map((_, i) => (
-                <div
-                    key={i}
-                    className="absolute rounded-full bg-nwu-red/10 blur-2xl animate-float"
-                    style={{
-                        width: Math.random() * 250 + 50 + 'px',
-                        height: Math.random() * 250 + 50 + 'px',
-                        left: Math.random() * 100 + '%',
-                        top: Math.random() * 100 + '%',
-                        animationDelay: Math.random() * 5 + 's',
-                        animationDuration: Math.random() * 8 + 8 + 's',
-                    }}
-                />
-            ))}
-        </div>
-    );
-};
-
-interface TechCardProps {
-    icon: LucideIcon;
-    title: string;
-    specs: string[];
-    delay: number;
-}
-
-const TechDetailCard = ({ icon: Icon, title, specs, delay }: TechCardProps) => (
-    <div 
-        className="group relative bg-white/40 dark:bg-gray-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/20 dark:border-gray-800 shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(151,13,11,0.15)] dark:hover:shadow-[0_20px_50px_rgba(255,255,255,0.03)] overflow-hidden"
-        style={{ animationDelay: `${delay}ms` }}
-    >
-        <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Icon size={140} />
-        </div>
-        <div className="relative z-10">
-            <div className="mb-6 h-12 w-12 rounded-2xl bg-nwu-red/10 flex items-center justify-center border border-nwu-red/20 group-hover:scale-110 transition-transform">
-                <Icon className="h-6 w-6 text-nwu-red" />
-            </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white mb-4 uppercase tracking-tighter">{title}</h3>
-            <ul className="space-y-2.5">
-                {specs.slice(0, 4).map((spec: string, i: number) => (
-                    <li key={i} className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-tight">
-                        <div className="h-1 w-1 rounded-full bg-nwu-gold shrink-0" />
-                        {spec}
-                    </li>
-                ))}
-            </ul>
-        </div>
-    </div>
-);
+import "./portal-about.css";
 
 interface Student {
     name: string;
@@ -79,181 +30,459 @@ interface Student {
 }
 
 export default function SysInfoPage() {
-    const [student, setStudent] = useState<Student | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [mounted, setMounted] = useState(false);
-    const router = useRouter();
+  const [student, setStudent] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-    useEffect(() => {
-        setMounted(true);
-        async function checkAuth() {
-            const session = await getStudentSession();
-            if (!session) {
-                router.push("/student/portal");
-                return;
-            }
-            setStudent(session);
-            setLoading(false);
+  // KIOSK STATE
+  const [ksm, setKsm] = useState({ state: 'idle', main: 'READY', sub: 'Place finger on sensor' });
+  const [klog, setKlog] = useState<{ msg: string; type?: string }[]>([
+    { msg: '[SYS] ClassTrack Kiosk Online', type: 'lsys' },
+    { msg: '[AS608] UART handshake → OK', type: 'lsys' },
+    { msg: '[NET] WiFi → Connected', type: 'lsys' },
+    { msg: '[READY] Awaiting finger input...', type: 'lsys' }
+  ]);
+  const [kled, setKled] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  // MODAL STATE
+  const [mOpen, setMOpen] = useState(false);
+  const [mKey, setMKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const el = document.getElementById('klog');
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [klog]);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const session = await getStudentSession();
+      if (!session) { router.push("/student/portal"); return; }
+      setStudent(session);
+      setLoading(false);
+    }
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    if (loading || !student) return;
+
+    // REVEAL ON SCROLL
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('vis');
+          obs.unobserve(e.target);
         }
-        checkAuth();
-    }, [router]);
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.rv').forEach(el => obs.observe(el));
 
-    if (!mounted || loading || !student) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                <Loader2 className="h-8 w-8 text-nwu-red animate-spin" />
-            </div>
-        );
+    function countUp(el: any, target: any, sfx: string) {
+      if (target === 'inf') { el.textContent = '∞'; return; }
+      let n = 0; const dur = 1800, step = 16, inc = target / (dur / step);
+      const tm = setInterval(() => {
+        n = Math.min(n + inc, target);
+        el.textContent = Math.floor(n).toLocaleString() + (sfx || '');
+        if (n >= target) {
+          el.textContent = target.toLocaleString() + (sfx || '');
+          clearInterval(tm);
+        }
+      }, step);
     }
 
-    const team = [
-        {
-            name: "Arden Hero Damaso",
-            role: "Full Stack Developer",
-            initials: "AH",
-            image: "/team/arden.png"
-        },
-        {
-            name: "Clemen Jay Luis",
-            role: "Frontend Developer",
-            initials: "CJ",
-            image: "/team/clemen.png"
-        },
-        {
-            name: "Ace Donner Dane Asuncion",
-            role: "Backend Developer",
-            initials: "AD",
-            image: "/team/ace.png"
+    const sObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll('.snum').forEach((el: any) => {
+             const t = el.getAttribute('data-t');
+             const s = el.getAttribute('data-s') || '';
+             countUp(el, t === 'inf' ? 'inf' : parseInt(t), s);
+          });
+          sObs.unobserve(e.target);
         }
-    ];
+      });
+    }, { threshold: 0.3 });
 
-    const hardwareSpecs = [
-        {
-            title: "Biometric Core",
-            icon: Fingerprint,
-            specs: ["Optical AS608 Sensor", "UART Communication", "1:N Identification", "3.3V Logic Level"]
-        },
-        {
-            title: "IoT Node",
-            icon: Cpu,
-            specs: ["ESP32 Dual-Core", "2.4GHz Wi-Fi", "Low-Latency Handshake", "WPA2 Enterprise Support"]
-        },
-        {
-            title: "Cloud Engine",
-            icon: Server,
-            specs: ["PostgreSQL Supabase", "Auth + RLS Protection", "Edge Execution", "Live Persistence"]
-        },
-        {
-            title: "Edge Resilience",
-            icon: Wifi,
-            specs: ["Offline Payload Queue", "Conflict Resolution", "Background Sync", "Status: [ ACTIVE ]"]
+    const statsEl = document.getElementById('stats');
+    if (statsEl) sObs.observe(statsEl);
+
+    const handleScroll = () => {
+      const nav = document.getElementById('nav-portal');
+      if (nav) nav.classList.toggle('sc', window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      obs.disconnect();
+      sObs.disconnect();
+    };
+  }, [loading, student]);
+
+  // KIOSK LOGIC
+  const kladd = (msg: string, type: string = '') => setKlog(prev => [...prev, { msg, type }]);
+
+  const kScan = (ok: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    setKsm({ state: 'scan', main: 'SCANNING', sub: 'Processing hardware data...' });
+    
+    // Simulate mechanical LED sequence
+    const leds = ['kl1','kl2','kl3','kl4'];
+    leds.forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if(el) el.classList.add('o');
+      }, i * 200);
+    });
+
+    kladd('[AS608] Optical scan initiated...');
+    
+    setTimeout(() => {
+      kladd('[AS608] Extracting minutiae points...');
+      setTimeout(() => {
+        kladd('[AS608] DSP template matching...');
+        setTimeout(() => {
+          leds.forEach(id => document.getElementById(id)?.classList.remove('o'));
+          if(ok) {
+            kladd('[AS608] Match → ID:0x03 · Arden Hero Damaso', 'lok');
+            kladd('[ESP32] HTTPS POST /attendance → 200 OK', 'lok');
+            setKsm({ state: 'ok', main: 'SUCCESS', sub: 'Attendance Logged ✓' });
+            document.getElementById('kl2')?.classList.add('g');
+            document.getElementById('kl3')?.classList.add('g');
+          } else {
+            kladd('[AS608] No match · Confidence: 22 (threshold: 60)', 'lerr');
+            kladd('[ESP32] Attendance rejected', 'lerr');
+            setKsm({ state: 'fail', main: 'FAILED', sub: 'Identity unrecognized' });
+            document.getElementById('kl1')?.classList.add('r');
+            document.getElementById('kl4')?.classList.add('r');
+          }
+          setTimeout(() => {
+            setKsm({ state: 'idle', main: 'READY', sub: 'Place finger on sensor' });
+            leds.forEach(id => {
+              document.getElementById(id)?.classList.remove('g');
+              document.getElementById(id)?.classList.remove('r');
+            });
+            kladd('[READY] Awaiting next input...', 'lsys');
+            setBusy(false);
+          }, 3200);
+        }, 800);
+      }, 600);
+    }, 500);
+  };
+
+  const kReboot = () => {
+    if (busy) return;
+    setBusy(true);
+    setKsm({ state: 'scan', main: 'REBOOTING', sub: 'Clearing buffers...' });
+    setKlog([]);
+    const leds = ['kl1','kl2','kl3','kl4'];
+    leds.forEach(id => document.getElementById(id)?.classList.add('o'));
+
+    const ls = [
+      {m: '[SYS] Reboot signal received...', t: 'lsys'},
+      {m: '[SYS] Halting all processes...', t: 'lsys'},
+      {m: '[SYS] Cleared SRAM buffer', t: 'lsys'},
+      {m: '[SYS] ESP32-S3 core restart', t: 'lsys'},
+      {m: '[NET] WiFi reconnecting...', t: 'lsys'},
+      {m: '[SYS] ClassTrack Kiosk Online ✓', t: 'lsys'}
+    ];
+    ls.forEach((l, i) => {
+      setTimeout(() => {
+        kladd(l.m, l.t);
+        if (i === ls.length - 1) {
+          leds.forEach(id => document.getElementById(id)?.classList.remove('o'));
+          setKsm({ state: 'idle', main: 'READY', sub: 'Place finger on sensor' });
+          setBusy(false);
         }
-    ];
+      }, i * 450);
+    });
+  };
 
+  const hwData: any = {
+    esp:{
+      fb:'<div class="esp-screen"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'WAVESHARE ESP32-S3-TOUCH-LCD-7',
+      desc:'The brain and face of the ClassTrack kiosk. Features a dual-core Xtensa LX7 processor paired with an integrated 7-inch capacitive touch display. Handles fingerprint UART communication, WiFi HTTP requests to Supabase, touch UI rendering, and GPIO LED control — all simultaneously at 240MHz.',
+      dims:'PCB: 165.72 × 97.60mm · Display: 192.96 × 110.76mm · 4×M3 + 4×M2.5 mount',
+      specs:[{k:'Processor',v:'Dual-Core LX7 @ 240MHz'},{k:'Memory',v:'512KB SRAM + 8MB PSRAM'},{k:'Flash',v:'16MB Onboard Flash'},{k:'Display',v:'7" Capacitive Touch LCD'},{k:'Connectivity',v:'WiFi 802.11 b/g/n + BLE 5.0'},{k:'Interfaces',v:'UART, SPI, I²C, GPIO'},{k:'Operating Voltage',v:'5V via USB-C'},{k:'Baud Rate',v:'57600 (AS608 comms)'}],
+      role:'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
+      tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7" Touch LCD','UART + SPI + I²C']
+    },
+    as608:{
+      fb:'🫆',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'OPTICAL FINGERPRINT MODULE',
+      desc:'An optical fingerprint sensor with a built-in DSP chip. Captures high-resolution fingerprint images at 500 DPI, extracts minutiae points, and performs template matching entirely onboard — delivering a match result to the ESP32-S3 via UART in under one second. Supports 360° finger placement rotation.',
+      dims:'Module: ~20 × 21 × 21.5mm · Connector: UART TTL · Power: 3.3V/5V',
+      specs:[{k:'Scan Resolution',v:'500 DPI'},{k:'Template Storage',v:'Up to 162 templates'},{k:'Match Time',v:'< 1 second'},{k:'Interface',v:'UART TTL 3.3V / 5V'},{k:'Baud Rate',v:'57600 bps'},{k:'FAR',v:'< 0.001%'},{k:'FRR',v:'< 0.1%'},{k:'Rotation Support',v:'360° recognition'}],
+      role:'Serves as the biometric input device of the ClassTrack kiosk. When a student places their finger, the AS608 performs an optical scan, extracts minutiae points using its onboard DSP, matches against stored templates, and sends a confirmation packet — including matched template ID and confidence score — to the ESP32-S3 via UART at 57600 baud.',
+      tags:['500 DPI','162 Templates','< 1s Match','UART 57600 bps','Onboard DSP']
+    }
+  };
+
+  const openModal = (key: string) => {
+    const d = hwData[key];
+    const mfb = document.getElementById('mfb');
+    if(mfb) mfb.innerHTML = d.fb;
+    
+    document.getElementById('mdims')!.textContent = d.dims;
+    document.getElementById('mbadge-txt')!.textContent = d.badge;
+    document.getElementById('mtitle')!.textContent = d.title;
+    document.getElementById('msubt')!.textContent = d.subt;
+    document.getElementById('mdesc')!.textContent = d.desc;
+    document.getElementById('mrld')!.textContent = d.role;
+    
+    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s:any) => `<div class=\"msp\"><div class=\"mspk\">${s.k}</div><div class=\"mspv\">${s.v}</div></div>`).join('');
+    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg:any) => `<div class=\"mtag\">${tg}</div>`).join('');
+    
+    setMOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    setMOpen(false);
+    document.body.style.overflow = '';
+  };
+
+  if (loading || !student) {
     return (
-        <StudentLayout studentName={student.name} sin={student.sin} imageUrl={student.image_url}>
-            <div className="relative max-w-6xl mx-auto space-y-32 py-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <ParticleBackground />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <Loader2 className="h-8 w-8 text-nwu-red animate-spin" />
+      </div>
+    );
+  }
 
-                {/* Hero section */}
-                <section className="text-center space-y-8 relative">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-nwu-gold/5 rounded-full blur-[100px] -z-10"></div>
-                    <div className="space-y-4">
-                        <span className="inline-block px-4 py-1.5 rounded-full bg-nwu-red/10 border border-nwu-red/20 text-nwu-red text-[10px] font-black uppercase tracking-[0.4em]">
-                            System Infrastructure v1.0
-                        </span>
-                        <h1 className="text-5xl md:text-7xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic leading-none">
-                            Powered by <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-nwu-red to-nwu-gold">ClassTrack Edge</span>
-                        </h1>
-                    </div>
-                </section>
+  return (
+    <StudentLayout studentName={student.name} sin={student.sin} imageUrl={student.image_url}>
+      <div className="portal-about-container relative">
+        
+        {/* HERO */}
+        <section id="hero-portal">
+          <div className="hbadge">Student Portal Experience · V1</div>
+          <h1 className="htitle">
+            <span className="l1">Your Attendance</span>
+            <span className="l2">Reimagined</span>
+          </h1>
+          <p className="hsub">Your personal hub for managing academic attendance records at Northwestern University. Transparent, real-time, and built for students.</p>
+          <div className="hbtns">
+            <button className="bp" onClick={() => document.getElementById('what-portal')?.scrollIntoView({behavior:'smooth'})}>Explore ClassTrack <Zap size={16} /></button>
+            <button className="bo" onClick={() => document.getElementById('hardware')?.scrollIntoView({behavior:'smooth'})}>See Hardware</button>
+          </div>
+        </section>
 
-                {/* Hardware Ecosystem */}
-                <section className="space-y-16">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {hardwareSpecs.map((hardware, i) => (
-                            <TechDetailCard key={i} {...hardware} delay={i * 100} />
-                        ))}
-                    </div>
-                </section>
-
-                {/* What is ClassTrack? - Redesigned */}
-                <section className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-nwu-red/10 to-transparent blur-3xl rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                    <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-3xl rounded-[3rem] border border-gray-100 dark:border-gray-800 p-12 shadow-2xl overflow-hidden relative">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                            <div className="space-y-8">
-                                <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none italic">
-                                    The Future of <br /><span className="text-nwu-red">Digital Attendance</span>
-                                </h2>
-                                <p className="text-gray-500 dark:text-gray-400 font-medium leading-relaxed italic border-l-4 border-nwu-red pl-6">
-                                    ClassTrack Student Portal is your high-speed access hub. Integrated with global scale biometrics and real-time cloud synchronization, we ensure your existence in class is never unrecorded.
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {["Digital Excuse Letters", "Real-time Alerts", "QR Verification", "Offline Ready"].map(tag => (
-                                        <span key={tag} className="px-3 py-1.5 bg-white dark:bg-gray-800 text-nwu-red rounded-xl text-[9px] font-black uppercase tracking-widest border border-red-50 dark:border-red-900/30">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="relative h-[250px] flex items-center justify-center">
-                                <div className="absolute inset-0 bg-nwu-red/5 rounded-full animate-ping opacity-10"></div>
-                                <div className="relative z-10 p-8 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-2xl">
-                                    <Box size={80} className="text-nwu-red" />
-                                </div>
-                                <Activity className="absolute top-0 right-10 text-nwu-red animate-pulse opacity-20" />
-                                <Network className="absolute bottom-5 left-10 text-nwu-gold animate-bounce opacity-20" />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Founding architects */}
-                <section className="space-y-16">
-                    <div className="text-center space-y-4">
-                        <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">The Dream Team</h2>
-                        <div className="h-1.5 w-24 bg-nwu-gold mx-auto rounded-full"></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        {team.map((member, i) => (
-                            <div key={i} className="group relative bg-white/60 dark:bg-gray-900/60 backdrop-blur-2xl p-10 rounded-[3rem] border border-gray-100 dark:border-gray-800 text-center transition-all hover:-translate-y-2 hover:shadow-2xl">
-                                <div className="relative mx-auto w-32 h-32 mb-8">
-                                    <div className="absolute inset-0 bg-nwu-red/10 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
-                                    <div className="relative w-full h-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-xl transition-transform duration-700 group-hover:scale-110 flex items-center justify-center">
-                                        <Image
-                                            src={member.image}
-                                            alt={member.name}
-                                            width={128}
-                                            height={128}
-                                            className="object-cover w-full h-full opacity-0 transition-opacity"
-                                            onLoadingComplete={(img) => img.classList.remove('opacity-0')}
-                                        />
-                                        <span className="absolute inset-0 flex items-center justify-center text-4xl font-black text-gray-200 dark:text-gray-800 select-none z-0">
-                                            {member.initials}
-                                        </span>
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter italic">{member.name}</h3>
-                                <p className="text-[10px] font-black text-nwu-red uppercase tracking-widest mt-2">{member.role}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Footer Section */}
-                <div className="text-center pt-24 border-t border-gray-100 dark:border-gray-800 opacity-40">
-                    <p className="text-[9px] font-black text-gray-300 dark:text-gray-700 uppercase tracking-[1em] mb-8">AUTHENTIC PRODUCT OF</p>
-                    <div className="flex flex-col md:flex-row items-center justify-center gap-12 group transition-all duration-1000 cursor-default">
-                        <div className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-[0.2em] flex items-center gap-4">
-                        ICPEP.SE
-                            <div className="h-3 w-3 rounded-full bg-nwu-red animate-pulse" />
-                            NWU
-                        </div>
-                    </div>
+        {/* WHAT IS PORTAL */}
+        <section id="what-portal">
+          <div className="si" style={{padding:'0 52px'}}>
+            <div className="slbl">Inside ClassTrack</div>
+            <h2 className="stit">The Student Portal</h2>
+            <div className="wgrid">
+              <div className="wtxt">
+                <p><strong>ClassTrack Student Portal</strong> is your digital gateway to academic accountability. Built specifically for students of Northwestern University, it provides a real-time window into your classroom participation.</p>
+                <p>Gone are the days of manual attendance logs and paper excuse letters. Integrated with <strong>Biometric Kiosks</strong> campus-wide, your attendance is logged in seconds and visible instantly in your pocket.</p>
+                <div className="wtags">
+                  {['Attendance Monitoring', 'Excuse Letter Portal', 'Real-time Alerts', 'Guardian Dashboard', 'Secure Biometrics', 'Academic Analytics'].map(t => (
+                    <span key={t} className="wtag">{t}</span>
+                  ))}
                 </div>
+              </div>
+              <div className="wsgrid">
+                <div className="ws"><div className="wsv">Real-time</div><div className="wsk">Sync</div></div>
+                <div className="ws"><div className="wsv">100%</div><div className="wsk">Digital</div></div>
+                <div className="ws"><div className="wsv">Secure</div><div className="wsk">Biometrics</div></div>
+                <div className="ws"><div className="wsv">AI Chatbot</div><div className="wsk">ClassTrack Assistant</div></div>
+              </div>
             </div>
-        </StudentLayout>
+          </div>
+        </section>
+
+        {/* INFRASTRUCTURE */}
+        <section id="infra">
+          <div className="si" style={{padding:'0 52px'}}>
+            <div className="slbl">Architecture</div>
+            <h2 className="stit">Technology Stack</h2>
+            <div className="icgrid">
+              <div className="ic">
+                <div className="ick">Frontend Framework</div>
+                <div className="icv">Next.js 14</div>
+                <div className="icd">Utilizing React Server Components and App Router for lighting fast portal navigation and secure data fetching.</div>
+              </div>
+              <div className="ic">
+                <div className="ick">Database & Real-time</div>
+                <div className="icv">Supabase (PostgreSQL)</div>
+                <div className="icd">Relational data layer with live WebSocket subscriptions ensuring updates appear as they happen.</div>
+              </div>
+              <div className="ic">
+                <div className="ick">Cloud Infrastructure</div>
+                <div className="icv">Vercel Edge Runtime</div>
+                <div className="icd">Global deployment ensures minimal latency for student interactions across the university campus.</div>
+              </div>
+              <div className="ic">
+                <div className="ick">IoT Ecosystem</div>
+                <div className="icv">ESP32 + Tuya Cloud</div>
+                <div className="icd">Managing classroom peripherals and biometric kiosks through a unified, secure IoT gateway.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* HARDWARE */}
+        <section id="hardware">
+           <div className="si" style={{padding:'0 52px'}}>
+            <div className="slbl">Hardware</div>
+            <h2 className="stit">Hardware Deep-Dive</h2>
+            <p className="sdesc">Click either hardware component to explore its full spec sheet and technical role.</p>
+            <div className="hwcards">
+              <div className="hwc" onClick={() => openModal('esp')}>
+                <div className="hwcimg">
+                  <div className="hwgbg" />
+                  <div style={{fontSize:'80px', position:'relative', zIndex:1, filter:'drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35))'}} dangerouslySetInnerHTML={{__html: hwData.esp.fb}}></div>
+                  <div className="hwov" />
+                  <div className="hwch">Click to explore</div>
+                </div>
+                <div className="hwbody" style={{padding:'32px'}}>
+                  <div className="hwname">ESP32-S3 Touch LCD</div>
+                  <div className="hwsub">MICROCONTROLLER + DISPLAY UNIT</div>
+                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7" capacitive touch display — handles all I/O, WiFi communication, and UI rendering.</div>
+                  <div className="hwtags">
+                    <span className="htag">Dual-Core 240MHz</span>
+                    <span className="htag">7" Touch LCD</span>
+                    <span className="htag">WiFi 2.4GHz</span>
+                  </div>
+                </div>
+              </div>
+              <div className="hwc" onClick={() => openModal('as608')}>
+                <div className="hwcimg">
+                  <div className="hwgbg" />
+                  <div style={{fontSize:'80px', position:'relative', zIndex:1, filter:'drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35))'}} dangerouslySetInnerHTML={{__html: hwData.as608.fb}}></div>
+                  <div className="hwov" />
+                  <div className="hwch">Click to explore</div>
+                </div>
+                <div className="hwbody" style={{padding:'32px'}}>
+                  <div className="hwname">AS608 Fingerprint Sensor</div>
+                  <div className="hwsub">OPTICAL BIOMETRIC INPUT</div>
+                  <div className="hwdesc">Secure, high-precision optical sensor with onboard DSP. Matches identity templates in under one second at 500 DPI.</div>
+                  <div className="hwtags">
+                    <span className="htag">162 Templates</span>
+                    <span className="htag">&lt;1s Match</span>
+                    <span className="htag">500 DPI</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* INTERACTIVE LAB */}
+        <section id="lab">
+          <div className="si" style={{padding:'0 52px'}}>
+            <div className="slbl">Interactive</div>
+            <h2 className="stit">The Lab</h2>
+            <p className="sdesc">A fully interactive ClassTrack kiosk simulator. Try scanning, failing, and rebooting the device.</p>
+            <div className="kwrap">
+              <div className="kdev">
+                <div className="kscr">
+                  <div className="kstat">CLASSTRACK KIOSK v2.1 · ESP32-S3</div>
+                  <div className={`kmain ${ksm.state}`}>{ksm.main}</div>
+                  <div className="ksub">{ksm.sub}</div>
+                </div>
+                <div className="kleds">
+                    <div className="led" id="kl1"></div>
+                    <div className="led" id="kl2"></div>
+                    <div className="led" id="kl3"></div>
+                    <div className="led" id="kl4"></div>
+                </div>
+                <div className={`ksen ${ksm.state}`} id="ksen" onClick={() => kScan(true)}>🫆</div>
+                <div className="kbtns">
+                  <button className="kbtn" onClick={() => kScan(false)}>⚡ Simulate Fail</button>
+                  <button className="kbtn" onClick={kReboot}>🔄 Reboot Device</button>
+                </div>
+              </div>
+              <div className="kright">
+                <h3 style={{fontFamily:'var(--fd)', fontSize:'1.8rem', fontWeight:800, marginBottom:'16px'}}>Try the Kiosk</h3>
+                <p style={{fontSize:'.88rem', color:'var(--mu)', lineHeight:1.75, marginBottom:'24px'}}>Simulate real classroom conditions. Tap the fingerprint sensor for a successful attendance log, trigger a failed scan for an unrecognized finger, or reboot to restart the device boot cycle.</p>
+                <div className="klog" id="klog">
+                  {klog.map((l, i) => (
+                    <div key={i} className={`ll ${l.type}`} style={{fontSize:'12px', color: l.type==='lok'?'#4dce9b':l.type==='lerr'?'#e85454':'inherit'}}>{l.msg}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* TEAM */}
+        <section id="team">
+          <div className="si" style={{padding:'0 52px'}}>
+            <div className="slbl">The Builders</div>
+            <h2 className="stit">Meet the Team</h2>
+            <div className="tgr">
+              <div className="tcard">
+                <div className="tav"><Image src="/team/arden.png" alt="Arden" fill /></div>
+                <div className="tnm">Arden Hero Damaso</div>
+                <div className="trl">Full Stack Developer</div>
+                <div className="tqt">"Building ClassTrack taught me that great software lives at the intersection of hardware, data, and UX — all three have to sing together."</div>
+              </div>
+              <div className="tcard">
+                <div className="tav"><Image src="/team/clemen.png" alt="Clemen" fill /></div>
+                <div className="tnm">Clemen Jay Luis</div>
+                <div className="trl">Frontend Developer</div>
+                <div className="tqt">"Every pixel is a decision. Making ClassTrack feel premium meant obsessing over the details no one notices — until they do."</div>
+              </div>
+              <div className="tcard">
+                <div className="tav"><Image src="/team/ace.png" alt="Ace" fill /></div>
+                <div className="tnm">Ace Donner Dane Asuncion</div>
+                <div className="trl">Backend Developer</div>
+                <div className="tqt">"The database schema is the foundation of trust. When attendance data is accurate, everything else falls into place."</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+         {/* STATS */}
+         <section id="stats">
+          <div className="si" style={{padding:'0 52px'}}>
+             <div className="slbl" style={{justifyContent:'center'}}>By The Numbers</div>
+            <div className="sgrid">
+              <div className="sbox"><div className="snum" data-t="4200" data-s="+">0</div><div className="slb">Lines of Code</div></div>
+              <div className="sbox"><div className="snum" data-t="inf">0</div><div className="slb">Coffee Consumed</div></div>
+              <div className="sbox"><div className="snum" data-t="927">0</div><div className="slb">Bugs Crushed</div></div>
+              <div className="sbox"><div className="snum" data-t="99" data-s="%">0</div><div className="slb">Student Focus</div></div>
+            </div>
+          </div>
+        </section>
+
+        {/* MODAL */}
+        <div id="modal-portal" className={mOpen ? "open" : ""}>
+          <div id="mbg" onClick={closeModal}></div>
+          <div id="mpanel">
+            <div id="mleft">
+              <div id="miwrap">
+                <div id="mimg-container" style={{display:'flex', alignItems:'center', justifyContent:'center', width:'100%', minHeight:'200px'}}>
+                  <div id="mfb" style={{fontSize:'120px', animation:'mfl 4s ease-in-out infinite', filter:'drop-shadow(0 30px 60px rgba(123, 17, 19, 0.38))'}}></div>
+                </div>
+                <div id="mdims" style={{fontFamily:'var(--fm)', fontSize:'.65rem', color:'var(--mu)', letterSpacing:'.1em', textAlign:'center', lineHeight:1.6}}></div>
+                <div id="mtagbar" style={{display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center', marginTop:'4px'}}></div>
+              </div>
+            </div>
+            <div id="mright">
+              <button id="mclose" onClick={closeModal}>✕</button>
+              <div className="mbadge"><div className="mbdot"></div><span id="mbadge-txt">Hardware</span></div>
+              <h2 className="mtitle" id="mtitle">—</h2>
+              <div className="msubt" id="msubt">—</div>
+              <p className="mdesc" id="mdesc">—</p>
+              <div className="msptt">Technical Specifications</div>
+              <div className="mspgrid" id="mspgrid"></div>
+              <div className="mrl"><div className="mrlt">Role in ClassTrack</div><div className="mrld" id="mrld">—</div></div>
+            </div>
+          </div>
+        </div>
+
+        <footer style={{padding:'60px 0', borderTop:'1px solid var(--bdr)', textAlign:'center'}}>
+           <div style={{fontFamily:'var(--fd)', fontSize:'20px', fontWeight:800}}>Class<span style={{color:'var(--orange)'}}>Track</span> Student Portal</div>
+           <div style={{fontSize:'12px', color:'var(--mu2)', letterSpacing:'4px', marginTop:'20px'}}>ICPEP.SE · NWU</div>
+           <div style={{fontSize:'11px', marginTop:'20px', opacity:0.5}}>© 2026 CLASSTRACK ECOSYSTEM • BUILDING THE FUTURE</div>
+        </footer>
+
+      </div>
+    </StudentLayout>
     );
 }

@@ -31,7 +31,7 @@ export default async function SettingsPage() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">Settings</h1>
 
                 <div className="space-y-8">
-                    {/* Academic Management Link (Administrator Only) */}
+                    {/* Academic Management Link (Super Admin Only) */}
                     {isSuperAdmin && (
                         <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:hover:shadow-[0_4px_20px_rgb(255,255,255,0.05)]">
                             <div className="flex items-center justify-between">
@@ -44,8 +44,8 @@ export default async function SettingsPage() {
                                         <p className="text-sm text-gray-500 dark:text-gray-400">Manage academic years, semesters, and historical records</p>
                                     </div>
                                 </div>
-                                <a 
-                                    href="/settings/academic" 
+                                <a
+                                    href="/settings/academic"
                                     className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-bold rounded-lg hover:opacity-90 transition-opacity"
                                 >
                                     Manage

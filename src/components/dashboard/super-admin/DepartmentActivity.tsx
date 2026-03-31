@@ -78,8 +78,8 @@ export function DepartmentActivity({ departments }: { departments: DeptStat[] })
 
                             {/* Activity Bar */}
                             <div className="mt-3 w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
-                                <div 
-                                    className="h-full bg-nwu-red/60 transition-all duration-1000" 
+                                <div
+                                    className="h-full bg-nwu-red/60 transition-all duration-1000"
                                     style={{ width: `${Math.min(100, (dept.sessions / 10) * 100)}%` }}
                                 />
                             </div>
@@ -90,7 +90,7 @@ export function DepartmentActivity({ departments }: { departments: DeptStat[] })
 
             <div className="mt-6 pt-4 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center text-[10px]">
                 <span className="text-gray-400 font-bold uppercase tracking-widest">Total Active Nodes: {departments.reduce((acc, d) => acc + d.sessions, 0)}</span>
-                <span className="text-nwu-red font-black">Administrator View</span>
+                <span className="text-nwu-red font-black">Super Admin View</span>
             </div>
         </div>
     );

@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GlobalSync } from "@/components/GlobalSync";
 import { ChatWidget } from "@/components/ChatWidget";
+import GlobalExperience from "@/components/GlobalExperience";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -26,13 +27,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300`}>
+      <body className={`${inter.variable} font-sans antialiased bg-transparent text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300`}>
         <Providers
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <GlobalExperience />
           {children}
           <ChatWidget />
         </Providers>
