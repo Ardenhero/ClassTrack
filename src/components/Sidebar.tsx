@@ -25,7 +25,10 @@ import {
     QrCode,
     Mail as MailIcon,
     GraduationCap,
+    Moon,
+    Sun,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // Instructor Navigation (full access including Evidence)
 const instructorNavigation = [
@@ -76,6 +79,10 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
     const [pendingMailsCount, setPendingMailsCount] = useState<number>(0);
     const supabase = createClient();
     const { profile, clearProfile, isSwitching } = useProfile();
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { setMounted(true); }, []);
 
     const isSuperAdmin = profile?.is_super_admin || (profile?.role === 'admin' && profile?.name === 'Super Admin');
     const isAdmin = profile?.role === 'admin' && !isSuperAdmin;
@@ -412,6 +419,25 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                             <p className="text-xs text-gray-400 whitespace-nowrap">View Profile</p>
                         </div>
                     </Link>
+
+                    {mounted && (
+                        <button
+                            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                            className={cn(
+                                "flex w-full items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
+                                "bg-[#5e0d0e] hover:bg-[#7b1113] text-nwu-gold border border-white/5",
+                                isCollapsed && "justify-center px-2"
+                            )}
+                            title={isCollapsed ? "Toggle theme" : undefined}
+                        >
+                            {theme === 'dark' ? (
+                                <Sun className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                            ) : (
+                                <Moon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                            )}
+                            {!isCollapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+                        </button>
+                    )}
 
                     {!isSuperAdmin && (
                         <button

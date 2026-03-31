@@ -17,7 +17,14 @@ export default function GlobalExperience() {
     const ring = document.getElementById('cr');
     let mx = 0, my = 0, rx = 0, ry = 0;
     
+    const isTouch = !window.matchMedia('(pointer: fine)').matches;
+    if (isTouch) {
+      if (dot) dot.style.display = 'none';
+      if (ring) ring.style.display = 'none';
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
+      if (isTouch) return;
       mx = e.clientX; 
       my = e.clientY; 
       if(dot) {
@@ -25,7 +32,7 @@ export default function GlobalExperience() {
         dot.style.top = my + 'px';
       }
     };
-    document.addEventListener('mousemove', handleMouseMove);
+    if (!isTouch) document.addEventListener('mousemove', handleMouseMove);
 
     let cursorRaf: number;
     const animateCursor = () => {
@@ -37,7 +44,7 @@ export default function GlobalExperience() {
       }
       cursorRaf = requestAnimationFrame(animateCursor);
     };
-    animateCursor();
+    if (!isTouch) animateCursor();
 
     const hoverSelector = 'button, a, .hwc, .fs, .tt, .ovc, .tcard, .rmc, .ws, .ksen, .kbtn, #mclose, .mtrybtn, .bp, .bo, [role="button"], .cursor-pointer';
     
@@ -68,12 +75,13 @@ export default function GlobalExperience() {
       x = 0; y = 0; vx = 0; vy = 0; rad = 0; a = 0;
       constructor() { this.r() }
       r() {
+        const isMob = window.innerWidth < 768;
         this.x = Math.random() * W; 
         this.y = Math.random() * H; 
-        this.vx = (Math.random() - 0.5) * 0.4;
-        this.vy = (Math.random() - 0.5) * 0.4; 
-        this.rad = Math.random() * 1.5 + 0.5; 
-        this.a = Math.random() * 0.3 + 0.1;
+        this.vx = (Math.random() - 0.5) * (isMob ? 0.2 : 0.4);
+        this.vy = (Math.random() - 0.5) * (isMob ? 0.2 : 0.4); 
+        this.rad = Math.random() * (isMob ? 0.8 : 1.5) + 0.5; 
+        this.a = Math.random() * (isMob ? 0.2 : 0.3) + 0.1;
       }
       u() {
         this.x += this.vx; 
@@ -112,7 +120,8 @@ export default function GlobalExperience() {
       resize();
       window.addEventListener('resize', resize);
       
-      for (let i = 0; i < 150; i++) parts.push(new P());
+      const pCount = window.innerWidth < 768 ? 45 : 150;
+      for (let i = 0; i < pCount; i++) parts.push(new P());
       
       const handleCanvasMouse = (e: MouseEvent) => { hmx = e.clientX; hmy = e.clientY; };
       document.addEventListener('mousemove', handleCanvasMouse);
