@@ -3,6 +3,7 @@
 import { Sidebar } from "./Sidebar";
 import { useState, useEffect } from "react";
 import { Menu, Fingerprint, X } from "lucide-react";
+import Image from "next/image";
 import { cn } from "../utils/cn";
 
 export default function DashboardLayout({

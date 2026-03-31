@@ -79,7 +79,7 @@ export default function LoginPage() {
                 <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-xl border-t-4 border-nwu-gold">
                     <div className="text-center">
                         <h2 className="mt-2 text-3xl font-extrabold text-gray-900">
-                            {isSignUp ? "Create Account" : "ClassTrack Login"}
+                            {isSignUp ? "Create Account" : "Attendance System Login"}
                         </h2>
                         <p className="mt-2 text-sm text-gray-600">
                             {isSignUp ? "Register to start tracking attendance" : "Enter your credentials to access the dashboard"}
@@ -160,7 +160,7 @@ export default function LoginPage() {
 
             {/* Footer */}
             <footer className="py-4 text-center text-xs text-gray-400">
-                &copy; {new Date().getFullYear()} ClassTrack Attendance System. All rights reserved.
+                &copy; {new Date().getFullYear()} Northwestern University Attendance System. All rights reserved.
             </footer>
         </div>
     );
