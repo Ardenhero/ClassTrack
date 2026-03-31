@@ -149,21 +149,21 @@
 .htag{background:rgba(255,255,255,0.04);border:1px solid var(--bdr);border-radius:100px;padding:4px 12px;font-size:.68rem;color:var(--mu);font-family:var(--fm);transition:border-color .3s,color .3s}
 .hwc:hover .htag{border-color:rgba(123, 17, 19, 0.25);color:var(--orange2)}
 @media (max-width: 768px) {
-  .portal-about-container { background: #111827 !important; }
+  .portal-about-container { background: transparent; }
   #nav-portal { padding: 14px 24px; }
-  .si { padding: 0 24px !important; }
-  #hero-portal { min-height: 60vh; padding: 80px 24px 40px; margin-top: 0; }
-  .htitle { font-size: 2.2rem; line-height: 1.1; margin-bottom: 24px; }
-  .hsub { font-size: 0.92rem; line-height: 1.6; max-width: 100%; }
+  .si { padding: 0 24px; }
+  #hero-portal { min-height: 45vh; padding: 40px 24px 20px; margin-top: 0; }
+  .htitle { font-size: 1.8rem; line-height: 1.0; margin-bottom: 16px; }
+  .hsub { font-size: 0.88rem; line-height: 1.5; max-width: 100%; }
   .wgrid, .hwcards, .icgrid, .tgr, .sgrid, .wsgrid, .kwrap { grid-template-columns: 1fr; }
-  .sbox { border-right: none; padding: 32px 24px; }
+  .sbox { border-right: none; padding: 24px 20px; }
   .sbox:last-child { border-bottom: none; }
   #mpanel { transform: translateY(60px); grid-template-columns: 1fr; grid-template-rows: 280px 1fr; overflow-y: auto; }
   #mleft { padding: 32px 24px; border-right: none; border-bottom: 1px solid var(--bdr); min-height: 280px; }
   #mright { padding: 32px 24px; }
-  .stit { font-size: 1.8rem; }
+  .stit { font-size: 1.7rem; }
   .portal-quick-nav { right: 24px; top: 15px; }
-  section { padding: 60px 24px !important; }
+  section { padding: 40px 24px; }
 }
 
 /* STATS */
