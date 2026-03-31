@@ -472,6 +472,7 @@ export default function SysInfoPage() {
               <div className="msptt">Technical Specifications</div>
               <div className="mspgrid" id="mspgrid"></div>
               <div className="mrl"><div className="mrlt">Role in ClassTrack</div><div className="mrld" id="mrld">—</div></div>
+              <button className="mtrybtn" onClick={() => { closeModal(); setTimeout(()=>document.getElementById('lab')?.scrollIntoView({behavior:'smooth'}),300); }}>Try the Simulator →</button>
             </div>
           </div>
         </div>
