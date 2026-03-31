@@ -36,8 +36,8 @@ export default function DashboardLayout({
             {/* Mobile Header */}
             <div className="md:hidden bg-udemy-indigo text-white p-4 flex justify-between items-center sticky top-0 z-30 shadow-md">
                 <div className="flex items-center">
-                    <Fingerprint className="h-6 w-6 text-nwu-red mr-2" />
-                    <span className="font-bold text-lg">Attendance System</span>
+                    <Image src="/branding/logo.png" alt="ClassTrack" width={32} height={32} className="mr-2" />
+                    <span className="font-bold text-lg">ClassTrack</span>
                 </div>
                 <button 
                     onClick={() => setIsMobileMenuOpen(true)}
