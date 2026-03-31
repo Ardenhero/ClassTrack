@@ -94,7 +94,7 @@ export default function SysInfoPage() {
     const sObs = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (e.isIntersecting) {
-          e.target.querySelectorAll('.snum').forEach((el: any) => {
+          e.target.querySelectorAll('.snum').forEach((el: Element) => {
              const t = el.getAttribute('data-t');
              const s = el.getAttribute('data-s') || '';
              countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), s);
@@ -341,10 +341,10 @@ export default function SysInfoPage() {
                 <div className="hwbody" style={{padding:'32px'}}>
                   <div className="hwname">ESP32-S3 Touch LCD</div>
                   <div className="hwsub">MICROCONTROLLER + DISPLAY UNIT</div>
-                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7" capacitive touch display — handles all I/O, WiFi communication, and UI rendering.</div>
+                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7&quot; capacitive touch display &mdash; handles all I/O, WiFi communication, and UI rendering.</div>
                   <div className="hwtags">
                     <span className="htag">Dual-Core 240MHz</span>
-                    <span className="htag">7" Touch LCD</span>
+                    <span className="htag">7&quot; Touch LCD</span>
                     <span className="htag">WiFi 2.4GHz</span>
                   </div>
                 </div>
@@ -419,19 +419,19 @@ export default function SysInfoPage() {
                 <div className="tav"><Image src="/team/arden.png" alt="Arden" fill /></div>
                 <div className="tnm">Arden Hero Damaso</div>
                 <div className="trl">Full Stack Developer</div>
-                <div className="tqt">"Building ClassTrack taught me that great software lives at the intersection of hardware, data, and UX — all three have to sing together."</div>
+                <div className="tqt">&quot;Building ClassTrack taught me that great software lives at the intersection of hardware, data, and UX &mdash; all three have to sing together.&quot;</div>
               </div>
               <div className="tcard">
                 <div className="tav"><Image src="/team/clemen.png" alt="Clemen" fill /></div>
                 <div className="tnm">Clemen Jay Luis</div>
                 <div className="trl">Frontend Developer</div>
-                <div className="tqt">"Every pixel is a decision. Making ClassTrack feel premium meant obsessing over the details no one notices — until they do."</div>
+                <div className="tqt">&quot;Every pixel is a decision. Making ClassTrack feel premium meant obsessing over the details no one notices &mdash; until they do.&quot;</div>
               </div>
               <div className="tcard">
                 <div className="tav"><Image src="/team/ace.png" alt="Ace" fill /></div>
                 <div className="tnm">Ace Donner Dane Asuncion</div>
                 <div className="trl">Backend Developer</div>
-                <div className="tqt">"The database schema is the foundation of trust. When attendance data is accurate, everything else falls into place."</div>
+                <div className="tqt">&quot;The database schema is the foundation of trust. When attendance data is accurate, everything else falls into place.&quot;</div>
               </div>
             </div>
           </div>

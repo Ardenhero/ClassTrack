@@ -61,9 +61,10 @@ export default function AboutPage() {
     const sObs = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (e.isIntersecting) {
-          e.target.querySelectorAll('.snum').forEach((el: any) => {
-             const t = el.dataset.t;
-             countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), el.dataset.s)
+          e.target.querySelectorAll('.snum').forEach((el: Element) => {
+             const t = el.getAttribute('data-t');
+             const s = el.getAttribute('data-s') || '';
+             countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), s);
           });
           sObs.unobserve(e.target);
         }
@@ -87,14 +88,15 @@ export default function AboutPage() {
     if (!was) el.classList.add('act');
   };
 
+
   const hwData: Record<string, HWComponent> = {
     esp:{
-      fb:'<div class="esp-screen"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'// WAVESHARE ESP32-S3-TOUCH-LCD-7',
+      fb:'<div class=\"esp-screen\"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'// WAVESHARE ESP32-S3-TOUCH-LCD-7',
       desc:'The brain and face of the ClassTrack kiosk. Features a dual-core Xtensa LX7 processor paired with an integrated 7-inch capacitive touch display. Handles fingerprint UART communication, WiFi HTTP requests to Supabase, touch UI rendering, and GPIO LED control — all simultaneously at 240MHz.',
       dims:'PCB: 165.72 × 97.60mm · Display: 192.96 × 110.76mm · 4×M3 + 4×M2.5 mount',
-      specs:[{k:'Processor',v:'Dual-Core LX7 @ 240MHz'},{k:'Memory',v:'512KB SRAM + 8MB PSRAM'},{k:'Flash',v:'16MB Onboard Flash'},{k:'Display',v:'7" Capacitive Touch LCD'},{k:'Connectivity',v:'WiFi 802.11 b/g/n + BLE 5.0'},{k:'Interfaces',v:'UART, SPI, I²C, GPIO'},{k:'Operating Voltage',v:'5V via USB-C'},{k:'Baud Rate',v:'57600 (AS608 comms)'}],
-      role:'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
-      tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7" Touch LCD','UART + SPI + I²C']
+      specs:[{k:'Processor',v:'Dual-Core LX7 @ 240MHz'},{k:'Memory',v:'512KB SRAM + 8MB PSRAM'},{k:'Flash',v:'16MB Onboard Flash'},{k:'Display',v:'7\" Capacitive Touch LCD'},{k:'Connectivity',v:'WiFi 802.11 b/g/n + BLE 5.0'},{k:'Interfaces',v:'UART, SPI, I²C, GPIO'},{k:'Operating Voltage',v:'5V via USB-C'},{k:'Baud Rate',v:'57600 (AS608 comms)'}],
+      role:'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7\" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
+      tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7\" Touch LCD','UART + SPI + I²C']
     },
     as608:{
       fb:'🫆',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'// OPTICAL FINGERPRINT MODULE',
@@ -118,8 +120,8 @@ export default function AboutPage() {
     document.getElementById('mdesc')!.textContent = d.desc;
     document.getElementById('mrld')!.textContent = d.role;
     
-    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s: Spec) => `<div class="msp"><div class="mspk">${s.k}</div><div class="mspv">${s.v}</div></div>`).join('');
-    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg: string) => `<div class="mtag">${tg}</div>`).join('');
+    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s: Spec) => `<div class=\"msp\"><div class=\"mspk\">${s.k}</div><div class=\"mspv\">${s.v}</div></div>`).join('');
+    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg: string) => `<div class=\"mtag\">${tg}</div>`).join('');
     
     document.getElementById('modal')!.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -347,8 +349,14 @@ export default function AboutPage() {
                 <div className="hwbody">
                   <div className="hwname">ESP32-S3 Touch LCD</div>
                   <div className="hwsub">{"// MICROCONTROLLER + DISPLAY UNIT"}</div>
-                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7&quot; capacitive touch display &mdash; handles all I/O, WiFi communication, and UI rendering simultaneously at 240MHz.</div>
-                  <div className="hwtags"><span className="htag">Dual-Core 240MHz</span><span className="htag">7&quot; Touch LCD</span><span className="htag">WiFi 2.4GHz</span><span className="htag">BLE 5.0</span><span className="htag">UART + SPI</span></div>
+                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7&quot; capacitive touch display &mdash; handles all I/O, WiFi communication, and UI rendering.</div>
+                  <div className="hwtags">
+                    <span className="htag">Dual-Core 240MHz</span>
+                    <span className="htag">7&quot; Touch LCD</span>
+                    <span className="htag">WiFi 2.4GHz</span>
+                    <span className="htag">BLE 5.0</span>
+                    <span className="htag">UART + SPI</span>
+                  </div>
                 </div>
               </div>
               <div className="hwc rv d3" onClick={() => openModal('as608')}>
@@ -445,7 +453,7 @@ export default function AboutPage() {
               <div className="ovc rv d1"><div className="ovico">🔐</div><div className="ovtit">Biometric Authentication</div><div className="ovdesc">AS608 optical sensor captures and matches fingerprints with onboard DSP. Up to 162 enrolled templates per device with sub-second matching accuracy.</div></div>
               <div className="ovc rv d2"><div className="ovico">📱</div><div className="ovtit">QR Verification</div><div className="ovdesc">Instructors generate unique QR codes per session from their dashboard. Students scan via their portal — a fast, secondary attendance method.</div></div>
               <div className="ovc rv d3"><div className="ovico">📊</div><div className="ovtit">Real-time Analytics</div><div className="ovdesc">WebSocket-powered live dashboard. Attendance events propagate instantly from ESP32 → Supabase → Admin UI. No refresh needed, ever.</div></div>
-              <div className="ovc rv d4"><div className="ovico">🛡️</div><div className="ovtit">Administrator Control</div><div className="ovdesc">Full CRUD over students, sections, subjects, and schedules. Role-based access control ensures each user sees only what they're permitted to.</div></div>
+              <div className="ovc rv d4"><div className="ovico">🛡️</div><div className="ovtit">Administrator Control</div><div className="ovdesc">Full CRUD over students, sections, subjects, and schedules. Role-based access control ensures each user sees only what they&apos;re permitted to.</div></div>
             </div>
           </div>
         </section>
@@ -456,12 +464,12 @@ export default function AboutPage() {
             <div className="slbl rv">Under the Hood</div>
             <h2 className="stit rv d1">Tech Stack</h2>
             <div className="tgrid">
-              <div id="tech-1" className="tt rv" onClick={() => toggleTech('tech-1')}><span className="tico">▲</span><div className="tname">Next.js 14</div><div className="trole">// Frontend Framework</div><div className="tdet">App Router, Server Components, and API Routes power the entire admin platform with blazing performance and SSR.</div></div>
-              <div id="tech-2" className="tt rv d1" onClick={() => toggleTech('tech-2')}><span className="tico">⚡</span><div className="tname">Supabase</div><div className="trole">// Backend + Realtime</div><div className="tdet">PostgreSQL hosting, Row-Level Security, Auth, and WebSocket real-time subscriptions for live attendance updates.</div></div>
-              <div id="tech-3" className="tt rv d2" onClick={() => toggleTech('tech-3')}><span className="tico">🐘</span><div className="tname">PostgreSQL</div><div className="trole">// Primary Database</div><div className="tdet">Relational schema with attendance, students, sections, subjects. ACID compliance and optimized query performance.</div></div>
-              <div id="tech-4" className="tt rv d3" onClick={() => toggleTech('tech-4')}><span className="tico">🔲</span><div className="tname">ESP32-S3</div><div className="trole">// Embedded Controller</div><div className="tdet">Dual-core LX7 MCU running custom firmware. UART with AS608, WiFi HTTPS POST, touch LCD rendering, LED GPIO.</div></div>
-              <div id="tech-5" className="tt rv d4" onClick={() => toggleTech('tech-5')}><span className="tico">🫆</span><div className="tname">AS608 Sensor</div><div className="trole">// Biometric Hardware</div><div className="tdet">Optical fingerprint sensor with onboard DSP. 500 DPI, 360° rotation, UART output, up to 162 stored templates.</div></div>
-              <div id="tech-6" className="tt rv d5" onClick={() => toggleTech('tech-6')}><span className="tico">🌐</span><div className="tname">Vercel</div><div className="trole">// Deployment</div><div className="tdet">Edge-optimized deployment for Next.js. Automatic CI/CD from Git, global CDN, serverless function support.</div></div>
+              <div id="tech-1" className="tt rv" onClick={() => toggleTech('tech-1')}><span className="tico">▲</span><div className="tname">Next.js 14</div><div className="trole">{"// Frontend Framework"}</div><div className="tdet">App Router, Server Components, and API Routes power the entire admin platform with blazing performance and SSR.</div></div>
+              <div id="tech-2" className="tt rv d1" onClick={() => toggleTech('tech-2')}><span className="tico">⚡</span><div className="tname">Supabase</div><div className="trole">{"// Backend + Realtime"}</div><div className="tdet">PostgreSQL hosting, Row-Level Security, Auth, and WebSocket real-time subscriptions for live attendance updates.</div></div>
+              <div id="tech-3" className="tt rv d2" onClick={() => toggleTech('tech-3')}><span className="tico">🐘</span><div className="tname">PostgreSQL</div><div className="trole">{"// Primary Database"}</div><div className="tdet">Relational schema with attendance, students, sections, subjects. ACID compliance and optimized query performance.</div></div>
+              <div id="tech-4" className="tt rv d3" onClick={() => toggleTech('tech-4')}><span className="tico">🔲</span><div className="tname">ESP32-S3</div><div className="trole">{"// Embedded Controller"}</div><div className="tdet">Dual-core LX7 MCU running custom firmware. UART with AS608, WiFi HTTPS POST, touch LCD rendering, LED GPIO.</div></div>
+              <div id="tech-5" className="tt rv d4" onClick={() => toggleTech('tech-5')}><span className="tico">🫆</span><div className="tname">AS608 Sensor</div><div className="trole">{"// Biometric Hardware"}</div><div className="tdet">Optical fingerprint sensor with onboard DSP. 500 DPI, 360° rotation, UART output, up to 162 stored templates.</div></div>
+              <div id="tech-6" className="tt rv d5" onClick={() => toggleTech('tech-6')}><span className="tico">🌐</span><div className="tname">Vercel</div><div className="trole">{"// Deployment"}</div><div className="tdet">Edge-optimized deployment for Next.js. Automatic CI/CD from Git, global CDN, serverless function support.</div></div>
             </div>
           </div>
         </section>
@@ -498,7 +506,7 @@ export default function AboutPage() {
         {/* ROADMAP */}
         <section id="roadmap">
           <div className="si" style={{padding:'0 52px'}}>
-            <div className="slbl rv">What's Next</div>
+            <div className="slbl rv">What&apos;s Next</div>
             <h2 className="stit rv d1">Future Roadmap</h2>
             <div className="rmgrid">
               <div className="rmc rv"><div className="rmbg brs">Researching</div><span className="rmico">🤖</span><div className="rmtit">AI Analytics</div><div className="rmdesc">Predictive attendance patterns, anomaly detection, and smart insights powered by machine learning models.</div></div>
