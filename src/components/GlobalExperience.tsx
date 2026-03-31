@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 /**
  * GlobalExperience Component
@@ -9,8 +8,6 @@ import { usePathname } from "next/navigation";
  * and the custom "dot and ring" cursor animation.
  */
 export default function GlobalExperience() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pathname = usePathname();
 
   // PORTAL-WIDE ENABLED
 
@@ -64,8 +61,46 @@ export default function GlobalExperience() {
     // --- HERO CANVAS (PARTICLES) LOGIC ---
     const canvas = document.getElementById('hc') as HTMLCanvasElement;
     const ctx = canvas?.getContext('2d');
-    let W = 0, H = 0, parts: any[] = [], t = 0, hmx = 0, hmy = 0;
+    let W = 0, H = 0, t = 0, hmx = 0, hmy = 0;
     let pColor = '123, 17, 19';
+
+    class P {
+      x = 0; y = 0; vx = 0; vy = 0; rad = 0; a = 0;
+      constructor() { this.r() }
+      r() {
+        this.x = Math.random() * W; 
+        this.y = Math.random() * H; 
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4; 
+        this.rad = Math.random() * 1.5 + 0.5; 
+        this.a = Math.random() * 0.3 + 0.1;
+      }
+      u() {
+        this.x += this.vx; 
+        this.y += this.vy; 
+        if(hmx && hmy) {
+          const dx = hmx - this.x;
+          const dy = hmy - this.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist < 150) {
+            const angle = Math.atan2(dy, dx);
+            const force = (150 - dist) / 150;
+            this.vx -= Math.cos(angle) * force * 0.2;
+            this.vy -= Math.sin(angle) * force * 0.2;
+          }
+        }
+        if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.r();
+      }
+      d() {
+        if(!ctx) return;
+        ctx.beginPath(); 
+        ctx.arc(this.x, this.y, this.rad, 0, Math.PI * 2); 
+        ctx.fillStyle = `rgba(${pColor}, ${this.a})`; 
+        ctx.fill();
+      }
+    }
+
+    const parts: P[] = [];
 
     function resize() {
       if(!canvas) return;
@@ -76,42 +111,6 @@ export default function GlobalExperience() {
     if (canvas && ctx) {
       resize();
       window.addEventListener('resize', resize);
-      
-      class P {
-        x = 0; y = 0; vx = 0; vy = 0; rad = 0; a = 0;
-        constructor() { this.r() }
-        r() {
-          this.x = Math.random() * W; 
-          this.y = Math.random() * H; 
-          this.vx = (Math.random() - 0.5) * 0.4;
-          this.vy = (Math.random() - 0.5) * 0.4; 
-          this.rad = Math.random() * 1.5 + 0.5; 
-          this.a = Math.random() * 0.3 + 0.1;
-        }
-        u() {
-          this.x += this.vx; 
-          this.y += this.vy; 
-          if(hmx && hmy) {
-            const dx = hmx - this.x;
-            const dy = hmy - this.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if(dist < 150) {
-              const angle = Math.atan2(dy, dx);
-              const force = (150 - dist) / 150;
-              this.x -= Math.cos(angle) * force * 2;
-              this.y -= Math.sin(angle) * force * 2;
-            }
-          }
-          if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.r();
-        }
-        d() {
-          if(!ctx) return;
-          ctx.beginPath(); 
-          ctx.arc(this.x, this.y, this.rad, 0, Math.PI * 2); 
-          ctx.fillStyle = `rgba(${pColor}, ${this.a})`; 
-          ctx.fill();
-        }
-      }
       
       for (let i = 0; i < 150; i++) parts.push(new P());
       

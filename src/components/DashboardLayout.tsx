@@ -4,7 +4,6 @@ import { Sidebar } from "./Sidebar";
 import { useState, useEffect } from "react";
 import { Menu, Fingerprint, X } from "lucide-react";
 import { cn } from "../utils/cn";
-import GlobalExperience from "./GlobalExperience";
 
 export default function DashboardLayout({
     children,

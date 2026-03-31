@@ -3,7 +3,25 @@
 import { useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Syne, DM_Sans, JetBrains_Mono } from "next/font/google";
+import Image from "next/image";
 import "./about.css";
+
+interface Spec {
+  k: string;
+  v: string;
+}
+
+interface HWComponent {
+  fb: string;
+  badge: string;
+  title: string;
+  subt: string;
+  desc: string;
+  dims: string;
+  specs: Spec[];
+  role: string;
+  tags: string[];
+}
 
 const syne = Syne({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-syne" });
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500"], variable: "--font-dm-sans" });
@@ -28,14 +46,14 @@ export default function AboutPage() {
     };
     window.addEventListener('scroll', handleScroll);
 
-    function countUp(el: any, target: any, sfx: string) {
+    function countUp(el: HTMLElement, target: number | 'inf', sfx?: string) {
       if (target === 'inf') { el.textContent = '∞'; return; }
       let n = 0; const dur = 1800, step = 16, inc = target / (dur / step);
       const tm = setInterval(() => {
-        n = Math.min(n + inc, target);
+        n = Math.min(n + inc, target as number);
         el.textContent = Math.floor(n).toLocaleString() + (sfx || '');
-        if (n >= target) {
-          el.textContent = target.toLocaleString() + (sfx || '');
+        if (n >= (target as number)) {
+          el.textContent = (target as number).toLocaleString() + (sfx || '');
           clearInterval(tm);
         }
       }, step);
@@ -44,7 +62,8 @@ export default function AboutPage() {
       entries.forEach(e => {
         if (e.isIntersecting) {
           e.target.querySelectorAll('.snum').forEach((el: any) => {
-             countUp(el, el.dataset.t === 'inf' ? 'inf' : parseInt(el.dataset.t), el.dataset.s)
+             const t = el.dataset.t;
+             countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), el.dataset.s)
           });
           sObs.unobserve(e.target);
         }
@@ -68,7 +87,7 @@ export default function AboutPage() {
     if (!was) el.classList.add('act');
   };
 
-  const hwData: any = {
+  const hwData: Record<string, HWComponent> = {
     esp:{
       fb:'<div class="esp-screen"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'// WAVESHARE ESP32-S3-TOUCH-LCD-7',
       desc:'The brain and face of the ClassTrack kiosk. Features a dual-core Xtensa LX7 processor paired with an integrated 7-inch capacitive touch display. Handles fingerprint UART communication, WiFi HTTP requests to Supabase, touch UI rendering, and GPIO LED control — all simultaneously at 240MHz.',
@@ -99,8 +118,8 @@ export default function AboutPage() {
     document.getElementById('mdesc')!.textContent = d.desc;
     document.getElementById('mrld')!.textContent = d.role;
     
-    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s:any) => `<div class="msp"><div class="mspk">${s.k}</div><div class="mspv">${s.v}</div></div>`).join('');
-    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg:any) => `<div class="mtag">${tg}</div>`).join('');
+    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s: Spec) => `<div class="msp"><div class="mspk">${s.k}</div><div class="mspv">${s.v}</div></div>`).join('');
+    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg: string) => `<div class="mtag">${tg}</div>`).join('');
     
     document.getElementById('modal')!.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -285,26 +304,26 @@ export default function AboutPage() {
           <div className="si" style={{padding:'0 52px'}}>
             <div className="slbl rv">Data Journey</div>
             <h2 className="stit rv d1">The Life of a Log</h2>
-            <p className="sdesc rv d2">Click any step to see what happens inside. Every attendance record makes this exact journey — in under 2 seconds.</p>
+            <p className="sdesc rv d2">Click any step to see what happens inside. Every attendance record makes this exact journey &mdash; in under 2 seconds.</p>
             <div className="ftrack">
               <div id="flow-1" className="fs rv" onClick={() => toggleFlow('flow-1')}>
                 <div className="fdot">👆</div>
-                <div className="fbody"><div className="fnum">// 01</div><div className="fname">Touch</div><div className="fdesc">Student places finger on AS608. Optical scan captures template in ~400ms.</div>
+                <div className="fbody"><div className="fnum">{"// 01"}</div><div className="fname">Touch</div><div className="fdesc">Student places finger on AS608. Optical scan captures template in ~400ms.</div>
                 <div className="fcode"><div className="cblock">{"[AS608] Optical scan → ID:0x03\n[AS608] Confidence: 97 → MATCH\n[UART] Payload ready → sending"}</div></div></div>
               </div>
               <div id="flow-2" className="fs rv d1" onClick={() => toggleFlow('flow-2')}>
                 <div className="fdot">⚡</div>
-                <div className="fbody"><div className="fnum">// 02</div><div className="fname">Process</div><div className="fdesc">ESP32 receives UART, packages event, fires HTTPS POST to Supabase.</div>
+                <div className="fbody"><div className="fnum">{"// 02"}</div><div className="fname">Process</div><div className="fdesc">ESP32 receives UART, packages event, fires HTTPS POST to Supabase.</div>
                 <div className="fcode"><div className="cblock">{"[ESP32] UART: 0xEF01 received\n[ESP32] WiFi POST /attendance\nBody:{id:3,ts:1700000000}\n[ESP32] HTTP 200 OK ✓"}</div></div></div>
               </div>
               <div id="flow-3" className="fs rv d2" onClick={() => toggleFlow('flow-3')}>
                 <div className="fdot">☁️</div>
-                <div className="fbody"><div className="fnum">// 03</div><div className="fname">Cloud</div><div className="fdesc">Supabase validates, stores to PostgreSQL, broadcasts real-time event.</div>
+                <div className="fbody"><div className="fnum">{"// 03"}</div><div className="fname">Cloud</div><div className="fdesc">Supabase validates, stores to PostgreSQL, broadcasts real-time event.</div>
                 <div className="fcode"><div className="cblock">{"[PG] INSERT attendance row\n[RLS] Policy check → pass\n[RT] Broadcast → all clients\n[WS] Event fired ✓"}</div></div></div>
               </div>
               <div id="flow-4" className="fs rv d3" onClick={() => toggleFlow('flow-4')}>
                 <div className="fdot">🖥️</div>
-                <div className="fbody"><div className="fnum">// 04</div><div className="fname">Dashboard</div><div className="fdesc">Admin browser receives WS event. Row animates in. Toast notification fires.</div>
+                <div className="fbody"><div className="fnum">{"// 04"}</div><div className="fname">Dashboard</div><div className="fdesc">Admin browser receives WS event. Row animates in. Toast notification fires.</div>
                 <div className="fcode"><div className="cblock">{"[WS] attendance:INSERT\n[UI] Row injected at index 0\n[UI] Toast: \"Juan → Present\"\n[UI] Analytics recalculated"}</div></div></div>
               </div>
             </div>
@@ -327,9 +346,9 @@ export default function AboutPage() {
                 </div>
                 <div className="hwbody">
                   <div className="hwname">ESP32-S3 Touch LCD</div>
-                  <div className="hwsub">// MICROCONTROLLER + DISPLAY UNIT</div>
-                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7" capacitive touch display — handles all I/O, WiFi communication, and UI rendering simultaneously at 240MHz.</div>
-                  <div className="hwtags"><span className="htag">Dual-Core 240MHz</span><span className="htag">7" Touch LCD</span><span className="htag">WiFi 2.4GHz</span><span className="htag">BLE 5.0</span><span className="htag">UART + SPI</span></div>
+                  <div className="hwsub">{"// MICROCONTROLLER + DISPLAY UNIT"}</div>
+                  <div className="hwdesc">The brain and face of the kiosk. Dual-core LX7 processor with integrated 7&quot; capacitive touch display &mdash; handles all I/O, WiFi communication, and UI rendering simultaneously at 240MHz.</div>
+                  <div className="hwtags"><span className="htag">Dual-Core 240MHz</span><span className="htag">7&quot; Touch LCD</span><span className="htag">WiFi 2.4GHz</span><span className="htag">BLE 5.0</span><span className="htag">UART + SPI</span></div>
                 </div>
               </div>
               <div className="hwc rv d3" onClick={() => openModal('as608')}>
@@ -341,7 +360,7 @@ export default function AboutPage() {
                 </div>
                 <div className="hwbody">
                   <div className="hwname">AS608 Fingerprint Sensor</div>
-                  <div className="hwsub">// OPTICAL BIOMETRIC INPUT</div>
+                  <div className="hwsub">{"// OPTICAL BIOMETRIC INPUT"}</div>
                   <div className="hwdesc">Optical fingerprint sensor with onboard DSP. Stores up to 162 templates, matches in under 1 second at 500 DPI. Communicates via UART at 57600 baud directly with the ESP32-S3.</div>
                   <div className="hwtags"><span className="htag">162 Templates</span><span className="htag">&lt;1s Match</span><span className="htag">500 DPI</span><span className="htag">UART 57600</span><span className="htag">Onboard DSP</span></div>
                 </div>
@@ -455,22 +474,22 @@ export default function AboutPage() {
             <h2 className="stit rv d1">Meet the Team</h2>
             <div className="tgr">
               <div className="tcard rv">
-                <div className="tav av1"><img src="/team/arden.png" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%'}} /></div>
+                <div className="tav av1"><Image src="/team/arden.png" alt="Arden" width={120} height={120} style={{objectFit:'cover', borderRadius:'50%'}} /></div>
                 <div className="tnm">Arden Hero Damaso</div>
                 <div className="trl">Full Stack Developer</div>
-                <div className="tqt">"Building ClassTrack taught me that great software lives at the intersection of hardware, data, and UX — all three have to sing together."</div>
+                <div className="tqt">&quot;Building ClassTrack taught me that great software lives at the intersection of hardware, data, and UX &mdash; all three have to sing together.&quot;</div>
               </div>
               <div className="tcard rv d2">
-                <div className="tav av2"><img src="/team/clemen.png" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%'}} /></div>
+                <div className="tav av2"><Image src="/team/clemen.png" alt="Clemen" width={120} height={120} style={{objectFit:'cover', borderRadius:'50%'}} /></div>
                 <div className="tnm">Clemen Jay Luis</div>
                 <div className="trl">Frontend Developer</div>
-                <div className="tqt">"Every pixel is a decision. Making ClassTrack feel premium meant obsessing over the details no one notices — until they do."</div>
+                <div className="tqt">&quot;Every pixel is a decision. Making ClassTrack feel premium meant obsessing over the details no one notices &mdash; until they do.&quot;</div>
               </div>
               <div className="tcard rv d3">
-                <div className="tav av3"><img src="/team/ace.png" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%'}} /></div>
+                <div className="tav av3"><Image src="/team/ace.png" alt="Ace" width={120} height={120} style={{objectFit:'cover', borderRadius:'50%'}} /></div>
                 <div className="tnm">Ace Donner Dane Asuncion</div>
                 <div className="trl">Backend Developer</div>
-                <div className="tqt">"The database schema is the foundation of trust. When attendance data is accurate, everything else falls into place."</div>
+                <div className="tqt">&quot;The database schema is the foundation of trust. When attendance data is accurate, everything else falls into place.&quot;</div>
               </div>
             </div>
           </div>

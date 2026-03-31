@@ -4,24 +4,26 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStudentSession } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
-import {
-    Cpu,
-    Database,
-    Loader2,
-    Globe,
-    Code2,
-    Users,
-    Zap,
-    Bell,
-    Heart,
-    Coffee,
-    Sparkles,
-    Layers,
-    ShieldCheck,
-    Code
-} from "lucide-react";
+import { Zap, Loader2 } from "lucide-react";
 import Image from "next/image";
 import "./portal-about.css";
+
+interface Spec {
+  k: string;
+  v: string;
+}
+
+interface HWComponent {
+  fb: string;
+  badge: string;
+  title: string;
+  subt: string;
+  desc: string;
+  dims: string;
+  specs: Spec[];
+  role: string;
+  tags: string[];
+}
 
 interface Student {
     name: string;
@@ -42,12 +44,10 @@ export default function SysInfoPage() {
     { msg: '[NET] WiFi → Connected', type: 'lsys' },
     { msg: '[READY] Awaiting finger input...', type: 'lsys' }
   ]);
-  const [kled, setKled] = useState('');
   const [busy, setBusy] = useState(false);
 
   // MODAL STATE
   const [mOpen, setMOpen] = useState(false);
-  const [mKey, setMKey] = useState<string | null>(null);
 
   useEffect(() => {
     const el = document.getElementById('klog');
@@ -78,14 +78,14 @@ export default function SysInfoPage() {
     }, { threshold: 0.08 });
     document.querySelectorAll('.rv').forEach(el => obs.observe(el));
 
-    function countUp(el: any, target: any, sfx: string) {
+    function countUp(el: HTMLElement, target: number | 'inf', sfx?: string) {
       if (target === 'inf') { el.textContent = '∞'; return; }
       let n = 0; const dur = 1800, step = 16, inc = target / (dur / step);
       const tm = setInterval(() => {
-        n = Math.min(n + inc, target);
+        n = Math.min(n + inc, target as number);
         el.textContent = Math.floor(n).toLocaleString() + (sfx || '');
-        if (n >= target) {
-          el.textContent = target.toLocaleString() + (sfx || '');
+        if (n >= (target as number)) {
+          el.textContent = (target as number).toLocaleString() + (sfx || '');
           clearInterval(tm);
         }
       }, step);
@@ -97,7 +97,7 @@ export default function SysInfoPage() {
           e.target.querySelectorAll('.snum').forEach((el: any) => {
              const t = el.getAttribute('data-t');
              const s = el.getAttribute('data-s') || '';
-             countUp(el, t === 'inf' ? 'inf' : parseInt(t), s);
+             countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), s);
           });
           sObs.unobserve(e.target);
         }
@@ -200,17 +200,17 @@ export default function SysInfoPage() {
     });
   };
 
-  const hwData: any = {
+  const hwData: Record<string, HWComponent> = {
     esp:{
-      fb:'<div class="esp-screen"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'WAVESHARE ESP32-S3-TOUCH-LCD-7',
+      fb:'<div class="esp-screen"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'// WAVESHARE ESP32-S3-TOUCH-LCD-7',
       desc:'The brain and face of the ClassTrack kiosk. Features a dual-core Xtensa LX7 processor paired with an integrated 7-inch capacitive touch display. Handles fingerprint UART communication, WiFi HTTP requests to Supabase, touch UI rendering, and GPIO LED control — all simultaneously at 240MHz.',
       dims:'PCB: 165.72 × 97.60mm · Display: 192.96 × 110.76mm · 4×M3 + 4×M2.5 mount',
-      specs:[{k:'Processor',v:'Dual-Core LX7 @ 240MHz'},{k:'Memory',v:'512KB SRAM + 8MB PSRAM'},{k:'Flash',v:'16MB Onboard Flash'},{k:'Display',v:'7" Capacitive Touch LCD'},{k:'Connectivity',v:'WiFi 802.11 b/g/n + BLE 5.0'},{k:'Interfaces',v:'UART, SPI, I²C, GPIO'},{k:'Operating Voltage',v:'5V via USB-C'},{k:'Baud Rate',v:'57600 (AS608 comms)'}],
-      role:'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
-      tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7" Touch LCD','UART + SPI + I²C']
+      specs:[{k:'Processor',v:'Dual-Core LX7 @ 240MHz'},{k:'Memory',v:'512KB SRAM + 8MB PSRAM'},{k:'Flash',v:'16MB Onboard Flash'},{k:'Display',v:'7\" Capacitive Touch LCD'},{k:'Connectivity',v:'WiFi 802.11 b/g/n + BLE 5.0'},{k:'Interfaces',v:'UART, SPI, I²C, GPIO'},{k:'Operating Voltage',v:'5V via USB-C'},{k:'Baud Rate',v:'57600 (AS608 comms)'}],
+      role:'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7\" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
+      tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7\" Touch LCD','UART + SPI + I²C']
     },
     as608:{
-      fb:'🫆',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'OPTICAL FINGERPRINT MODULE',
+      fb:'🫆',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'// OPTICAL FINGERPRINT MODULE',
       desc:'An optical fingerprint sensor with a built-in DSP chip. Captures high-resolution fingerprint images at 500 DPI, extracts minutiae points, and performs template matching entirely onboard — delivering a match result to the ESP32-S3 via UART in under one second. Supports 360° finger placement rotation.',
       dims:'Module: ~20 × 21 × 21.5mm · Connector: UART TTL · Power: 3.3V/5V',
       specs:[{k:'Scan Resolution',v:'500 DPI'},{k:'Template Storage',v:'Up to 162 templates'},{k:'Match Time',v:'< 1 second'},{k:'Interface',v:'UART TTL 3.3V / 5V'},{k:'Baud Rate',v:'57600 bps'},{k:'FAR',v:'< 0.001%'},{k:'FRR',v:'< 0.1%'},{k:'Rotation Support',v:'360° recognition'}],
@@ -231,8 +231,8 @@ export default function SysInfoPage() {
     document.getElementById('mdesc')!.textContent = d.desc;
     document.getElementById('mrld')!.textContent = d.role;
     
-    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s:any) => `<div class=\"msp\"><div class=\"mspk\">${s.k}</div><div class=\"mspv\">${s.v}</div></div>`).join('');
-    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg:any) => `<div class=\"mtag\">${tg}</div>`).join('');
+    document.getElementById('mspgrid')!.innerHTML = d.specs.map((s: Spec) => `<div class="msp"><div class="mspk">${s.k}</div><div class="mspv">${s.v}</div></div>`).join('');
+    document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg: string) => `<div class="mtag">${tg}</div>`).join('');
     
     setMOpen(true);
     document.body.style.overflow = 'hidden';
