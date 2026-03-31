@@ -424,16 +424,16 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                         <button
                             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                             className={cn(
-                                "flex w-full items-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200",
-                                "bg-[#5e0d0e] hover:bg-[#7b1113] text-nwu-gold border border-white/5",
+                                "flex w-full items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 group",
+                                "bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/20",
                                 isCollapsed && "justify-center px-2"
                             )}
                             title={isCollapsed ? "Toggle theme" : undefined}
                         >
                             {theme === 'dark' ? (
-                                <Sun className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                                <Sun className={cn("h-5 w-5 text-nwu-gold shrink-0 transition-transform group-hover:scale-110", !isCollapsed && "mr-3")} />
                             ) : (
-                                <Moon className={cn("h-5 w-5", isCollapsed ? "mr-0" : "mr-3")} />
+                                <Moon className={cn("h-5 w-5 text-nwu-gold shrink-0 transition-transform group-hover:scale-110", !isCollapsed && "mr-3")} />
                             )}
                             {!isCollapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
                         </button>
