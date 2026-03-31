@@ -295,12 +295,13 @@
 }
 
 @media (max-width: 768px) {
-  .about-container { background: #0a0a0c !important; }
+  .about-container { background: #111827 !important; }
+  .portal-about-container { background: #111827 !important; }
   #nav { padding: 14px 20px; }
   .si { padding: 0 20px !important; }
-  #hero { min-height: 80vh; padding: 40px 20px; margin-top: 0; }
-  .htitle { font-size: 3.8rem; line-height: 1; }
-  .hsub { font-size: 0.95rem; margin-top: 16px; }
+  #hero { min-height: 70vh; padding: 60px 24px; margin-top: 0; }
+  .htitle { font-size: 2.4rem; line-height: 1.1; margin-bottom: 24px; }
+  .hsub { font-size: 0.95rem; margin-top: 16px; line-height: 1.6; }
   .wgrid, .hwcards, .ovgrid, .tgrid, .rmgrid, .tgr, .sgrid, .wsgrid, .ftrack, .kwrap { grid-template-columns: 1fr; }
   .ftrack::before { display: none; }
   .sbox { border-right: none; padding: 32px 20px; }
@@ -310,5 +311,5 @@
   #mright { padding: 32px 20px; }
   .stit { font-size: 2.2rem; }
   .fbody { margin-top: 20px; }
-  section { padding: 80px 20px !important; }
+  section { padding: 80px 24px !important; }
 }
