@@ -294,6 +294,10 @@
   .mrl { margin-bottom: 16px !important; }
   #mclose { top: 20px !important; right: 20px !important; position: fixed !important; z-index: 2001 !important; width: 44px !important; height: 44px !important; background: var(--sur2) !important; color: var(--tx) !important; border-radius: 50% !important; border: 1px solid var(--bdr) !important; backdrop-filter: blur(10px) !important; box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important; display: flex !important; align-items: center !important; justify-content: center !important; }
   .mtitle { font-size: 2.2rem !important; }
+  .mspgrid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .msp { padding: 10px !important; }
+  .mspk { font-size: 0.55rem !important; margin-bottom: 3px !important; }
+  .mspv { font-size: 0.7rem !important; }
   .stit { font-size: 1.6rem; }
   .fbody { margin-top: 20px; }
   section { padding: 40px 16px !important; }
