@@ -279,7 +279,7 @@ export default function SysInfoPage() {
                 <p><strong>ClassTrack Student Portal</strong> is your digital gateway to academic accountability. Built specifically for students of Northwestern University, it provides a real-time window into your classroom participation.</p>
                 <p>Gone are the days of manual attendance logs and paper excuse letters. Integrated with <strong>Biometric Kiosks</strong> campus-wide, your attendance is logged in seconds and visible instantly in your pocket.</p>
                 <div className="wtags">
-                  {['Attendance Monitoring', 'Excuse Letter Portal', 'Real-time Alerts', 'Guardian Dashboard', 'Secure Biometrics', 'Academic Analytics'].map(t => (
+                  {['Attendance Monitoring', 'Excuse Letter Portal', 'Real-time Alerts', 'Secure Biometrics', 'Academic Analytics'].map(t => (
                     <span key={t} className="wtag">{t}</span>
                   ))}
                 </div>
