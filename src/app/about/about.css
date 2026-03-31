@@ -130,9 +130,9 @@
 .mbdot{width:5px;height:5px;background:var(--orange);border-radius:50%;flex-shrink:0;animation:pulse 2s infinite}
 #mright{padding:70px 64px;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;background:var(--navy);position:relative}
 #mtagbar { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; width: 100%; }
-.mtag { background: rgba(123, 17, 19, 0.05); border: 1px solid rgba(123, 17, 19, 0.2); border-radius: 100px; padding: 6px 14px; font-size: .65rem; color: var(--orange); font-family: var(--fm); letter-spacing: .05em; transition: all .3s; white-space: nowrap; }
+.mtag { background: transparent; border: 1px solid var(--orange); border-radius: 100px; padding: 6px 14px; font-size: .65rem; color: var(--orange); font-family: var(--fm); letter-spacing: .05em; transition: all .3s; white-space: nowrap; }
 .mtag:hover { background: rgba(123, 17, 19, 0.1); border-color: var(--orange); }
-.dark .mtag { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.2); color: var(--tx); }
+.dark .mtag { background: transparent; border-color: rgba(255, 255, 255, 0.2); color: var(--tx); }
 #mclose{position:absolute;top:28px;right:32px;z-index:10;background:var(--sur2);border:1px solid var(--bdr);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--mu);transition:border-color .3s,color .3s,background .3s}
 #mclose:hover{border-color:var(--orange);color:var(--orange);background:rgba(123, 17, 19, 0.08)}
 .mtitle{font-family:var(--fd);font-weight:800;font-size:clamp(1.8rem,3vw,2.8rem);letter-spacing:-.04em;line-height:1.05;margin-bottom:6px}
