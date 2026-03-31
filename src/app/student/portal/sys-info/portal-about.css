@@ -183,7 +183,7 @@
 #mtagbar { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; width: 100%; }
 .mtag { background: transparent; border: 1px solid var(--orange); border-radius: 100px; padding: 6px 14px; font-size: .65rem; color: var(--orange); font-family: var(--fm); letter-spacing: .05em; transition: all .3s; white-space: nowrap; }
 .mtag:hover { background: rgba(123, 17, 19, 0.1); border-color: var(--orange); }
-.dark .mtag { background: transparent; border-color: rgba(255, 255, 255, 0.2); color: var(--tx); }
+.dark .mtag { background: transparent; border-color: var(--orange); color: var(--orange); }
 
 /* MODAL INTERNAL */
 #mclose{position:absolute;top:28px;right:32px;z-index:10;background:var(--sur2);border:1px solid var(--bdr);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--mu);transition:border-color .3s}
