@@ -159,8 +159,13 @@ export default function LoginPage() {
             </div>
 
             {/* Footer */}
-            <footer className="py-4 text-center text-xs text-gray-400">
-                &copy; {new Date().getFullYear()} Northwestern University Attendance System. All rights reserved.
+            <footer className="py-4 text-center text-xs text-gray-400 space-y-2">
+                <p>&copy; {new Date().getFullYear()} Northwestern University Attendance System. All rights reserved.</p>
+                <div className="flex justify-center gap-4">
+                    <a href="/privacy-policy" className="hover:text-nwu-red transition-colors underline underline-offset-2">Privacy Policy</a>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-gray-400">ClassTrack Security v2.0</span>
+                </div>
             </footer>
         </div>
     );
