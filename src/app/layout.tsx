@@ -29,7 +29,7 @@ export default function RootLayout({
   const nonce = headers().get("x-nonce") ?? "";
 
   return (
-    <html lang="en">
+    <html lang="en" data-nonce={nonce}>
       <body className={`${inter.variable} font-sans antialiased bg-transparent text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300`}>
         <Providers
           attribute="class"
