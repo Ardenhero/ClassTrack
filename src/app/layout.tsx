@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -25,6 +26,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = headers().get("x-nonce") ?? "";
+
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased bg-transparent text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300`}>

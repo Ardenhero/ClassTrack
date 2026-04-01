@@ -94,8 +94,28 @@ export async function middleware(request: NextRequest) {
     }
 
     // ============================================
-    // 2. CORS & Security Headers
+    // 2. CSP & Security Headers (Nonce-based)
     // ============================================
+    const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
+    const cspHeader = `
+        default-src 'self';
+        script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
+        style-src 'self' 'unsafe-inline' fonts.googleapis.com;
+        img-src 'self' blob: data: *.supabase.co;
+        font-src 'self' fonts.gstatic.com;
+        connect-src 'self' *.supabase.co *.vercel-analytics.com *.vitals.vercel-insights.com;
+        frame-ancestors 'none';
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        upgrade-insecure-requests;
+    `.replace(/\s{2,}/g, ' ').trim();
+
+    // Set CSP on response
+    supabaseResponse.headers.set('Content-Security-Policy', cspHeader);
+    // Set custom x-nonce on request so server components can access it
+    request.headers.set('x-nonce', nonce);
+
     const origin = request.headers.get("origin");
     // Strictly filter origin
     const isAllowedOrigin = origin && ALLOWED_ORIGINS.includes(origin);

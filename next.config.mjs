@@ -36,10 +36,6 @@ const nextConfig = {
                 source: '/(.*)',
                 headers: [
                     {
-                        key: 'Content-Security-Policy',
-                        value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.vercel-scripts.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; img-src 'self' blob: data: *.supabase.co; font-src 'self' fonts.gstatic.com; connect-src 'self' *.supabase.co *.vercel-analytics.com *.vitals.vercel-insights.com; frame-ancestors 'none'; upgrade-insecure-requests;",
-                    },
-                    {
                         key: 'X-DNS-Prefetch-Control',
                         value: 'on',
                     },
