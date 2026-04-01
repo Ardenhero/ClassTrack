@@ -108,7 +108,6 @@ export async function middleware(request: NextRequest) {
         object-src 'none';
         base-uri 'self';
         form-action 'self';
-        require-trusted-types-for 'script';
         upgrade-insecure-requests;
     `.replace(/\s{2,}/g, ' ').trim();
 
