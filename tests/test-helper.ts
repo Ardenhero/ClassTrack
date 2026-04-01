@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test';
 
-export const TEST_EMAIL = 'testadmin@playwright.test';
-export const TEST_PASSWORD = 'r4iolbv6pl';
+export const TEST_EMAIL = process.env.TEST_EMAIL || 'testadmin@playwright.test';
+export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'r4iolbv6pl';
 
 export async function loginTestUser(page: Page) {
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));

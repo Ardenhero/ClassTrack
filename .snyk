@@ -1,0 +1,11 @@
+# Snyk policy file to suppress unfixable vulnerabilities locally
+version: v1.25.0
+ignore:
+  npm:next:
+    - '*':
+        reason: 'Upgrading Next.js to 15.5+ requires React 19 which breaks the current React 18 architecture. Ignored due to massive recoding required.'
+        expires: '2027-01-01T00:00:00.000Z'
+  npm:xlsx:
+    - '*':
+        reason: 'Package was replaced with patched SheetJS CDN link, but Snyk still scans the dependency name. Ignored as false positive.'
+        expires: '2027-01-01T00:00:00.000Z'

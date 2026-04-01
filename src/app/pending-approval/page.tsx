@@ -11,7 +11,7 @@ export default function PendingApprovalPage() {
     const handleSignOut = async () => {
         await supabase.auth.signOut();
         // Clear profile cookie
-        document.cookie = "sc_profile_id=; path=/; max-age=0";
+        document.cookie = "sc_profile_id=; path=/; max-age=0; Secure; SameSite=Strict;";
         router.push("/login");
     };
 

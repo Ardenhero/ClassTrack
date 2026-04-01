@@ -4,7 +4,11 @@ import crypto from 'crypto';
 // QR TOTP + AES Encryption Utilities for ClassTrack v3.2
 // ============================================================================
 
-const QR_SECRET = process.env.QR_SIGNING_SECRET || 'classtrack-v32-default-secret-change-me';
+const QR_SECRET_RAW = process.env.QR_SIGNING_SECRET;
+if (!QR_SECRET_RAW) {
+    throw new Error('QR_SIGNING_SECRET environment variable is missing. QR services will be unavailable.');
+}
+const QR_SECRET: string = QR_SECRET_RAW;
 const TOTP_WINDOW_SECONDS = 60;
 const AES_ALGORITHM = 'aes-256-gcm';
 

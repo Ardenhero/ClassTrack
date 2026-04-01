@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerClient } from "../../../../utils/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { z } from "zod";
+
+const reviewSchema = z.object({
+    evidence_id: z.string().uuid(),
+    action: z.enum(["approve", "reject"]),
+});
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,6 +19,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
         }
 
+        const body = await request.json();
+        const result = reviewSchema.safeParse(body);
+
+        if (!result.success) {
+            return NextResponse.json({ 
+                error: "Invalid request data", 
+                details: result.error.flatten().fieldErrors 
+            }, { status: 400 });
+        }
+
+        const { evidence_id, action } = result.data;
+
         // Verify caller is an instructor (admin or regular)
         const { data: actor } = await supabase
             .from("instructors")
@@ -22,12 +40,6 @@ export async function POST(request: NextRequest) {
 
         if (!actor) {
             return NextResponse.json({ error: "Forbidden: Not an instructor" }, { status: 403 });
-        }
-
-        const { evidence_id, action } = await request.json();
-
-        if (!evidence_id || !["approve", "reject"].includes(action)) {
-            return NextResponse.json({ error: "Missing evidence_id or invalid action" }, { status: 400 });
         }
 
         // Check ownership/permissions
@@ -117,7 +129,7 @@ export async function POST(request: NextRequest) {
                             const startISO = startUTC.toISOString();
                             const endISO = endUTC.toISOString();
 
-                            console.log(`Processing attendance: Student ${evidence.student_id}, Class ${evidence.class_id || 'All'}, Date ${link.absence_date}, Range ${startISO} - ${endISO}`);
+                            console.log("Processing attendance:", "Student", evidence.student_id, "Class", evidence.class_id || 'All', "Date", link.absence_date, "Range", startISO, "-", endISO);
 
                             // 1. Try to find existing record
                             let query = adminClient
@@ -134,13 +146,13 @@ export async function POST(request: NextRequest) {
                             const { data: existingLogs, error: fetchError } = await query;
 
                             if (fetchError) {
-                                console.error(`Failed to fetch attendance for ${link.absence_date}:`, fetchError);
+                                console.error("Failed to fetch attendance for", link.absence_date, ":", fetchError);
                                 continue;
                             }
 
                             if (existingLogs && existingLogs.length > 0) {
                                 // UPDATE existing records
-                                console.log(`Found ${existingLogs.length} existing records. Updating to Excused.`);
+                                console.log("Found", existingLogs.length, "existing records. Updating to Excused.");
 
                                 let updateQuery = adminClient
                                     .from("attendance_logs")
@@ -157,11 +169,11 @@ export async function POST(request: NextRequest) {
 
                                 const { error: updateError } = await updateQuery;
                                 if (updateError) {
-                                    console.error(`Update failed for ${link.absence_date}:`, updateError);
+                                    console.error("Update failed for", link.absence_date, ":", updateError);
                                 }
                             } else {
                                 // INSERT new record
-                                console.log(`No existing records found for ${link.absence_date}. Inserting new 'Excused' record.`);
+                                console.log("No existing records found for", link.absence_date, ". Inserting new 'Excused' record.");
 
                                 // Need user_id for the insert (it's nullable but good to have)
                                 // Fetch student user_id
@@ -186,14 +198,14 @@ export async function POST(request: NextRequest) {
                                     });
 
                                 if (insertError) {
-                                    console.error(`Insert failed for ${link.absence_date}:`, insertError);
+                                    console.error("Insert failed for", link.absence_date, ":", insertError);
                                 } else {
-                                    console.log(`Successfully inserted 'Excused' record for ${link.absence_date}`);
+                                    console.log("Successfully inserted 'Excused' record for", link.absence_date);
                                 }
                             }
 
                         } catch (e) {
-                            console.error(`Error processing ${link.absence_date}:`, e);
+                            console.error("Error processing", link.absence_date, ":", e);
                         }
                     }
                 }

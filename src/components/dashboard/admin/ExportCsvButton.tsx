@@ -28,8 +28,8 @@ export function ExportCsvButton({ profileId, isSuperAdmin, isAdmin }: { profileI
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
-            a.href = url;
-            a.download = `ClassTrack_Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.setAttribute('href', url);
+            a.setAttribute('download', `ClassTrack_Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

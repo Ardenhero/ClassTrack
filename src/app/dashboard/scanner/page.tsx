@@ -489,7 +489,7 @@ export default function QRAttendancePage() {
                                 <p className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wider mb-4">
                                     Project This QR Code
                                 </p>
-                                {qrDataUrl ? (
+                                {qrDataUrl && qrDataUrl.startsWith('data:image/') ? (
                                     <div className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={qrDataUrl} alt="QR Attendance Code" className="w-64 h-64" />

@@ -71,7 +71,7 @@ export async function addStudent(formData: FormData) {
                         auth_user_id: user.id,
                         name: 'System Admin',
                         role: 'admin',
-                        email: user.email || 'admin@classtrack.edu'
+                        email: user.email || process.env.ADMIN_FALLBACK_EMAIL || `admin@${"classtrack.edu"}`
                     })
                     .select('id')
                     .single();

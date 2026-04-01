@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Tuya IoT Service — Singleton client for controlling smart devices.
  * Uses the official @tuya/tuya-connector-nodejs SDK.

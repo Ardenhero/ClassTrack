@@ -117,7 +117,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                 } else {
                     // Cookie was invalid or instructor deleted? Clear it.
                     console.warn("Sticky profile not found in DB, clearing.");
-                    document.cookie = "sc_profile_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                    document.cookie = "sc_profile_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Strict;";
                 }
             }
             setLoading(false);
@@ -171,7 +171,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
         // Sync to cookie for Middleware & Server Components
         // Max-Age: 1 year (31536000 seconds)
-        document.cookie = `sc_profile_id=${newProfile.id}; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `sc_profile_id=${newProfile.id}; path=/; max-age=31536000; SameSite=Strict; Secure;`;
     };
 
     const clearProfile = () => {
@@ -181,7 +181,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("sc_profile");
 
         // Clear cookie
-        document.cookie = "sc_profile_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie = "sc_profile_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Strict;";
 
         window.location.href = "/select-profile";
     };

@@ -97,27 +97,27 @@ export async function middleware(request: NextRequest) {
     // 2. CORS & Security Headers
     // ============================================
     const origin = request.headers.get("origin");
-    const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] || '*';
+    // Strictly filter origin
+    const isAllowedOrigin = origin && ALLOWED_ORIGINS.includes(origin);
+    const allowedOrigin = isAllowedOrigin ? origin : (process.env.NEXT_PUBLIC_APP_URL || 'https://classtrack-navy.vercel.app');
 
-    supabaseResponse.headers.set('Access-Control-Allow-Origin', allowedOrigin);
-    supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
-    supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true');
-    supabaseResponse.headers.set('X-DNS-Prefetch-Control', 'on');
-    supabaseResponse.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-    supabaseResponse.headers.set('X-Frame-Options', 'DENY');
-    supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
-    supabaseResponse.headers.set('Referrer-Policy', 'origin-when-cross-origin');
-    supabaseResponse.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+    if (isAllowedOrigin) {
+        supabaseResponse.headers.set('Access-Control-Allow-Origin', allowedOrigin);
+        supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-client-info');
+        supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true');
+    }
 
     // Handle preflight requests
     if (request.method === 'OPTIONS') {
         return new NextResponse(null, {
             status: 204,
             headers: {
-                'Access-Control-Allow-Origin': allowedOrigin,
+                'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigin,
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key, x-client-info',
+                'Access-Control-Allow-Credentials': 'true',
+                'Access-Control-Max-Age': '86400',
             }
         });
     }

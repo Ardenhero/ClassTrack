@@ -280,7 +280,7 @@ export default function ProfilePage() {
                 <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:hover:shadow-[0_4px_20px_rgb(255,255,255,0.05)]">
                     <div className="flex items-center mb-6">
                         <ShieldCheck className="h-6 w-6 text-nwu-red mr-3" />
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Kiosk Security</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Profile Security</h2>
                     </div>
 
                     <div className="space-y-6">
