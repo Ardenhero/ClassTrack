@@ -1,7 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { createClient } from "@/utils/supabase/server";
 import { format, differenceInMinutes } from "date-fns";
-import { GlobalSearch } from "@/components/GlobalSearch";
 import { Suspense } from "react";
 import { AttendanceFilter } from "./AttendanceFilter";
 import { DepartmentSelector } from "./DepartmentSelector";

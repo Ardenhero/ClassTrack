@@ -1,19 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+const QuerySchema = z.object({
+    academic_year_id: z.string().uuid().optional(),
+});
+
+export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+    const result = QuerySchema.safeParse(Object.fromEntries(searchParams));
+
+    if (!result.success) {
+        return NextResponse.json({ error: "Invalid query parameters" }, { status: 400 });
+    }
+
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
     try {
-        const { data: terms, error } = await supabase
+        let query = supabase
             .from('academic_terms')
             .select('*, academic_years(name)')
             .order('start_date', { ascending: false });
+
+        if (result.data.academic_year_id) {
+            query = query.eq('academic_year_id', result.data.academic_year_id);
+        }
+
+        const { data: terms, error } = await query;
 
         if (error) throw error;
 

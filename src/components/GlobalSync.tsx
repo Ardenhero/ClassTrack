@@ -64,18 +64,6 @@ export function GlobalSync() {
         };
     }, [supabase, triggerSync]);
 
-    return (
-        <button
-            onClick={handleManualRefresh}
-            className={cn(
-                "fixed bottom-[5.5rem] sm:bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-all duration-300",
-                "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700",
-                "hover:scale-110 active:scale-95",
-                isSyncing ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
-            )}
-            title="Global Sync Status (Click to Refresh)"
-        >
-            <RefreshCw className={cn("h-6 w-6", isSyncing && "animate-spin")} />
-        </button>
-    );
+    // The background logic stays active to keep data fresh, but we hide the redundant button
+    return null;
 }

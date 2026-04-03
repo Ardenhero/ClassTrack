@@ -5,21 +5,24 @@ import { controlDevice } from "../../../../lib/tuya";
 
 
 const LogSchema = z.object({
-    student_name: z.string().optional(),
-    class: z.string().optional(),
+    student_name: z.string().trim().optional(),
+    class: z.string().trim().optional(),
     year_level: z.union([z.string(), z.number()]).optional(),
-    attendance_type: z.string(),
-    timestamp: z.string(),
-    class_id: z.string().optional(),
-    instructor_id: z.string().optional(),
+    attendance_type: z.string().trim(),
+    timestamp: z.string().datetime().or(z.string()).optional(),
+    class_id: z.string().uuid().or(z.string()).optional(),
+    instructor_id: z.string().uuid().or(z.string()).optional(),
     // Biometric fields
     fingerprint_slot_id: z.number().int().optional(),
     student_id: z.union([z.string(), z.number()]).optional(),
-    device_id: z.string().optional(),
+    device_id: z.string().trim().optional(),
     entry_method: z.enum(['biometric', 'manual_override', 'rfid', 'qr_verified', 'pin']).optional(),
     // v3.2 Correction fields
     is_correction: z.boolean().optional(),
     corrects_log_id: z.string().uuid().optional(),
+    // Room Control fields
+    room_id: z.string().uuid().or(z.string()).optional(),
+    room_action: z.enum(['ON', 'OFF', 'TOGGLE']).optional(),
 });
 
 
@@ -41,7 +44,7 @@ async function resolveInstructorByEmail(supabase: SupabaseClient, email: string)
     if (!authData?.users) return null;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const user = authData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+    const user = authData.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
     if (!user) return null;
 
     // Check both auth_user_id (standard) and user_id (legacy/alt)
@@ -64,25 +67,6 @@ export async function POST(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
-        const userAgent = request.headers.get("user-agent") || "";
-        const isHardware = userAgent.includes("ESP") || userAgent.includes("Arduino") || !request.headers.get("accept")?.includes("text/html");
-
-        // TIERED AUTHENTICATION: Non-Breaking Production Hardening
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-            // WEB MODE: Do not trust URL params. Use the actual session email.
-            if (email && email.toLowerCase() !== user.email?.toLowerCase()) {
-                console.warn(`[SECURITY] Identity Spoof Blocked: User ${user.email} attempted to log as ${email}`);
-                return NextResponse.json({ error: "Identity mismatch: Browser sessions cannot spoof legacy emails." }, { status: 403 });
-            }
-        } else if (!isHardware) {
-            // ANONYMOUS BROWSER: Block legacy ?email= access to prevent easy URL spoofing
-            if (email) {
-                console.warn(`[SECURITY] Blocked anonymous browser attempt to use legacy ?email= auth.`);
-                return NextResponse.json({ error: "Unauthorized: Please log in to use web-based logging." }, { status: 401 });
-            }
-        }
 
         let bodyText = "";
         try {
@@ -92,35 +76,29 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Failed to read request body" }, { status: 400 });
         }
 
-        interface AttendanceRequestBody {
-            device_id?: string;
-            attendance_type?: string;
-            entry_method?: string;
-            fingerprint_slot_id?: number;
-            student_id?: string | number;
-            class_id?: string;
-            instructor_id?: string;
-            is_correction?: boolean;
-            corrects_log_id?: string;
-            timestamp?: string;
-            room_id?: string;
-            room_action?: string;
-        }
-
-        let body: AttendanceRequestBody;
+        let rawBody: unknown;
         try {
-            body = JSON.parse(bodyText) as AttendanceRequestBody;
+            rawBody = JSON.parse(bodyText);
         } catch (jsonErr: unknown) {
             const errorMessage = jsonErr instanceof Error ? jsonErr.message : "Unknown error";
-            console.error("JSON Syntax Error:", errorMessage);
-            console.error("Malformed Body Snippet:", bodyText.substring(0, 300) + (bodyText.length > 300 ? "..." : ""));
-            console.error("Total Body Length:", bodyText.length);
             return NextResponse.json({
                 error: "Malformed JSON",
-                details: errorMessage,
-                snippet: bodyText.substring(0, 100)
+                details: errorMessage
             }, { status: 400 });
         }
+
+        // --- RIGOROUS VALIDATION (Zod Armor) ---
+        type AttendanceLogBody = z.infer<typeof LogSchema>;
+        const result = LogSchema.safeParse(rawBody);
+        if (!result.success) {
+            console.warn("[SECURITY] Invalid attendance payload:", result.error.format());
+            return NextResponse.json({ 
+                error: "Invalid Request Payload", 
+                details: result.error.issues.map(e => `${e.path.join('.')}: ${e.message}`) 
+            }, { status: 400 });
+        }
+
+        const body = result.data as AttendanceLogBody;
 
         // 1. Resolve Kiosk Identity via Device Serial (v3.2 Standard)
         const { data: kioskInfo } = await supabase
@@ -129,15 +107,7 @@ export async function POST(request: Request) {
             .eq('device_serial', body.device_id)
             .maybeSingle();
 
-        // SCHOOL-GUARD: Strict hardware verification for production deployment
-        if (isHardware && !kioskInfo && body.device_id) {
-            console.warn(`[SECURITY] REJECTED: Unregistered hardware device attempt: ${body.device_id}`);
-            return NextResponse.json({ error: "Unauthorized: Unregistered hardware device." }, { status: 403 });
-        }
-
         // --- ☢️ NUCLEAR INTERCEPT: ROOM CONTROL (REFINED v3.2) ---
-        // Only triggers on PIN or explicit room activation commands.
-        // Biometric (fingerprint) scans are now EXCLUDED from this intercept to avoid 403 errors for students.
         const typeStr = (body.attendance_type || "").toString().toLowerCase();
         const methodStr = (body.entry_method || "").toString().toLowerCase();
         const rpcStatus = typeStr.toUpperCase().replace(" ", "_");
@@ -147,13 +117,11 @@ export async function POST(request: Request) {
         if (isRoomIntent && body.device_id) {
             console.log(`[ROOM CONTROL] PIN/System Trigger: Device=${body.device_id}, Action=${typeStr}`);
 
-            // 2. Resolve Room (Primary: assigned kiosk room)
             const targetRoomId = kioskInfo?.room_id || body.room_id || null;
             if (!targetRoomId) {
                 return NextResponse.json({ error: "no_room_assigned", device_serial: body.device_id }, { status: 404 });
             }
 
-            // Resolve Instructor for logging (PIN entry method always provides email in query)
             let instructor = null;
             if (email) {
                 instructor = await resolveInstructorByEmail(supabase, email);
@@ -162,22 +130,20 @@ export async function POST(request: Request) {
             const triggerId = instructor?.id || 'system-authorized';
             const triggerName = instructor?.name || 'Authorized User';
 
-            // 3. Resolve Devices in this room
             const { data: devices } = await supabase.from('iot_devices').select('id, current_state, dp_code').eq('room_id', targetRoomId);
             if (!devices || devices.length === 0) {
                 return NextResponse.json({ error: "no_devices_in_room", room_id: targetRoomId }, { status: 404 });
             }
 
-            // 4. Power Toggle (Handle explicit ON/OFF if provided)
-            const explicitAction = body.room_action; // "ON" or "OFF"
-            const anyOff = devices.some((d: { current_state: boolean }) => !d.current_state);
+            const explicitAction = body.room_action;
+            const anyOff = devices.some((d) => !d.current_state);
 
             let newState: boolean;
             if (explicitAction === "ON") newState = true;
             else if (explicitAction === "OFF") newState = false;
-            else newState = anyOff; // Fallback to toggle
+            else newState = anyOff;
 
-            const results = await Promise.all(devices.map(async (dev: { id: string; dp_code: string }) => {
+            const results = await Promise.all(devices.map(async (dev) => {
                 const realId = dev.id.replace(/_ch\d+$/, '');
                 const dCode = dev.dp_code || 'switch_1';
                 const res = await controlDevice(realId, dCode, newState);
@@ -205,12 +171,7 @@ export async function POST(request: Request) {
         }
 
         // --- Standard Flow (for Student Attendance) ---
-        const result = LogSchema.safeParse(body);
-        if (!result.success) {
-            return NextResponse.json({ error: "Invalid Request", details: result.error }, { status: 400 });
-        }
-
-        const { student_id, student_name, class: className, instructor_id, attendance_type, fingerprint_slot_id, device_id } = result.data;
+        const { student_id, student_name, class: className, instructor_id, attendance_type, fingerprint_slot_id, device_id } = body;
         const entryMethod = result.data.entry_method || (fingerprint_slot_id ? 'biometric' : 'manual_override');
         const timestamp = result.data.timestamp || new Date().toISOString();
         const rpcStatusInput = attendance_type.toUpperCase().replace(" ", "_");

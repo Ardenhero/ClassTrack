@@ -22,7 +22,7 @@ export default async function RoomsManagementPage() {
 
     let roomsQuery = supabase
         .from("rooms")
-        .select("*")
+        .select("id, name, status, last_check, created_at, building, capacity")
         .order("name");
 
     if (!isSuperAdminUser && assignedRoomIds) {

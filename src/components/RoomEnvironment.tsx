@@ -37,7 +37,7 @@ export default function RoomEnvironment() {
         const supabase = createClient();
         const { data, error } = await supabase
             .from("iot_devices")
-            .select("*")
+            .select("id, name, type, room, dp_code, current_state, online, updated_at")
             .order("name");
 
         if (!error && data) {

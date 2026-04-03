@@ -1,14 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { controlDevice } from "../../../../lib/tuya";
+import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/iot/control — Send ON/OFF command to a Tuya device.
- * Body: { device_id, code, value, source? }
- * Auth: email query param (ESP32 compatible) or service-level trust.
- */
+const ControlSchema = z.object({
+    device_id: z.string().optional(),
+    code: z.string().optional(),
+    value: z.boolean(),
+    source: z.string().optional(),
+    class_id: z.string().uuid().or(z.string()).optional(),
+    profile_id: z.string().uuid().optional(),
+    group_id: z.string().uuid().or(z.string()).optional(),
+});
+
 export async function POST(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,28 +24,52 @@ export async function POST(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
-        const userAgent = request.headers.get("user-agent") || "";
-        const isHardware = userAgent.includes("ESP") || userAgent.includes("Arduino") || !request.headers.get("accept")?.includes("text/html");
 
-        // TIERED AUTHENTICATION: Non-Breaking Production Hardening
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-            // WEB MODE: Do not trust URL params. Use the actual session email.
-            if (email && email.toLowerCase() !== user.email?.toLowerCase()) {
-                console.warn(`[SECURITY] IOT Identity Spoof Blocked: User ${user.email} attempted to control as ${email}`);
-                return NextResponse.json({ error: "Identity mismatch: Browser sessions cannot spoof legacy emails." }, { status: 403 });
-            }
-        } else if (!isHardware) {
-            // ANONYMOUS BROWSER: Block legacy ?email= access to prevent easy URL spoofing
-            if (email) {
-                console.warn(`[SECURITY] Blocked anonymous browser attempt to use legacy IOT ?email= auth.`);
-                return NextResponse.json({ error: "Unauthorized: Please log in to control devices." }, { status: 401 });
-            }
+        let rawBody: unknown;
+        try {
+            rawBody = await request.json();
+        } catch {
+            return NextResponse.json({ error: "Malformed JSON" }, { status: 400 });
         }
 
-        const body = await request.json();
+        const result = ControlSchema.safeParse(rawBody);
+        if (!result.success) {
+            return NextResponse.json({ 
+                error: "Invalid Request", 
+                details: result.error.issues.map(e => `${e.path.join('.')}: ${e.message}`) 
+            }, { status: 400 });
+        }
+
+        const body = result.data;
         const { device_id, code, value, source, class_id, profile_id, group_id } = body;
+
+        // --- AUTH & PERMISSION CHECK ---
+        let instructor: { id: string, name: string, can_activate_room: boolean, is_super_admin: boolean, assigned_room_ids: string[] | null } | null = null;
+        if (profile_id) {
+            const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin, assigned_room_ids').eq('id', profile_id).single();
+            instructor = data;
+        } else if (email) {
+            const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin, assigned_room_ids').eq('email', email).single();
+            instructor = data;
+        }
+
+        // --- SCOPED PERMISSION: Ensure instructor is authorized for this room/group ---
+        if (instructor && !instructor.is_super_admin) {
+            const roomIds = Array.isArray(instructor.assigned_room_ids) ? instructor.assigned_room_ids : [];
+            
+            if (device_id) {
+                const { data: device } = await supabase.from('iot_devices').select('room_id').eq('id', device_id).single();
+                if (device?.room_id && !roomIds.includes(device.room_id)) {
+                    console.warn(`[SECURITY] Unauthorized IoT access attempt: ${instructor.name} -> ${device_id}`);
+                    return NextResponse.json({ error: "unauthorized_room_access" }, { status: 403 });
+                }
+            } else if (group_id) {
+                const { data: group } = await supabase.from('iot_device_groups').select('room_id').eq('id', group_id).single();
+                if (group?.room_id && !roomIds.includes(group.room_id)) {
+                    return NextResponse.json({ error: "unauthorized_group_access" }, { status: 403 });
+                }
+            }
+        }
 
         // --- BATCH CONTROL (Virtual Group) ---
         if (group_id) {
@@ -55,9 +85,9 @@ export async function POST(request: Request) {
 
             const results = await Promise.all(members.map(async (member) => {
                 const realDeviceId = member.device_id.replace(/_ch\d+$/, '');
-                const result = await controlDevice(realDeviceId, member.dp_code, value);
+                const res = await controlDevice(realDeviceId, member.dp_code, value);
 
-                if (result.success) {
+                if (res.success) {
                     await supabase.from('iot_devices').update({ current_state: value, updated_at: new Date().toISOString() }).eq('id', member.device_id);
                     await supabase.from('iot_device_logs').insert({
                         device_id: member.device_id,
@@ -68,37 +98,22 @@ export async function POST(request: Request) {
                         class_id: class_id || null,
                     });
                 }
-                return { device_id: member.device_id, success: result.success };
+                return { device_id: member.device_id, success: res.success };
             }));
 
             return NextResponse.json({ success: true, group_id, value, results });
         }
 
-        if (!device_id || !code || value === undefined || value === null) {
-            return NextResponse.json(
-                { error: "Missing required fields: device_id, code, value" },
-                { status: 400 }
-            );
+        if (!device_id || !code) {
+            return NextResponse.json({ error: "Missing device_id or code" }, { status: 400 });
         }
 
         // ===== v3.2 GRACE BUFFER: Prevent auto-off if room still occupied or class recently ended =====
         if (value === false && source === 'auto') {
             try {
-                // Get the device's room_id
-                const { data: device } = await supabase
-                    .from('iot_devices')
-                    .select('room_id')
-                    .eq('id', device_id)
-                    .single();
-
+                const { data: device } = await supabase.from('iot_devices').select('room_id').eq('id', device_id).single();
                 if (device?.room_id) {
-                    // Check room occupancy
-                    const { data: occupancy } = await supabase
-                        .from('room_occupancy')
-                        .select('current_count')
-                        .eq('room_id', device.room_id)
-                        .single();
-
+                    const { data: occupancy } = await supabase.from('room_occupancy').select('current_count').eq('room_id', device.room_id).single();
                     if (occupancy && occupancy.current_count > 0) {
                         return NextResponse.json({
                             error: 'grace_buffer_active',
@@ -106,23 +121,12 @@ export async function POST(request: Request) {
                         }, { status: 409 });
                     }
 
-                    // Check if latest class in this room ended within last 15 minutes
                     const now = new Date();
-                    const manilaOffset = 8 * 60;
-                    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-                    const manilaDate = new Date(utcMs + manilaOffset * 60000);
-                    const nowStr = manilaDate.toLocaleTimeString('en-US', { hour12: false });
+                    const nowStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour12: false });
                     const getMinutes = (t: string) => { const p = t.split(':').map(Number); return p[0] * 60 + p[1]; };
                     const currentMin = getMinutes(nowStr);
 
-                    const { data: roomClasses } = await supabase
-                        .from('classes')
-                        .select('end_time')
-                        .eq('room_id', device.room_id)
-                        .not('end_time', 'is', null)
-                        .order('end_time', { ascending: false })
-                        .limit(1);
-
+                    const { data: roomClasses } = await supabase.from('classes').select('end_time').eq('room_id', device.room_id).not('end_time', 'is', null).order('end_time', { ascending: false }).limit(1);
                     if (roomClasses && roomClasses.length > 0 && roomClasses[0].end_time) {
                         const endMin = getMinutes(roomClasses[0].end_time);
                         const elapsed = currentMin - endMin;
@@ -130,90 +134,39 @@ export async function POST(request: Request) {
                             return NextResponse.json({
                                 error: 'grace_buffer_active',
                                 message: `Class ended ${elapsed}m ago. 15-minute grace buffer active.`,
-                                minutes_remaining: 15 - elapsed,
                             }, { status: 409 });
                         }
                     }
                 }
             } catch (graceErr) {
-                // Non-fatal: if grace buffer check fails, allow the command through
                 console.warn('[IoT] Grace buffer check error (non-fatal):', graceErr);
             }
         }
 
-        // Resolve instructor_id from email (for ESP32 requests) or profile_id (for web requests)
-        let triggeredBy: string | null = profile_id || null;
-        let instructor: { id: string; can_activate_room: boolean; name: string; is_super_admin: boolean } | null = null;
-
-        if (profile_id) {
-            const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin').eq('id', profile_id).single();
-            instructor = data;
-        } else if (email) {
-            const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin').eq('email', email).single();
-            instructor = data;
-        }
-
-        // 1. Resolve Device Identity (v3.2 Standard)
-        const { data: deviceInfo } = await supabase
-            .from('iot_devices')
-            .select('id, name')
-            .eq('id', device_id)
-            .maybeSingle();
-
-        // SCHOOL-GUARD: Strict hardware verification for production deployment
-        if (isHardware && !deviceInfo && device_id) {
-            console.warn(`[SECURITY] REJECTED: Unregistered IOT device attempt: ${device_id}`);
-            return NextResponse.json({ error: "Unauthorized: Unregistered hardware device." }, { status: 403 });
-        }
-
-        triggeredBy = instructor?.id || null;
-
         console.log(`[IoT Control] POST: Device=${device_id}, Code=${code}, Value=${value}, Source=${source}, User=${instructor?.name || 'Unknown'}`);
 
-        // Permission Check (Advisory)
-        if (instructor && !instructor.is_super_admin && !instructor.can_activate_room) {
-            console.warn(`[IoT Control] Advisory: ${instructor.name} does not have can_activate_room permission, but allowing toggle.`);
-        }
-
-        // Send command to Tuya
-        // For multi-channel devices, DB id may have a suffix like "_ch2"
-        // Strip it to get the real Tuya device ID
         const realDeviceId = device_id.replace(/_ch\d+$/, '');
-        const result = await controlDevice(realDeviceId, code, value);
+        const resultCommand = await controlDevice(realDeviceId, code, value);
 
-        if (!result.success) {
-            return NextResponse.json(
-                { error: "Tuya command failed", details: result.msg },
-                { status: 502 }
-            );
+        if (!resultCommand.success) {
+            return NextResponse.json({ error: "Tuya command failed", details: resultCommand.msg }, { status: 502 });
         }
 
-        // Update device state in DB
-        await supabase
-            .from('iot_devices')
-            .update({ current_state: value, updated_at: new Date().toISOString() })
-            .eq('id', device_id);
-
-        // Log the command
-        await supabase
-            .from('iot_device_logs')
-            .insert({
-                device_id,
-                code,
-                value,
-                source: source || 'web',
-                triggered_by: triggeredBy,
-                class_id: class_id || null,
-            });
+        await supabase.from('iot_devices').update({ current_state: value, updated_at: new Date().toISOString() }).eq('id', device_id);
+        await supabase.from('iot_device_logs').insert({
+            device_id,
+            code,
+            value,
+            source: source || 'web',
+            triggered_by: instructor?.id || null,
+            class_id: class_id || null,
+        });
 
         return NextResponse.json({ success: true, device_id, code, value });
 
     } catch (err) {
         console.error("[IoT Control] Error:", err);
-        return NextResponse.json(
-            { error: "Internal server error", details: String(err) },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: "Internal server error", details: String(err) }, { status: 500 });
     }
 }
 

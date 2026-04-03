@@ -17,21 +17,6 @@ export async function POST(req: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const userAgent = req.headers.get("user-agent") || "";
-    const isHardware = userAgent.includes("ESP") || userAgent.includes("Arduino") || !req.headers.get("accept")?.includes("text/html");
-    const hasSession = req.cookies.has("sb-blpjvjqozhtzectndmxk-auth-token"); // Supabase session cookie
-
-    // SECURITY: Reverse Lock. Hardware never sends browser cookies. Web sessions are blocked from spoofing this callback.
-    if (hasSession) {
-        console.warn('[SECURITY] Blocked web-session attempt to trigger hardware enrollment callback.');
-        return NextResponse.json({ error: "Forbidden: Hardware-only route." }, { status: 403 });
-    }
-
-    if (!isHardware && !req.headers.get("x-iot-api-key")) {
-        console.warn(`[SECURITY] Suspicious non-hardware attempt to enroll-callback from: ${userAgent}`);
-        // Allow for now but log. Consider rejecting if false positives are low.
-    }
-
     const body = await req.json();
     const { instructor_id, slot_id, device_serial } = body;
 

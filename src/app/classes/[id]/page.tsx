@@ -65,11 +65,11 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
 
     // ⚡ BATCH 1: Fire class data, viewer profile, enrollments, and day override in parallel
     const [classResult, viewerResult, enrollmentResult, dayOverrideResult] = await Promise.all([
-        supabase.from("classes").select("*, academic_terms(is_active)").eq("id", params.id).single(),
+        supabase.from("classes").select("id, name, description, instructor_id, schedule_days, start_time, end_time, academic_terms(is_active)").eq("id", params.id).single(),
         viewerProfileId
             ? supabase.from("instructors").select("role").eq("id", viewerProfileId).single()
             : Promise.resolve({ data: null }),
-        supabase.from("enrollments").select(`*, students (*)`).eq("class_id", params.id).order("id"),
+        supabase.from("enrollments").select(`id, students(id, name, sin, year_level, image_url)`).eq("class_id", params.id).order("id"),
         supabase.from("class_day_overrides").select("id, type, note").eq("class_id", params.id).eq("date", dayString).maybeSingle(),
     ]);
 

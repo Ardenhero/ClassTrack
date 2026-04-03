@@ -405,11 +405,11 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
                         <div className="h-8 w-8 rounded-full bg-nwu-gold flex items-center justify-center text-xs text-nwu-red font-bold overflow-hidden relative border border-white/10">
                             {isSwitching ? "..." : (
                                 profile?.image_url ? (
-                                    /* eslint-disable-next-line @next/next/no-img-element */
-                                    <img
+                                    <Image
                                         src={profile.image_url}
-                                        alt={profile.name}
-                                        className="h-full w-full object-cover"
+                                        alt={profile.name || "Profile"}
+                                        fill
+                                        className="object-cover"
                                     />
                                 ) : (
                                     profile?.name?.[0]?.toUpperCase() || user?.user_metadata?.full_name?.[0]?.toUpperCase() || <User className="h-4 w-4" />

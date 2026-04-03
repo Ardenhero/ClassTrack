@@ -59,7 +59,7 @@ export async function getProfile() {
 
         const { data, error } = await supabase
             .from('instructors')
-            .select('*')
+            .select('id, name, role, department_id, is_super_admin, assigned_room_ids')
             .eq('id', profileId)
             .eq('auth_user_id', user.id)
             .maybeSingle();
@@ -78,7 +78,7 @@ export async function getProfile() {
 
         const { data: instructorData } = await supabase
             .from('instructors')
-            .select('*')
+            .select('id, name, role, department_id, is_super_admin, assigned_room_ids')
             .eq('auth_user_id', user.id)
             .eq('role', 'admin')
             .maybeSingle();

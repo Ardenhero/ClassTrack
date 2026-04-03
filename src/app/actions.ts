@@ -9,38 +9,24 @@ export async function markAttendance(classId: string) {
 
     if (!user) return { error: "Unauthorized" };
 
-    // For testing/demo purposes, since we are an Admin/Teacher user technically,
-    // we might not have a 'student' record linked to this auth user unless we seeded it.
-    // The test expects "Attendance recorded".
+    // SECURE IDENTITY MAPPING: Ensure user can only mark their OWN attendance
+    const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('id, name')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
 
-    // Check if we can find a student record for this user using email?
-    // Or just insert a dummy log for "Test Student"?
-
-    // Let's assume the user IS a student for this flow, or we simulate it.
-    // We'll find a student ID or create a log using the user's ID if mapped.
-
-    // SIMPLIFICATION:
-    // We will assume there is a student with specific characteristics or just log it.
-    // But `attendance_logs` logic uses `student_id`.
-    // Let's Insert a log for a known test student "QA Tester" if possible.
-
-    // Find 'QA Tester'
-    const { data: student } = await supabase.from('students').select('id').ilike('name', 'QA Tester').single();
-
-    let studentId = student?.id;
-
-    if (!studentId) {
-        // Fallback: Just pick the first student
-        const { data: firstStudent } = await supabase.from('students').select('id').limit(1).single();
-        studentId = firstStudent?.id;
+    if (studentError || !student) {
+        console.error("[SECURITY] Unauthorized attendance attempt by user:", user.id);
+        return { error: "No student profile linked to this account. Please contact an instructor." };
     }
 
-    if (!studentId) return { error: "No student found to mark." };
+    const studentId = student.id;
 
-    // Fetch class details to validate window
+    // Fetch class details to validate window - LEAN SELECTION
     const { data: classDetails } = await supabase
         .from('classes')
-        .select('*')
+        .select('id, start_time, end_time')
         .eq('id', classId)
         .single();
 

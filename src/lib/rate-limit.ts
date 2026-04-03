@@ -49,6 +49,14 @@ export const rateLimiters = {
         analytics: true,
         prefix: "ratelimit:mutations",
     }) : null,
+
+    // AI Chatbot: 40 requests per day per user (to prevent cost explosion)
+    chat: redis ? new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(40, "1 d"),
+        analytics: true,
+        prefix: "ratelimit:chat",
+    }) : null,
 };
 
 export type RateLimitType = keyof typeof rateLimiters;
@@ -110,9 +118,9 @@ export async function checkRateLimit(
     // If Upstash Redis is configured, use it
     if (limiter) {
         try {
-            // Add a strict timeout to avoid hanging the middleware
+            // Add a more generous timeout to avoid hanging the middleware (especially in dev)
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Rate limit timeout")), 100)
+                setTimeout(() => reject(new Error("Rate limit timeout")), 1000)
             );
 
             const result = (await Promise.race([

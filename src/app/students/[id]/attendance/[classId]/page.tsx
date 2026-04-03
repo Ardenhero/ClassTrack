@@ -45,7 +45,7 @@ export default async function StudentClassAttendancePage({ params }: PageProps) 
     const classId = params.classId;
 
     // Resolve Student first to get correct ID
-    let studentQuery = adminSupabase.from("students").select("*");
+    let studentQuery = adminSupabase.from("students").select("id, name, image_url, department_id");
     if (studentIdInt !== null) {
         studentQuery = studentQuery.or(`id.eq.${studentIdInt},sin.eq.${idParam}`);
     } else {
@@ -89,9 +89,9 @@ export default async function StudentClassAttendancePage({ params }: PageProps) 
 
     // Fetch Class, Logs, and Enrollment in parallel
     const [classRes, logsRes, enrollmentRes] = await Promise.all([
-        adminSupabase.from("classes").select("*").eq("id", classId).single(),
+        adminSupabase.from("classes").select("id, name, start_time, end_time, created_at, schedule_days").eq("id", classId).single(),
         adminSupabase.from("attendance_logs")
-            .select("*")
+            .select("id, timestamp, time_out, status, student_id, class_id")
             .eq("student_id", resolvedStudentId)
             .eq("class_id", classId)
             .order("timestamp", { ascending: false }),

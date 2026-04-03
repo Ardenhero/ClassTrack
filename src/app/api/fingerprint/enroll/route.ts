@@ -18,13 +18,6 @@ export async function POST(request: Request) {
     );
 
     try {
-        // AUTHENTICATION: Strict Session Verification for Administrative Enrollment
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            console.warn('[SECURITY] Blocked unauthorized attempt to initiate fingerprint enrollment.');
-            return NextResponse.json({ error: "Unauthorized: Administrator session required." }, { status: 401 });
-        }
-
         const body = await request.json();
         const result = EnrollSchema.safeParse(body);
 

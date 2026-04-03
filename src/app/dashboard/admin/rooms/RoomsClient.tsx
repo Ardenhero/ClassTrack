@@ -82,7 +82,7 @@ export default function RoomsClient({
 
     const refreshData = useCallback(async () => {
         // Re-fetch data on mutation (simplified for reliability)
-        const { data: roomsData } = await supabase.from("rooms").select("*").order("name");
+        const { data: roomsData } = await supabase.from("rooms").select("id, name, status, last_check, created_at, building, capacity").order("name");
         const { data: devicesData } = await supabase.from("iot_devices").select("id, name, type, room_id, online").order("name");
 
         if (roomsData) setRooms(roomsData);

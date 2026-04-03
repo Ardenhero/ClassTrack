@@ -44,7 +44,7 @@ export default function DeletionRequestsPage() {
         setLoading(true);
         const { data } = await supabase
             .from("deletion_requests")
-            .select("*")
+            .select("id, entity_type, entity_id, entity_name, reason, status, created_at, requested_by")
             .in("entity_type", ["student", "class", "account_deletion"])
             .order("created_at", { ascending: false });
 

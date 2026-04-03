@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, User } from "lucide-react";
+import Image from "next/image";
 
 export function AdminDirectoryGroup({
     instructorName,
@@ -30,11 +31,11 @@ export function AdminDirectoryGroup({
                 <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-nwu-red/10 text-nwu-red flex items-center justify-center flex-shrink-0 overflow-hidden relative border border-gray-100 dark:border-gray-700">
                         {instructorImageUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
+                            <Image
                                 src={instructorImageUrl}
                                 alt={instructorName}
-                                className="h-full w-full object-cover"
+                                fill
+                                className="object-cover"
                             />
                         ) : instructorName === 'Unassigned' ? (
                             <User className="h-5 w-5" />

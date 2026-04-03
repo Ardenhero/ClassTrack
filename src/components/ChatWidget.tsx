@@ -19,6 +19,7 @@ export function ChatWidget() {
     const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
     const [isLoading, setIsLoading] = useState(false);
     const [didHydrate, setDidHydrate] = useState(false);
+    const [remaining, setRemaining] = useState<number | null>(null);
 
     // Load chat history from localStorage on first mount
     useEffect(() => {
@@ -63,6 +64,12 @@ export function ChatWidget() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages: [...refinedMessages, currentMessage] })
             });
+
+            // Capture rate limit info from headers
+            const remainingHeader = response.headers.get('X-RateLimit-Remaining');
+            if (remainingHeader) {
+                setRemaining(parseInt(remainingHeader));
+            }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -136,7 +143,7 @@ export function ChatWidget() {
     };
 
     return (
-        <div className="fixed bottom-6 md:bottom-24 right-6 z-[9999] flex flex-col items-end">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
             {isOpen && (
                 <div className="mb-4 w-80 sm:w-[400px] h-[520px] bg-white dark:bg-gray-950 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
                     {/* Header */}
@@ -209,7 +216,14 @@ export function ChatWidget() {
                                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                             </button>
                         </form>
-                        <p className="text-[10px] text-center text-gray-400 mt-2 font-medium">Powered by ClassTrack Intelligence</p>
+                        <div className="flex justify-between items-center mt-2 px-1">
+                            <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Powered by ClassTrack AI</p>
+                            {remaining !== null && (
+                                <p className="text-[9px] font-bold text-nwu-red bg-nwu-red/5 px-2 py-0.5 rounded-full border border-nwu-red/10">
+                                    {remaining} / 40 Left Today
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

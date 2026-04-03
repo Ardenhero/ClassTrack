@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSmartPolling } from "@/hooks/useSmartPolling";
 import { format, parse } from "date-fns";
+import Image from "next/image";
 import { createClient } from "../../../utils/supabase/client";
 import { useProfile } from "../../../context/ProfileContext";
 import DashboardLayout from "../../../components/DashboardLayout";
@@ -490,10 +491,15 @@ export default function QRAttendancePage() {
                                     Project This QR Code
                                 </p>
                                 {qrDataUrl && qrDataUrl.startsWith('data:image/') ? (
-                                    <div className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={qrDataUrl} alt="QR Attendance Code" className="w-64 h-64" />
-                                    </div>
+                                        <div className="bg-white p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-600 font-bold">
+                                            <Image 
+                                                src={qrDataUrl} 
+                                                alt="QR Attendance Code" 
+                                                width={256} 
+                                                height={256} 
+                                                unoptimized
+                                            />
+                                        </div>
                                 ) : (
                                     <div className="w-64 h-64 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center">
                                         <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />

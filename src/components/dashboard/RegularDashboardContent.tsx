@@ -147,7 +147,7 @@ export default async function RegularDashboardContent({
     // Classes list (for upcoming class widget)
     let classesListQuery = supabase
         .from('classes')
-        .select('*')
+        .select('id, name, start_time, end_time, schedule_days, term_id')
         .order('created_at', { ascending: false })
         .limit(50);
     if (activeTermId) {

@@ -228,7 +228,7 @@ export async function approveDeletionRequest(requestId: string) {
 
     const { data: request } = await supabase
         .from('deletion_requests')
-        .select('*')
+        .select('id, entity_type, entity_id, status')
         .eq('id', requestId)
         .single();
 

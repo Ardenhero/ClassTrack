@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Lock, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 import { PinVerificationModal } from "../../components/PinVerificationModal";
 import { useProfile, Profile } from "../../context/ProfileContext";
 
@@ -57,11 +58,11 @@ export function ProfileSelector({ profiles }: { profiles: Profile[] }) {
                     >
                         <div className="w-32 h-32 md:w-40 md:h-40 rounded relative overflow-hidden mb-4 border-2 border-transparent group-hover:border-2 group-hover:border-white transition-all shadow-xl bg-gray-800 flex items-center justify-center">
                             {profile.image_url ? (
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
+                                <Image
                                     src={profile.image_url}
                                     alt={profile.name}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             ) : profile.role === "admin" ? (
                                 <ShieldCheck className="h-16 w-16 text-nwu-gold" />

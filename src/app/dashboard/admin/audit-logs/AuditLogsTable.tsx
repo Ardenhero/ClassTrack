@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 import { bulkDeleteAuditLogs } from "./actions";
 import { deleteAuditLog } from "../provisioning/actions";
 
-interface AuditLogRecord {
+export interface AuditLogRecord {
     id: string;
     created_at: string;
     action: string;
@@ -65,7 +65,7 @@ export function AuditLogsTable({
         setDeletingId(id);
         try {
             await deleteAuditLog(id);
-        } catch (err) {
+        } catch {
             alert("Failed to delete log");
         } finally {
             setDeletingId(null);

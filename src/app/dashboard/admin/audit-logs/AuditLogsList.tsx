@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { AuditLogsTable } from "./AuditLogsTable";
+import { AuditLogsTable, type AuditLogRecord } from "./AuditLogsTable";
 
 export default async function AuditLogsList({
     searchParams,
@@ -72,8 +72,8 @@ export default async function AuditLogsList({
 
         pastLogs?.forEach(pl => {
             if (!pl.target_id) return;
-            const details = pl.details as any;
-            const name = details?.name || details?.admin_name || details?.student_name;
+            const details = pl.details as Record<string, unknown>;
+            const name = (details?.name || details?.admin_name || details?.student_name) as string | undefined;
             if (name && !idToNameMap[pl.target_id]) {
                 idToNameMap[pl.target_id] = name;
             }
@@ -83,7 +83,7 @@ export default async function AuditLogsList({
     return (
         <div className="space-y-4">
             <AuditLogsTable 
-                logs={logs as any} 
+                logs={logs as unknown as AuditLogRecord[]} 
                 isSuperAdmin={isSuperAdmin} 
                 idToNameMap={idToNameMap}
             />

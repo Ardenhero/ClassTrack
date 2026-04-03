@@ -8,6 +8,7 @@ import { Skeleton, CardSkeleton } from "@/components/ui/Skeleton";
 import { AdminRoomControl } from "@/components/admin/AdminRoomControl";
 import { AddClassDialog } from "@/app/classes/AddClassDialog";
 import { Plus } from "lucide-react";
+import Image from "next/image";
 
 const AttendanceChart = dynamic(() => import("@/components/AttendanceChart").then(mod => mod.AttendanceChart), {
     ssr: false,
@@ -163,7 +164,7 @@ export default async function AdminDashboardContent({
         recentAttendanceQuery,
         supabase
             .from('class_day_overrides')
-            .select('*')
+            .select('id, class_id, date, type')
             .in('class_id', accountInstructorIds.length > 0 ? accountInstructorIds : [profileId]) // Use initial IDs to avoid waiting for breakdown
     ]);
 
@@ -661,12 +662,14 @@ export default async function AdminDashboardContent({
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
                                         {inst.image_url ? (
-                                            /* eslint-disable-next-line @next/next/no-img-element */
-                                            <img
-                                                src={inst.image_url}
-                                                alt={inst.name}
-                                                className="h-9 w-9 rounded-full object-cover flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-700"
-                                            />
+                                            <div className="relative h-9 w-9 flex-shrink-0">
+                                                <Image
+                                                    src={inst.image_url}
+                                                    alt={inst.name || "Instructor"}
+                                                    fill
+                                                    className="rounded-full object-cover shadow-sm border border-gray-100 dark:border-gray-700"
+                                                />
+                                            </div>
                                         ) : (
                                             <div className="h-9 w-9 rounded-full bg-gradient-to-br from-nwu-red to-red-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
                                                 {inst.name.charAt(0).toUpperCase()}

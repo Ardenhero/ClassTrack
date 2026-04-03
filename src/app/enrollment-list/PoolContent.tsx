@@ -73,7 +73,7 @@ export default function PoolContent({ students, departmentName, isSuperAdmin, de
             const matchesYear = !yearFilter || (s.year_level === yearFilter);
             return matchesSearch && matchesYear;
         });
-    }, [students, search, yearFilter, statusTab]);
+    }, [students, search, yearFilter, statusTab, deptCode]);
 
     // Stats
     const totalStudents = students.length;

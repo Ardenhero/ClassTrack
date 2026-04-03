@@ -28,7 +28,7 @@ export default async function StudentProfilePage({ params }: PageProps) {
     const studentIdInt = isNumeric ? parseInt(idParam) : null;
 
     // Fetch Student by ID or SIN
-    let studentQuery = adminSupabase.from("students").select("*");
+    let studentQuery = adminSupabase.from("students").select("id, name, sin, year_level, department, image_url");
     if (studentIdInt !== null) {
         studentQuery = studentQuery.or(`id.eq.${studentIdInt},sin.eq.${idParam}`);
     } else {

@@ -8,6 +8,7 @@ import { User, Lock, Loader2, ShieldCheck } from "lucide-react";
 import { updateInstructorProfileName } from "./profileActions";
 import { useRouter } from "next/navigation";
 import { PhotoUpload } from "../../components/PhotoUpload";
+import Image from "next/image";
 
 export default function ProfilePage() {
     const [loading, setLoading] = useState(false);
@@ -37,7 +38,7 @@ export default function ProfilePage() {
                 const match = document.cookie.match(new RegExp('(^| )sc_profile_id=([^;]+)'));
                 const activeProfileId = match ? match[2] : null;
 
-                let query = supabase.from("instructors").select("*");
+                let query = supabase.from("instructors").select("id, name, pin_code, pin_enabled, role, image_url, user_id");
 
                 if (activeProfileId && activeProfileId !== 'admin-profile') {
                     // Strictly target the specific UUID session
@@ -53,7 +54,7 @@ export default function ProfilePage() {
                     // Try one more time by role for safety
                     const { data: adminRecord } = await supabase
                         .from("instructors")
-                        .select("*")
+                        .select("id, name, pin_code, pin_enabled, role, image_url, user_id")
                         .eq("user_id", user.id)
                         .eq("role", "admin")
                         .maybeSingle();
@@ -185,11 +186,11 @@ export default function ProfilePage() {
                     {instructorId && (
                         <div className="shrink-0 h-12 w-12 rounded-full overflow-hidden border-2 border-white dark:border-gray-700 bg-gray-200 shadow-sm relative">
                             {currentImageUrl ? (
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
+                                <Image
                                     src={currentImageUrl}
                                     alt="Profile"
-                                    className="h-full w-full object-cover"
+                                    fill
+                                    className="object-cover"
                                 />
                             ) : (
                                 <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-400">

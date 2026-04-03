@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set('x-nonce', nonce);
 
     // Initial response object
-    let supabaseResponse = NextResponse.next({
+    const supabaseResponse = NextResponse.next({
         request: {
             headers: requestHeaders,
         },
@@ -86,7 +86,7 @@ export async function middleware(request: NextRequest) {
         }
 
         // IDENTITY ISOLATION: Prevent web-users from spoofing legacy hardware credentials
-        const hasSession = request.cookies.has("sb-blpjvjqozhtzectndmxk-auth-token"); // Check for Supabase session cookie
+        const hasSession = request.cookies.has("sb-blpjvjqozhtzectndmxk-auth-token"); // Supabase session cookie
         const hasLegacyEmail = request.nextUrl.searchParams.has("email");
         
         if (hasSession && hasLegacyEmail && isApiRequest) {
@@ -119,16 +119,13 @@ export async function middleware(request: NextRequest) {
     // ============================================
     // 4. CSP & Security Headers (Strict Configuration)
     // ============================================
-    const isDev = process.env.NODE_ENV === 'development';
-    
-    // Relaxed CSP for debugging "Unloadable" state
     const cspHeader = `
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co *.vercel-analytics.com;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co;
         style-src 'self' 'unsafe-inline' fonts.googleapis.com;
         img-src 'self' blob: data: *.supabase.co;
         font-src 'self' fonts.gstatic.com;
-        connect-src 'self' *.supabase.co *.vercel-analytics.com *.vitals.vercel-insights.com;
+        connect-src 'self' *.supabase.co wss://*.supabase.co *.vercel-analytics.com *.vitals.vercel-insights.com;
         frame-ancestors 'none';
         object-src 'none';
         base-uri 'self';

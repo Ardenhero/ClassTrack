@@ -11,7 +11,7 @@ export default async function DepartmentsPage() {
     // Fetch departments
     const { data: rawDepartments } = await supabase
         .from("departments")
-        .select("*")
+        .select("id, name, code, college, is_active, owner_id")
         .order("name");
 
     // Enhance departments with metrics if Super Admin

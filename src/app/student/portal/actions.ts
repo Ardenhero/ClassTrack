@@ -198,7 +198,7 @@ export async function getStudentNotifications() {
     const supabase = createAdminClient();
     const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id, title, message, type, read, created_at, student_id")
         .eq("student_id", session.id) // Use UUID (session.id), NOT SIN string
         .order("created_at", { ascending: false })
         .limit(20);
@@ -209,7 +209,7 @@ export async function getStudentNotifications() {
         if (error.message.includes("column \"student_id\" does not exist")) {
             const { data: legacyData } = await supabase
                 .from("notifications")
-                .select("*")
+                .select("id, title, message, type, read, created_at")
                 .eq("type", "info") // or some other criteria
                 .limit(5);
             return { notifications: legacyData || [] };
@@ -252,7 +252,7 @@ export async function getLatestStudentRecord() {
     const supabase = createAdminClient();
     const { data, error } = await supabase
         .from("students")
-        .select("*, status:enrollment_status")
+        .select("id, name, sin, image_url, year_level, status:enrollment_status")
         .eq("id", session.id)
         .single();
 

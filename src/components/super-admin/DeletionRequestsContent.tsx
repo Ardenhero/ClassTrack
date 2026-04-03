@@ -42,8 +42,8 @@ export default function DeletionRequestsContent({ initialRequests }: Props) {
             alert("Deletion request approved and executed.");
             setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r));
             router.refresh();
-        } catch (error: any) {
-            alert(error.message || "Failed to approve request");
+        } catch (error: unknown) {
+            alert(error instanceof Error ? error.message : "Failed to approve request");
         } finally {
             setProcessingId(null);
         }
@@ -56,8 +56,8 @@ export default function DeletionRequestsContent({ initialRequests }: Props) {
             alert("Deletion request rejected.");
             setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
             router.refresh();
-        } catch (error: any) {
-            alert(error.message || "Failed to reject request");
+        } catch (error: unknown) {
+            alert(error instanceof Error ? error.message : "Failed to reject request");
         } finally {
             setProcessingId(null);
         }

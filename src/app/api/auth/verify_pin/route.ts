@@ -1,20 +1,25 @@
 import { createClient } from "../../../../utils/supabase/server";
 import { NextResponse } from "next/server";
 import { verifyCredential } from "@/lib/auth-crypto";
+import { z } from "zod";
+
+const VerifyPinSchema = z.object({
+    instructor_id: z.string().uuid(),
+    pin: z.string().min(1).max(10),
+});
 
 export async function POST(request: Request) {
     try {
-        const { instructor_id, pin } = await request.json();
+        const body = await request.json();
+        const result = VerifyPinSchema.safeParse(body);
 
-        if (!instructor_id) {
-            return NextResponse.json({ error: "Missing instructor_id" }, { status: 400 });
+        if (!result.success) {
+            return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
         }
 
+        const { instructor_id, pin } = result.data;
         const supabase = createClient();
 
-        if (!pin) {
-            return NextResponse.json({ error: "Missing pin" }, { status: 400 });
-        }
         const { data, error } = await supabase
             .from("instructors")
             .select("pin_code")

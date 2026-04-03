@@ -64,7 +64,7 @@ export async function getDepartmentStudentPool(): Promise<{
     // 3. Fetch students who are NOT in this department but are either:
     //    a) Enrolled in classes of these instructors
     //    b) Directly assigned to these instructors (manual addition to list)
-    let otherStudents: any[] = [];
+    let otherStudents: PoolStudent[] = [];
     if (instructorIds.length > 0) {
         // Query A: Direct assignments (manual addition)
         const { data: directAssignments } = await supabase
