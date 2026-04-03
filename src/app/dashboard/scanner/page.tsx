@@ -112,10 +112,10 @@ export default function QRAttendancePage() {
                     .select("class_id, type")
                     .eq("date", todayStrManila)
             ]);
-            
+
             const rawClasses = classesRes.data || [];
             const dayOverrides = overridesRes.data || [];
-            
+
             // Filter by today's day of week
             const todayClasses = rawClasses
                 .filter((c: QrClass) => (c.day_of_week || "").includes(manilaDayShort))
@@ -125,7 +125,7 @@ export default function QRAttendancePage() {
                 }));
 
             setClasses(todayClasses);
-            
+
             // Stable selection: only select first if none selected
             if (todayClasses.length > 0 && !selectedClassId) {
                 setSelectedClassId(todayClasses[0].id);
@@ -158,14 +158,14 @@ export default function QRAttendancePage() {
     useEffect(() => {
         const activeSession = activeSessions[0];
         const payload = activeSession?.qr_payload;
-        
+
         if (!payload) {
             setQrDataUrl(null);
             return;
         }
 
         let isMounted = true;
-        
+
         async function generateQR() {
             try {
                 const QRCode = (await import("qrcode")).default;
@@ -189,7 +189,7 @@ export default function QRAttendancePage() {
     // Start a new session
     const startSession = async () => {
         if (!profile || !selectedClassId) return;
-        
+
         const cls = classes.find(c => c.id === selectedClassId);
         if (cls) {
             const startM = getMinutes(cls.start_time);
@@ -227,7 +227,7 @@ export default function QRAttendancePage() {
 
         setStarting(true);
         setError(null);
- 
+
         try {
             const res = await fetch("/api/qr/session", {
                 method: "POST",
@@ -336,10 +336,10 @@ export default function QRAttendancePage() {
                         <QrCode className="h-6 w-6 text-nwu-red" />
                         QR Attendance
                     </h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-                            Project a QR code for students to scan. Approve their attendance in real time.
-                        </p>
-                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+                        Project a QR code for students to scan. Approve their attendance in real time.
+                    </p>
+                </div>
                 {/* Error / Success Banners */}
                 {error && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 p-4 rounded-xl flex items-center gap-3 shadow-sm">
@@ -383,7 +383,7 @@ export default function QRAttendancePage() {
                                         classes.map((c: QrClass) => {
                                             const startM = getMinutes(c.start_time);
                                             const endM = getMinutes(c.end_time);
-                                            
+
                                             // Status check
                                             let statusLabel = "Closed";
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { format, parseISO } from "date-fns";
 import Image from "next/image";
+import Link from "next/link";
 import { CheckCircle, Clock, AlertCircle, Ghost, TimerOff, LucideIcon, Radio } from "lucide-react";
 import { useSmartPolling } from "@/hooks/useSmartPolling";
 
@@ -268,7 +269,7 @@ export default function LiveAttendanceTable({ initialRows, dayString, instructor
             const status = rec.status || "Present";
             const { badgeColor, iconName } = getStatusBadge(status);
             const classData = Array.isArray(rec.classes) ? rec.classes[0] : rec.classes;
-            
+
             // Extra safety: skip if join failed but filter is active
             if (instructorIds && !classData) return null;
             return {
@@ -360,7 +361,12 @@ export default function LiveAttendanceTable({ initialRows, dayString, instructor
                                                 )}
                                             </div>
                                             <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{row.studentName}</div>
+                                                <Link 
+                                                    href={`/students/${row.studentSin}`}
+                                                    className="text-sm font-medium text-gray-900 dark:text-white hover:text-nwu-red transition-all duration-200 block"
+                                                >
+                                                    {row.studentName}
+                                                </Link>
                                                 <div className="text-xs text-gray-500 dark:text-gray-400">{row.yearLevel}</div>
                                             </div>
                                         </div>

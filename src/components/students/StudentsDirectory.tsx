@@ -12,6 +12,7 @@ interface StudentEnrollment {
     instructorId: string;
     instructorName: string;
     instructorImageUrl: string | null;
+    department: string | null;
 }
 
 interface Student {
@@ -164,12 +165,20 @@ export function StudentsDirectory({
     const adminGroups = useMemo(() => {
         if (!isAdmin) return [];
         const map = new Map<string, Student[]>();
+        const homeSet = new Set(homeDeptCodes);
+
         filtered.forEach((s: Student) => {
-            if (s.enrollments && s.enrollments.length > 0) {
-                s.enrollments.forEach((e: StudentEnrollment) => {
-                    if (!map.has(e.instructorId)) map.set(e.instructorId, []);
-                    if (!map.get(e.instructorId)!.some((existing: Student) => existing.id === s.id)) {
-                        map.get(e.instructorId)!.push({
+            // 1. Filter out enrollments that don't belong to the Admin's department
+            const relevantEnrollments = (s.enrollments || []).filter(e => 
+                isSuperAdmin || (e.department && homeSet.has(e.department))
+            );
+
+            if (relevantEnrollments.length > 0) {
+                relevantEnrollments.forEach((e: StudentEnrollment) => {
+                    const folderId = e.instructorId;
+                    if (!map.has(folderId)) map.set(folderId, []);
+                    if (!map.get(folderId)!.some((existing: Student) => existing.id === s.id)) {
+                        map.get(folderId)!.push({
                             ...s,
                             instructor_name: e.instructorName,
                             instructor_image_url: e.instructorImageUrl
@@ -177,7 +186,11 @@ export function StudentsDirectory({
                     }
                 });
             } else {
-                const key = "unassigned";
+                // 2. Decide where to put students with no departmental classes
+                // If they belong to our department -> Unassigned
+                // If they belong to a different department -> Other Dept Students
+                const isHomeDept = s.department && homeSet.has(s.department);
+                const key = isHomeDept || isSuperAdmin ? "unassigned" : "external";
                 if (!map.has(key)) map.set(key, []);
                 map.get(key)!.push(s);
             }
@@ -186,11 +199,13 @@ export function StudentsDirectory({
         return Array.from(map.entries()).sort((a, b) => {
             if (a[0] === "unassigned") return 1;
             if (b[0] === "unassigned") return -1;
+            if (a[0] === "external") return 1; 
+            if (b[0] === "external") return -1;
             const nameA = a[1][0]?.instructor_name || "Unassigned";
             const nameB = b[1][0]?.instructor_name || "Unassigned";
             return nameA.localeCompare(nameB);
         });
-    }, [filtered, isAdmin]);
+    }, [filtered, isAdmin, isSuperAdmin, homeDeptCodes]);
 
     const superAdminGroups = useMemo(() => {
         if (!isSuperAdmin) return new Map<string, Map<string, Student[]>>();
@@ -304,7 +319,10 @@ export function StudentsDirectory({
                         // ADMIN VIEW: Folders per Instructor
                         <div className="space-y-2">
                             {adminGroups.map(([instructorId, instructorStudents], index) => {
-                                const instName = instructorId === "unassigned" ? "Unassigned / Not Enrolled" : (instructorStudents[0]?.instructor_name || "Unknown Instructor");
+                                const instName = 
+                                    instructorId === "unassigned" ? "Unassigned / Not Enrolled" : 
+                                    (instructorId === "external" ? "Other Dept Students" : 
+                                    (instructorStudents[0]?.instructor_name || "Unknown Instructor"));
 
                                 return (
                                     <AdminDirectoryGroup

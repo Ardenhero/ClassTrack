@@ -22,12 +22,13 @@ export interface PoolStudent {
 export async function getDepartmentStudentPool(): Promise<{
     students: PoolStudent[];
     departmentName: string | null;
+    deptCode: string | null;
 }> {
     const supabase = createClient();
     const cookieStore = cookies();
     const profileId = cookieStore.get("sc_profile_id")?.value;
 
-    if (!profileId) return { students: [], departmentName: null };
+    if (!profileId) return { students: [], departmentName: null, deptCode: null };
 
     // Get admin's department
     const { data: adminProfile } = await supabase
@@ -37,7 +38,7 @@ export async function getDepartmentStudentPool(): Promise<{
         .single();
 
     if (!adminProfile?.department_id) {
-        return { students: [], departmentName: null };
+        return { students: [], departmentName: null, deptCode: null };
     }
 
     // @ts-expect-error - Supabase joined type inference limitation
@@ -45,33 +46,80 @@ export async function getDepartmentStudentPool(): Promise<{
     // @ts-expect-error - Supabase joined type inference limitation
     const deptCode = adminProfile.departments?.code || null;
 
-    // Fetch all students in this department
-    const { data: students } = await supabase
+    // 1. Fetch all students in this department
+    const { data: deptStudents } = await supabase
         .from("students")
         .select("id, name, sin, year_level, department, created_at, is_archived, image_url, enrollment_status, batch_year")
         .eq("department", deptCode)
         .order("name");
 
-    // Get enrollment counts for each student
-    const studentIds = (students || []).map(s => s.id);
+    // 2. Get all instructor IDs in this department to find "Other Dept" students
+    const { data: deptInstructors } = await supabase
+        .from("instructors")
+        .select("id")
+        .eq("department_id", adminProfile.department_id);
+    
+    const instructorIds = (deptInstructors || []).map(i => i.id);
+
+    // 3. Fetch students who are NOT in this department but are either:
+    //    a) Enrolled in classes of these instructors
+    //    b) Directly assigned to these instructors (manual addition to list)
+    let otherStudents: any[] = [];
+    if (instructorIds.length > 0) {
+        // Query A: Direct assignments (manual addition)
+        const { data: directAssignments } = await supabase
+            .from("students")
+            .select(`id, name, sin, year_level, department, created_at, is_archived, image_url, enrollment_status, batch_year`)
+            .neq("department", deptCode)
+            .in("instructor_id", instructorIds);
+
+        // Query B: Enrollment-based assignments
+        const { data: enrollmentAssignments } = await supabase
+            .from("students")
+            .select(`
+                id, name, sin, year_level, department, created_at, is_archived, image_url, enrollment_status, batch_year,
+                enrollments!inner (
+                    classes!inner (
+                        instructor_id
+                    )
+                )
+            `)
+            .neq("department", deptCode)
+            .in("enrollments.classes.instructor_id", instructorIds);
+
+        const map = new Map();
+        (directAssignments || []).forEach(s => map.set(s.id, s));
+        (enrollmentAssignments || []).forEach(s => map.set(s.id, s));
+        otherStudents = Array.from(map.values());
+    }
+
+    // Combine and deduplicate
+    const allStudentsRaw = [...(deptStudents || []), ...otherStudents];
+    const studentMap = new Map();
+    allStudentsRaw.forEach(s => studentMap.set(s.id, s));
+    const uniqueStudents = Array.from(studentMap.values());
+
+    const studentIds = uniqueStudents.map(s => s.id);
+    // Join with classes to filter by admin's department for privacy
     const { data: enrollments } = await supabase
         .from("enrollments")
-        .select("student_id")
-        .in("student_id", studentIds.length > 0 ? studentIds : ["__none__"]);
+        .select("student_id, classes!inner(department_id)")
+        .in("student_id", studentIds.length > 0 ? studentIds : ["__none__"])
+        .eq("classes.department_id", adminProfile.department_id);
 
     const enrollCountMap = new Map<string, number>();
     (enrollments || []).forEach(e => {
         enrollCountMap.set(e.student_id, (enrollCountMap.get(e.student_id) || 0) + 1);
     });
 
-    const poolStudents: PoolStudent[] = (students || []).map(s => ({
+    const poolStudents: PoolStudent[] = uniqueStudents.map(s => ({
         ...s,
         department: s.department || null,
         is_archived: s.is_archived || null,
         enrollment_count: enrollCountMap.get(s.id) || 0,
-    }));
+    })).sort((a, b) => a.name.localeCompare(b.name));
 
-    return { students: poolStudents, departmentName: deptName };
+    return { students: poolStudents, departmentName: deptName, deptCode };
 }
 
 // ── Tier 3 Critical Deletion ──────────────────────────────────────────────────
@@ -198,7 +246,7 @@ export async function promoteStudentsBatch(studentIds: string[], newGradeLevel: 
         enrollment_status: newStatus,
         updated_at: new Date().toISOString()
     };
-    
+
     if (batchYear) {
         updateData.batch_year = batchYear;
     }

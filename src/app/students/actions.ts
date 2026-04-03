@@ -105,6 +105,16 @@ export async function addStudent(formData: FormData) {
         studentId = existingStudent.id;
 
         console.log(`Found existing student: ${existingStudent.name} (${studentId})`);
+
+        // SYNC: Link this student to the current instructor's pool if they were added manually
+        // profileId has been resolved from 'admin-profile' to the actual Admin instructor ID at this point.
+        if (profileId && profileId !== 'admin-profile') {
+            await supabase
+                .from("students")
+                .update({ instructor_id: profileId })
+                .eq("id", studentId);
+            console.log(`DEBUG: Synced instructor_id ${profileId} for existing student ${studentId}`);
+        }
     } else {
         // NEW STUDENT: Create record
         // If profileId is still "admin-profile" (meaning Admin didn't select an instructor and auto-create failed or was skipped),
@@ -190,6 +200,7 @@ export async function addStudent(formData: FormData) {
 
     // STEP 5: Revalidate Path to Force UI Refresh
     revalidatePath("/students");
+    revalidatePath("/enrollment-list");
 
     // Return specific success message
     if (existingStudent) {
@@ -237,11 +248,34 @@ export async function getAssignableClasses() {
     if (!profileId) return [];
 
     if (role === 'admin') {
-        // Admin sees all classes, with instructor names for clarity
-        const { data } = await supabase
+        // Get admin's department to filter classes
+        const { data: adminRecord } = await supabase
+            .from('instructors')
+            .select('department_id, is_super_admin')
+            .eq('id', profileId)
+            .single();
+
+        let query = supabase
             .from("classes")
             .select("id, name, description, instructors!classes_instructor_id_fkey(name)")
             .order("name");
+
+        // If Dept Admin (not Super Admin), filter by department instructors
+        if (adminRecord && !adminRecord.is_super_admin && adminRecord.department_id) {
+            const { data: deptInstructors } = await supabase
+                .from('instructors')
+                .select('id')
+                .eq('department_id', adminRecord.department_id);
+            
+            const deptInstructorIds = (deptInstructors || []).map(i => i.id);
+            if (deptInstructorIds.length > 0) {
+                query = query.in("instructor_id", deptInstructorIds);
+            } else {
+                query = query.eq("instructor_id", profileId);
+            }
+        }
+
+        const { data } = await query;
 
         return (data || []).map((c: { id: string; name: string; description: string | null; instructors: { name: string }[] | null }) => {
             const instructorName = c.instructors && c.instructors[0] ? c.instructors[0].name : '';
@@ -283,6 +317,13 @@ export async function archiveStudent(id: string, profileId?: string) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Fetch student info for audit logging
+    const { data: student } = await adminSupabase
+        .from("students")
+        .select("name")
+        .eq("id", id)
+        .single();
+
     const { error } = await adminSupabase
         .from("students")
         .update({
@@ -297,12 +338,12 @@ export async function archiveStudent(id: string, profileId?: string) {
         return { error: `Failed to archive student: ${error.message}` };
     }
 
-    if (user) {
+    if (user && student) {
         await supabase.from("audit_logs").insert({
             action: "student_archived",
             entity_type: "student",
             entity_id: id,
-            details: "Student moved to archive",
+            details: `Student ${student.name} moved to archive`,
             performed_by: user.id,
         });
     }
@@ -527,12 +568,23 @@ export async function permanentlyDeleteStudent(id: string) {
         await adminSupabase.from("fingerprint_device_links").delete().eq("student_id", id);
     }
 
-    if (user) {
+    if (user && student) {
         await supabase.from("audit_logs").insert({
             action: "student_permanently_deleted",
             entity_type: "student",
             entity_id: id,
-            details: `Student permanently deleted from archive${fingerprintSlot ? ` (fingerprint slot ${fingerprintSlot} queued for hardware wipe)` : ""}`,
+            details: `Student ${student.name} permanently deleted from archive${fingerprintSlot ? ` (fingerprint slot ${fingerprintSlot} queued for hardware wipe)` : ""}`,
+            performed_by: user.id,
+        });
+    }
+    
+    // Add additional bio log for fingerprint wipe
+    if (user && student && fingerprintSlot) {
+        await supabase.from("audit_logs").insert({
+            action: "biometric_data_wipe_queued",
+            entity_type: "student",
+            entity_id: id,
+            details: `Hardware wipe command for student ${student.name} (slot ${fingerprintSlot}) queued on device ${deviceId}`,
             performed_by: user.id,
         });
     }
@@ -853,9 +905,21 @@ export async function getPoolStudentsForInstructor() {
         return { data: [] };
     }
 
+    const { data: instructor } = await supabase
+        .from('instructors')
+        .select('id, department_id, departments(code)')
+        .eq('id', profileId)
+        .single();
+
+    // @ts-expect-error - Supabase joined type inference limitation
+    const userDeptCode = instructor?.departments?.code || null;
+
     // Filter out students the instructor already sees
     const availableToClaim = (poolStudents || []).filter(s => !alreadyOwnedIds.has(s.id));
 
-    return { data: availableToClaim };
+    return { 
+        data: availableToClaim,
+        userDeptCode
+    };
 }
 

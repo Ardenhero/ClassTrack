@@ -26,7 +26,7 @@ export default async function DepartmentStudentPoolPage() {
         redirect("/");
     }
 
-    const { students, departmentName } = await getDepartmentStudentPool();
+    const { students, departmentName, deptCode } = await getDepartmentStudentPool();
     const isSuperAdmin = await checkIsSuperAdmin();
 
     return (
@@ -35,6 +35,7 @@ export default async function DepartmentStudentPoolPage() {
                 students={students} 
                 departmentName={departmentName} 
                 isSuperAdmin={isSuperAdmin}
+                deptCode={deptCode}
             />
         </DashboardLayout>
     );

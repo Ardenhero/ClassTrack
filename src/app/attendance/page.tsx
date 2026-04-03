@@ -9,6 +9,7 @@ import DeclareSuspensionsButton from "./DeclareSuspensionsButton";
 
 import { ExportCSVButton } from "./ExportCSVButton";
 import { ExportFullReportButton } from "./ExportFullReportButton";
+import { AttendanceSearch } from "./AttendanceSearch";
 import { getProfile, checkIsSuperAdmin } from "@/lib/auth-utils";
 import nextDynamic from "next/dynamic";
 import { TableSkeleton, Skeleton } from "@/components/ui/Skeleton";
@@ -104,7 +105,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
         .order('timestamp', { ascending: false });
 
     if (query) {
-        queryBuilder = queryBuilder.ilike('students.name', `%${query}%`);
+        queryBuilder = queryBuilder.or(`name.ilike."%${query}%",sin.ilike."%${query}%"`, { foreignTable: 'students' });
     }
 
     // Role-based filtering logic
@@ -284,7 +285,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: {
                     </div>
                     <div className="w-full md:w-80">
                         <Suspense fallback={<Skeleton className="h-10 w-full" variant="rounded" />}>
-                            <GlobalSearch type="students" placeholder="Search student name..." />
+                            <AttendanceSearch />
                         </Suspense>
                     </div>
                 </div>

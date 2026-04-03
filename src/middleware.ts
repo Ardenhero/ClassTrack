@@ -7,18 +7,37 @@ const ALLOWED_ORIGINS = [
     process.env.NEXT_PUBLIC_APP_URL,
     'https://classtrack-navy.vercel.app',
     'http://localhost:3000',
+    'http://localhost:3001',
 ].filter(Boolean) as string[];
 
 export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
-    const supabaseResponse = NextResponse.next({
+
+    // ============================================
+    // 0. ABSOLUTE FAST PATH: Static Assets & Internal Next.js Files
+    // ============================================
+    // Skip everything for static assets to prevent redirect loops and MIME type errors
+    const isStaticAsset = pathname.startsWith("/_next") || pathname.includes(".");
+    if (isStaticAsset && !pathname.startsWith("/api")) {
+        return NextResponse.next();
+    }
+
+    // ============================================
+    // 1. SECURITY: Nonce-based Identity Setup
+    // ============================================
+    const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-nonce', nonce);
+
+    // Initial response object
+    let supabaseResponse = NextResponse.next({
         request: {
-            headers: request.headers,
+            headers: requestHeaders,
         },
     });
 
     // ============================================
-    // 0. PATH TYPE IDENTIFICATION
+    // 2. PATH TYPE IDENTIFICATION
     // ============================================
     const publicPaths = [
         "/login",
@@ -46,31 +65,36 @@ export async function middleware(request: NextRequest) {
     ];
 
     const isPublicPath = publicPaths.some(p => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p + "?"));
-    const isStaticAsset = pathname.startsWith("/_next") || pathname.includes(".");
-
-    // FAST PATH: Skip everything for static assets
-    if (isStaticAsset && !pathname.startsWith("/api")) {
-        return supabaseResponse;
-    }
 
     // ============================================
-    // 1. RATE LIMITING (Upstash Redis or Fallback)
+    // 3. RATE LIMITING (Upstash Redis or Fallback)
     // ============================================
-    // Only rate limit API and Auth routes to ensure page navigation is instant
     const isApiRequest = pathname.startsWith("/api");
     const isAuthRequest = pathname.startsWith("/login") || pathname.startsWith("/auth") || pathname.includes("/auth");
 
     if (isApiRequest || isAuthRequest) {
         const clientIP = getClientIP(request);
-
-        // Determine rate limit type
+        const isMutation = ["POST", "PUT", "DELETE"].includes(request.method);
         let rateLimitType: "api" | "auth" | "attendance" | "mutations" = "api";
+
         if (isAuthRequest) {
             rateLimitType = "auth";
         } else if (pathname.startsWith("/api/attendance") || pathname.startsWith("/api/sync")) {
             rateLimitType = "attendance";
-        } else if (pathname.includes("/students") || pathname.includes("/classes")) {
+        } else if (isMutation) {
             rateLimitType = "mutations";
+        }
+
+        // IDENTITY ISOLATION: Prevent web-users from spoofing legacy hardware credentials
+        const hasSession = request.cookies.has("sb-blpjvjqozhtzectndmxk-auth-token"); // Check for Supabase session cookie
+        const hasLegacyEmail = request.nextUrl.searchParams.has("email");
+        
+        if (hasSession && hasLegacyEmail && isApiRequest) {
+            console.warn(`[SECURITY] Blocked browser-based legacy auth attempt for: ${pathname}`);
+            return new NextResponse(JSON.stringify({ error: "Legacy authentication is restricted to hardware devices." }), { 
+                status: 403, 
+                headers: { "Content-Type": "application/json" } 
+            });
         }
 
         const rateLimit = await checkRateLimit(clientIP, rateLimitType);
@@ -88,18 +112,19 @@ export async function middleware(request: NextRequest) {
             });
         }
 
-        // Add rate limit headers
         supabaseResponse.headers.set("X-RateLimit-Limit", String(rateLimit.limit));
         supabaseResponse.headers.set("X-RateLimit-Remaining", String(rateLimit.remaining));
     }
 
     // ============================================
-    // 2. CSP & Security Headers (Nonce-based)
+    // 4. CSP & Security Headers (Strict Configuration)
     // ============================================
-    const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    // Relaxed CSP for debugging "Unloadable" state
     const cspHeader = `
         default-src 'self';
-        script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co *.vercel-analytics.com;
         style-src 'self' 'unsafe-inline' fonts.googleapis.com;
         img-src 'self' blob: data: *.supabase.co;
         font-src 'self' fonts.gstatic.com;
@@ -111,20 +136,18 @@ export async function middleware(request: NextRequest) {
         upgrade-insecure-requests;
     `.replace(/\s{2,}/g, ' ').trim();
 
-    // Set CSP on response
     supabaseResponse.headers.set('Content-Security-Policy', cspHeader);
-    // Set custom x-nonce on request so server components can access it
-    request.headers.set('x-nonce', nonce);
-    
+    supabaseResponse.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    supabaseResponse.headers.set('X-Frame-Options', 'DENY');
+    supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
+    supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    supabaseResponse.headers.set('x-nonce', nonce);
+
     // ============================================
-    // 3. CORS & Public Visibility
+    // 5. CORS & Public Visibility
     // ============================================
     const origin = request.headers.get("origin");
-    // Strictly filter origin
     const isAllowedOrigin = origin && ALLOWED_ORIGINS.includes(origin);
-    
-    // IMPORTANT: To satisfy security scanners that check the homepage, 
-    // we set the header even if Origin is missing, defaulting to the app's own URL.
     const allowedOrigin = isAllowedOrigin ? origin : (process.env.NEXT_PUBLIC_APP_URL || 'https://classtrack-navy.vercel.app');
 
     supabaseResponse.headers.set('Access-Control-Allow-Origin', allowedOrigin);
@@ -133,12 +156,11 @@ export async function middleware(request: NextRequest) {
     supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true');
     supabaseResponse.headers.set('Vary', 'Origin');
 
-    // Handle preflight requests
     if (request.method === 'OPTIONS') {
         return new NextResponse(null, {
             status: 204,
             headers: {
-                'Access-Control-Allow-Origin': isAllowedOrigin ? origin : allowedOrigin,
+                'Access-Control-Allow-Origin': allowedOrigin,
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key, x-client-info',
                 'Access-Control-Allow-Credentials': 'true',
@@ -148,7 +170,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // ============================================
-    // 3. Supabase Auth Session
+    // 6. Supabase Auth Session
     // ============================================
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -158,7 +180,6 @@ export async function middleware(request: NextRequest) {
                 getAll() { return request.cookies.getAll(); },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-                    // Note: We don't recreate the response here to save time, we just set the cookies later
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, options)
                     );
@@ -167,7 +188,6 @@ export async function middleware(request: NextRequest) {
         }
     );
 
-    // Skip heavy auth for public paths
     if (isPublicPath) {
         return supabaseResponse;
     }
@@ -181,12 +201,11 @@ export async function middleware(request: NextRequest) {
     }
 
     // ============================================
-    // 4. Instructor & Department Guard (Optimized)
+    // 7. Instructor & Department Guard
     // ============================================
     const isPageRequest = request.headers.get('accept')?.includes('text/html');
 
     if (isPageRequest && !pathname.startsWith("/_next") && !pathname.includes(".")) {
-        // COMBINED QUERY: Fetch instructor role AND department status in one hit
         const { data: instructor } = await supabase
             .from("instructors")
             .select("id, role, department_id, is_super_admin, departments(is_active)")
@@ -194,16 +213,13 @@ export async function middleware(request: NextRequest) {
             .limit(1)
             .maybeSingle();
 
-        const isSuperAdmin = !!instructor?.is_super_admin;
-
-        // 1. Profile Existence Check
         if (!instructor && pathname !== "/pending-approval" && pathname !== "/select-profile") {
             const url = request.nextUrl.clone();
             url.pathname = "/pending-approval";
             return NextResponse.redirect(url);
         }
 
-        // 2. Department Frozen Check (Skip for Super Admins)
+        const isSuperAdmin = !!instructor?.is_super_admin;
         // @ts-expect-error: Joined relation
         if (instructor && !isSuperAdmin && instructor.departments && !instructor.departments.is_active) {
             const url = request.nextUrl.clone();
@@ -211,7 +227,6 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(url);
         }
 
-        // 3. Profile Selection Check
         if (instructor && !isSuperAdmin) {
             const profileId = request.cookies.get("sc_profile_id")?.value;
             if (!profileId && pathname !== "/select-profile" && !pathname.startsWith("/api")) {
@@ -227,13 +242,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
-         */
         "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
     ],
 };

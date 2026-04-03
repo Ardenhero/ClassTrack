@@ -16,6 +16,21 @@
 # production
 /build
 
+# database backups (critical security)
+/supabase_data_export/
+
+# legacy test and fix scripts (security)
+/test_*.js
+/ping_*.js
+/db_check.js
+/get_*.js
+/fix_*.sql
+/test_*.mjs
+/add_*.sql
+/query_*.js
+/delete_*.js
+/delete_*.py
+
 # misc
 .DS_Store
 *.pem

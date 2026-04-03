@@ -62,15 +62,23 @@ export async function provisionAdmin(formData: {
         throw profileError;
     }
 
-    // 5. Log the Action
+    // 5. Fetch department name for logging
+    let deptName = "N/A";
+    if (formData.departmentId) {
+        const { data: dept } = await adminSupabase.from('departments').select('name').eq('id', formData.departmentId).single();
+        if (dept) deptName = dept.name;
+    }
+
+    // 6. Log the Action
     await adminSupabase.rpc('log_action', {
         p_action: 'PROVISION_ADMIN',
         p_target_type: 'instructors',
         p_target_id: authData.user.id,
         p_details: {
             email: formData.email,
-            name: formData.name,
-            department_id: formData.departmentId
+            admin_name: formData.name,
+            department: deptName,
+            is_super_admin: formData.isSuperAdmin || false
         }
     });
 
@@ -159,14 +167,126 @@ export async function updateAdminDepartment(adminId: string, departmentId: strin
 
     if (error) throw error;
 
+    // Fetch admin and department info for logging
+    const { data: adminData } = await adminSupabase.from('instructors').select('name').eq('id', adminId).single();
+    let deptName = "General / N/A";
+    if (departmentId) {
+        const { data: dept } = await adminSupabase.from('departments').select('name').eq('id', departmentId).single();
+        if (dept) deptName = dept.name;
+    }
+
     await adminSupabase.rpc('log_action', {
         p_action: 'UPDATE_ADMIN_DEPT',
         p_target_type: 'instructors',
         p_target_id: adminId,
-        p_details: { department_id: departmentId }
+        p_details: { 
+            admin_name: adminData?.name || adminId, 
+            new_department: deptName 
+        }
     });
 
     revalidatePath("/dashboard/admin/provisioning");
+}
+
+export async function deleteAuditLog(logId: string) {
+    const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) throw new Error("Unauthorized");
+
+    const { data: profile } = await supabase
+        .from('instructors')
+        .select('is_super_admin')
+        .eq('auth_user_id', currentUser.id)
+        .single();
+
+    if (!profile?.is_super_admin) throw new Error("Forbidden: Super Admin only");
+
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase
+        .from('audit_logs')
+        .delete()
+        .eq('id', logId);
+
+    if (error) throw error;
+
+    revalidatePath("/dashboard/admin/audit-logs");
+    return { success: true };
+}
+
+export async function approveDeletionRequest(requestId: string) {
+    const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) throw new Error("Unauthorized");
+
+    const { data: profile } = await supabase
+        .from('instructors')
+        .select('is_super_admin, id')
+        .eq('auth_user_id', currentUser.id)
+        .single();
+
+    if (!profile?.is_super_admin) throw new Error("Forbidden: Super Admin only");
+
+    const { data: request } = await supabase
+        .from('deletion_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+    if (!request) throw new Error("Request not found");
+    if (request.status !== 'pending') throw new Error("Request already processed");
+
+    const adminSupabase = createAdminClient();
+
+    // Perform the actual deletion based on entity_type
+    if (request.entity_type === 'account_deletion') {
+        // request.entity_id is the auth_user_id to delete
+        await deleteAdmin(request.entity_id);
+    } else if (request.entity_type === 'student') {
+        await adminSupabase.from('students').delete().eq('id', request.entity_id);
+    } else if (request.entity_type === 'class') {
+        await adminSupabase.from('classes').delete().eq('id', request.entity_id);
+    }
+
+    // Update request status
+    const { error } = await adminSupabase
+        .from('deletion_requests')
+        .update({
+            status: 'approved',
+            reviewed_by: profile.id,
+            reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+    if (error) throw error;
+
+    revalidatePath("/super-admin/deletion-requests");
+}
+
+export async function rejectDeletionRequest(requestId: string) {
+    const supabase = createClient();
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) throw new Error("Unauthorized");
+
+    const { data: profile } = await supabase
+        .from('instructors')
+        .select('is_super_admin, id')
+        .eq('auth_user_id', currentUser.id)
+        .single();
+
+    if (!profile?.is_super_admin) throw new Error("Forbidden: Super Admin only");
+
+    const { error } = await supabase
+        .from('deletion_requests')
+        .update({
+            status: 'rejected',
+            reviewed_by: profile.id,
+            reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+    if (error) throw error;
+
+    revalidatePath("/super-admin/deletion-requests");
 }
 
 
@@ -178,7 +298,7 @@ export async function deleteAdmin(authUserId: string) {
 
     const { data: profile } = await supabase
         .from('instructors')
-        .select('is_super_admin')
+        .select('is_super_admin, name')
         .eq('auth_user_id', currentUser.id)
         .single();
 
@@ -192,7 +312,7 @@ export async function deleteAdmin(authUserId: string) {
     // Protection: Cannot delete another Super Admin
     const { data: targetProfile } = await supabase
         .from('instructors')
-        .select('is_super_admin, id, owner_id')
+        .select('is_super_admin, id, owner_id, name')
         .eq('auth_user_id', authUserId)
         .single();
 
@@ -265,12 +385,18 @@ export async function deleteAdmin(authUserId: string) {
     const { error: authError } = await adminSupabase.auth.admin.deleteUser(authUserId);
     if (authError) throw authError;
 
+    // Fetch target admin name before deletion log (we have it from step 2)
+    const targetName = targetProfile?.name || "Unknown Admin";
+
     // 5. Log the action
     await adminSupabase.rpc('log_action', {
         p_action: 'DELETE_ADMIN',
         p_target_type: 'auth.users',
         p_target_id: authUserId,
-        p_details: { deleted_by: currentUser.id }
+        p_details: { 
+            deleted_admin_name: targetName,
+            deleted_by: profile.name // profile.name is current user's name
+        }
     });
 
     revalidatePath("/dashboard/admin/provisioning");

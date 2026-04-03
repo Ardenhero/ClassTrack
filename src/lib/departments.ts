@@ -24,7 +24,7 @@ export async function getActiveDepartments(profileId?: string): Promise<Departme
 
     if (profileId) {
         // 1. Check if super admin using our unified utility
-        const { checkIsSuperAdmin, getProfile } = await import("@/lib/auth-utils");
+        const { checkIsSuperAdmin, getProfile, getProfileRole } = await import("@/lib/auth-utils");
         const isSuperAdmin = await checkIsSuperAdmin();
 
         // 2. If not super admin, we must scope the departments
@@ -47,25 +47,36 @@ export async function getActiveDepartments(profileId?: string): Promise<Departme
             const { data: assignedClasses } = await supabase
                 .from('classes')
                 .select('department')
-                .eq('instructor_id', profileId);
+                .eq('instructor_id', actualProfileId);
 
             const crossTaughtDeptNames = Array.from(new Set(
                 (assignedClasses || []).map(c => c.department).filter(Boolean)
             ));
 
             // Execute the scoped request
-            if (homeCollege && crossTaughtDeptNames.length > 0) {
-                // Return departments that either match Home College OR their names match cross-taught classes
-                const inClause = crossTaughtDeptNames.map(d => `"${d}"`).join(',');
-                query = query.or(`college.eq."${homeCollege}",name.in.(${inClause})`);
+            const role = await getProfileRole();
+            const isAdmin = role === 'admin';
+
+            if (isAdmin && instructor?.department_id) {
+                // ADMINS: Strictly limited to their home department + cross-taught
+                if (crossTaughtDeptNames.length > 0) {
+                    const inClause = crossTaughtDeptNames.map(d => `"${d}"`).join(',');
+                    query = query.or(`id.eq."${instructor.department_id}",name.in.(${inClause})`);
+                } else {
+                    query = query.eq('id', instructor.department_id);
+                }
             } else if (homeCollege) {
-                // Only matches home college
-                query = query.eq('college', homeCollege);
+                // INSTRUCTORS: Maintain college-wide view + cross-taught
+                if (crossTaughtDeptNames.length > 0) {
+                    const inClause = crossTaughtDeptNames.map(d => `"${d}"`).join(',');
+                    query = query.or(`college.eq."${homeCollege}",name.in.(${inClause})`);
+                } else {
+                    query = query.eq('college', homeCollege);
+                }
             } else if (crossTaughtDeptNames.length > 0) {
-                // Instructors without a home department somehow but teaching classes
+                // Failsafe for teaching-only profiles
                 query = query.in('name', crossTaughtDeptNames);
             } else {
-                // Failsafe: return nothing if they don't have a department & teach no classes
                 return [];
             }
         }

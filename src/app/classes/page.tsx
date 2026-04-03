@@ -81,24 +81,24 @@ export default async function ClassesPage({
     if (isActiveAdmin && !isSuperAdmin && profileId) {
         const { data: adminRecord } = await supabase
             .from('instructors')
-            .select('auth_user_id')
+            .select('department_id')
             .eq('id', profileId)
             .single();
 
-        if (adminRecord?.auth_user_id) {
-            const { data: accountInstructors } = await supabase
+        if (adminRecord?.department_id) {
+            const { data: deptInstructors } = await supabase
                 .from('instructors')
                 .select('id')
-                .or(`auth_user_id.eq.${adminRecord.auth_user_id},owner_id.eq.${adminRecord.auth_user_id}`);
+                .eq('department_id', adminRecord.department_id);
 
-            const accountInstructorIds = accountInstructors?.map(i => i.id) || [];
+            const deptInstructorIds = deptInstructors?.map(i => i.id) || [];
 
-            if (accountInstructorIds.length > 0) {
-                // If a specific instructor is requested, use that, otherwise use all in department
-                if (instructorFilter && accountInstructorIds.includes(instructorFilter)) {
+            if (deptInstructorIds.length > 0) {
+                // If a specific instructor is requested, ensure they are in this department
+                if (instructorFilter && deptInstructorIds.includes(instructorFilter)) {
                     queryBuilder = queryBuilder.eq("instructor_id", instructorFilter);
                 } else {
-                    queryBuilder = queryBuilder.in("instructor_id", accountInstructorIds);
+                    queryBuilder = queryBuilder.in("instructor_id", deptInstructorIds);
                 }
             } else {
                 queryBuilder = queryBuilder.eq("instructor_id", profileId);

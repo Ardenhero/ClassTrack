@@ -91,6 +91,13 @@ export async function archiveClass(classId: string) {
     const cookieStore = cookies();
     const profileId = cookieStore.get("sc_profile_id")?.value;
 
+    // Fetch class name for audit log
+    const { data: classData } = await supabase
+        .from("classes")
+        .select("name")
+        .eq("id", classId)
+        .single();
+
     const { error } = await supabase
         .from("classes")
         .update({
@@ -102,12 +109,12 @@ export async function archiveClass(classId: string) {
 
     if (error) return { error: error.message };
 
-    if (user) {
+    if (user && classData) {
         await supabase.from("audit_logs").insert({
             action: "class_archived",
             entity_type: "class",
             entity_id: classId,
-            details: "Class moved to archive",
+            details: `Class ${classData.name} moved to archive`,
             performed_by: user.id,
         });
     }
@@ -170,6 +177,13 @@ export async function updateClass(classId: string, formData: FormData) {
 
 export async function restoreClass(classId: string) {
     const supabase = createClient();
+    // Fetch class name for audit log
+    const { data: classData } = await supabase
+        .from("classes")
+        .select("name")
+        .eq("id", classId)
+        .single();
+
     const { error } = await supabase
         .from("classes")
         .update({
@@ -182,12 +196,12 @@ export async function restoreClass(classId: string) {
     if (error) return { error: error.message };
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    if (user && classData) {
         await supabase.from("audit_logs").insert({
             action: "class_restored",
             entity_type: "class",
             entity_id: classId,
-            details: "Class restored from archive",
+            details: `Class ${classData.name} restored from archive`,
             performed_by: user.id,
         });
     }
@@ -200,6 +214,13 @@ export async function permanentlyDeleteClass(classId: string) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Fetch class name for audit log
+    const { data: classData } = await supabase
+        .from("classes")
+        .select("name")
+        .eq("id", classId)
+        .single();
+
     const { error } = await supabase
         .from("classes")
         .delete()
@@ -208,12 +229,12 @@ export async function permanentlyDeleteClass(classId: string) {
 
     if (error) return { error: error.message };
 
-    if (user) {
+    if (user && classData) {
         await supabase.from("audit_logs").insert({
             action: "class_permanently_deleted",
             entity_type: "class",
             entity_id: classId,
-            details: "Class permanently deleted from archive",
+            details: `Class ${classData.name} permanently deleted from archive`,
             performed_by: user.id,
         });
     }

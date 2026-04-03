@@ -64,6 +64,6 @@
     "typescript": "^5"
   },
   "overrides": {
-    "axios": "^1.7.9"
+    "axios": "1.14.0"
   }
 }

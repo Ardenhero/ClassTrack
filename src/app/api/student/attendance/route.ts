@@ -287,7 +287,7 @@ export async function GET(request: Request) {
 
         // 5. Calculate overall stats with same robust logic
 
-        // 5. Calculate overall stats with same robust logic
+        // 5. Calculate default overall stats
         let ovPresent = 0, ovLate = 0, ovAbsent = 0, ovExcused = 0;
 
         classStatsList.forEach(stat => {
@@ -300,17 +300,71 @@ export async function GET(request: Request) {
         const overallTotal = ovPresent + ovLate + ovAbsent + ovExcused;
         const overallPercentage = overallTotal > 0 ? Math.round(((ovPresent + ovLate) / overallTotal) * 100) : 0;
 
+        // 6. Final Filtering for Dept Admin Privacy (In-Memory)
+        let finalClassStats = classStatsList;
+        let finalOverallStats = {
+            total: overallTotal,
+            present: ovPresent,
+            late: ovLate,
+            absent: ovAbsent,
+            excuse_pending: ovExcused,
+            percentage: overallPercentage
+        };
+
+        if (role === 'admin' && instructorId) {
+            // 1. Get viewer's profile to check for Super Admin status and Department ID
+            const { data: viewer } = await supabase
+                .from('instructors')
+                .select('id, department, department_id, is_super_admin')
+                .eq('id', instructorId)
+                .single();
+
+            if (viewer && !viewer.is_super_admin) {
+                // 2. Resolve the official department code (e.g. 'ME', 'CpE') 
+                // We use the department_id as the primary source of truth.
+                let deptCode = viewer.department;
+                if (!deptCode && viewer.department_id) {
+                    const { data: dept } = await supabase
+                        .from('departments')
+                        .select('code')
+                        .eq('id', viewer.department_id)
+                        .single();
+                    if (dept) deptCode = dept.code;
+                }
+
+                // 3. Filter the pre-calculated stats by this resolved department code
+                if (deptCode) {
+                    finalClassStats = classStatsList.filter(stat => {
+                        const cls = enrolledClasses.find(e => e.id === stat.id);
+                        // Strict case-insensitive match for the department code
+                        return cls?.department?.toLowerCase().trim() === deptCode.toLowerCase().trim();
+                    });
+
+                    // 4. Recalculate Overall Stats for privacy
+                    let p2 = 0, l2 = 0, a2 = 0, e2 = 0;
+                    finalClassStats.forEach(s => {
+                        p2 += s.present;
+                        l2 += s.late;
+                        a2 += s.absent;
+                        e2 += s.excuse_pending;
+                    });
+                    const t2 = p2 + l2 + a2 + e2;
+                    finalOverallStats = {
+                        total: t2,
+                        present: p2,
+                        late: l2,
+                        absent: a2,
+                        excuse_pending: e2,
+                        percentage: t2 > 0 ? Math.round(((p2 + l2) / t2) * 100) : 0
+                    };
+                }
+            }
+        }
+
         return NextResponse.json({
             student: studentData,
-            overall_stats: {
-                total: overallTotal,
-                present: ovPresent,
-                late: ovLate,
-                absent: ovAbsent,
-                excuse_pending: ovExcused,
-                percentage: overallPercentage
-            },
-            class_stats: classStatsList,
+            overall_stats: finalOverallStats,
+            class_stats: finalClassStats,
             recent_logs: attendanceLogs.slice(0, 10).map(log => {
                 const logDateStr = manilaFormatter.format(new Date(log.timestamp));
                 const override = dayOverrides.find(o => 

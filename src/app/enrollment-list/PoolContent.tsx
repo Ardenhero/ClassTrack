@@ -15,18 +15,19 @@ interface PoolContentProps {
     students: PoolStudent[];
     departmentName: string | null;
     isSuperAdmin: boolean;
+    deptCode: string | null;
 }
 
-export default function PoolContent({ students, departmentName, isSuperAdmin }: PoolContentProps) {
+export default function PoolContent({ students, departmentName, isSuperAdmin, deptCode }: PoolContentProps) {
     const [search, setSearch] = useState("");
     const [yearFilter, setYearFilter] = useState<string | null>(null);
-    const [statusTab, setStatusTab] = useState<"active" | "graduated" | "dropped">("active");
+    const [statusTab, setStatusTab] = useState<"active" | "graduated" | "dropped" | "other">("active");
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [showMenuId, setShowMenuId] = useState<string | null>(null);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const router = useRouter();
     const canEdit = !isSuperAdmin; // Allow Dept Admins to manage the pool, restrict Super Admins
-    
+
     const [confirmConfig, setConfirmConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -47,15 +48,29 @@ export default function PoolContent({ students, departmentName, isSuperAdmin }: 
         return students.filter(s => {
             // Status Tab Filter
             const sStatus = (s.enrollment_status || 'active').toLowerCase();
-            if (statusTab === 'active' && sStatus !== 'active') return false;
-            if (statusTab === 'graduated' && sStatus !== 'graduated') return false;
-            if (statusTab === 'dropped' && sStatus !== 'dropped' && sStatus !== 'transferred') return false;
+            const sDept = s.department;
+
+            if (statusTab === 'active') {
+                if (sStatus !== 'active') return false;
+                if (deptCode && sDept !== deptCode) return false; // Filter out other depts in active tab
+            }
+            if (statusTab === 'graduated') {
+                if (sStatus !== 'graduated') return false;
+                if (deptCode && sDept !== deptCode) return false;
+            }
+            if (statusTab === 'dropped') {
+                if (sStatus !== 'dropped' && sStatus !== 'transferred') return false;
+                if (deptCode && sDept !== deptCode) return false;
+            }
+            if (statusTab === 'other') {
+                if (deptCode && sDept === deptCode) return false; // Only show other depts
+            }
 
             const q = search.toLowerCase();
             const matchesSearch = !q ||
-                s.name.toLowerCase().includes(q) ||
-                s.sin.toLowerCase().includes(q);
-            const matchesYear = !yearFilter || s.year_level === yearFilter;
+                (s.name || '').toLowerCase().includes(q) ||
+                (s.sin || '').toLowerCase().includes(q);
+            const matchesYear = !yearFilter || (s.year_level === yearFilter);
             return matchesSearch && matchesYear;
         });
     }, [students, search, yearFilter, statusTab]);
@@ -129,7 +144,7 @@ export default function PoolContent({ students, departmentName, isSuperAdmin }: 
 
             {/* Batch Actions Bar */}
             {canEdit && (
-                <BatchActionBar 
+                <BatchActionBar
                     selectedIds={Array.from(selected)}
                     onClear={() => setSelected(new Set())}
                     onSuccess={() => {
@@ -190,6 +205,12 @@ export default function PoolContent({ students, departmentName, isSuperAdmin }: 
                     className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${statusTab === "dropped" ? "bg-white dark:bg-gray-800 text-red-600 shadow-sm" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
                 >
                     Dropped / Transferred
+                </button>
+                <button
+                    onClick={() => setStatusTab("other")}
+                    className={`px-6 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${statusTab === "other" ? "bg-white dark:bg-gray-800 text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                >
+                    Other Dept
                 </button>
             </div>
 
@@ -309,12 +330,11 @@ export default function PoolContent({ students, departmentName, isSuperAdmin }: 
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex flex-col gap-1">
-                                                <span className={`text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded w-fit ${
-                                                    (student.enrollment_status || 'active') === 'graduated' ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" :
+                                                <span className={`text-[10px] uppercase font-black tracking-widest px-2 py-0.5 rounded w-fit ${(student.enrollment_status || 'active') === 'graduated' ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" :
                                                     (student.enrollment_status || 'active') === 'dropped' ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
-                                                    (student.enrollment_status || 'active') === 'transferred' ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" :
-                                                    "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                                }`}>
+                                                        (student.enrollment_status || 'active') === 'transferred' ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" :
+                                                            "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                    }`}>
                                                     {student.enrollment_status || 'active'}
                                                 </span>
                                             </div>
@@ -329,7 +349,7 @@ export default function PoolContent({ students, departmentName, isSuperAdmin }: 
                                                 {showMenuId === student.id && (
                                                     <div className="absolute right-6 top-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-50 py-2 animate-in fade-in slide-in-from-right-2 duration-200" onMouseLeave={() => setShowMenuId(null)}>
                                                         <p className="px-4 py-2 text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50 dark:border-gray-700 mb-1">Actions</p>
-                                                        
+
                                                         {statusTab !== 'active' && (
                                                             <button
                                                                 onClick={() => handleUpdateStatus(student.id, 'active')}

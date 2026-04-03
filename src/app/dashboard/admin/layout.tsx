@@ -24,7 +24,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     "/dashboard/admin/departments",
                     "/dashboard/admin/provisioning",
                     "/dashboard/admin/devices", // This refers to Device Inventory
-                    "/dashboard/admin/audit-logs"
+                    "/dashboard/admin/audit-logs",
+                    "/dashboard/admin/deletion-requests"
                 ];
                 
                 if (superAdminPaths.some(path => pathname.startsWith(path))) {
@@ -61,7 +62,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </>
                 )}
 
-                <AdminNav />
+                {/* Only show AdminNav tabs for the main console pages, hide for independent tools like Audit Trail/Deletion Requests */}
+                {!["/dashboard/admin/deletion-requests", "/dashboard/admin/audit-logs"].includes(pathname) && (
+                    <AdminNav />
+                )}
 
                 {children}
             </div>

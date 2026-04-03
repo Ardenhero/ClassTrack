@@ -21,13 +21,16 @@ export function ClaimStudentDialog() {
     const [search, setSearch] = useState("");
     const [claiming, setClaiming] = useState(false);
     const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+    const [userDeptCode, setUserDeptCode] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<"in-dept" | "other">("in-dept");
 
     const fetchPoolStudents = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await getPoolStudentsForInstructor();
+            const { data, userDeptCode } = await getPoolStudentsForInstructor();
             if (data) {
                 setStudents(data as Student[]);
+                setUserDeptCode(userDeptCode || null);
             }
         } catch (err) {
             console.error("Error fetching students:", err);
@@ -60,6 +63,11 @@ export function ClaimStudentDialog() {
     };
 
     const filtered = students.filter(s => {
+        // Tab Filter
+        const inDept = s.department === userDeptCode;
+        if (activeTab === "in-dept" && !inDept) return false;
+        if (activeTab === "other" && inDept) return false;
+
         const q = search.toLowerCase();
         return (
             (s.name || "").toLowerCase().includes(q) ||
@@ -140,6 +148,22 @@ export function ClaimStudentDialog() {
                             </div>
                         )}
 
+                        {/* Tabs */}
+                        <div className="flex gap-1 mb-4 p-1 bg-gray-100 dark:bg-gray-900 rounded-xl w-full">
+                            <button
+                                onClick={() => setActiveTab("in-dept")}
+                                className={`flex-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === "in-dept" ? "bg-white dark:bg-gray-800 text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                            >
+                                In Dept
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("other")}
+                                className={`flex-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${activeTab === "other" ? "bg-white dark:bg-gray-800 text-gray-500 shadow-sm" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}`}
+                            >
+                                Other Dept
+                            </button>
+                        </div>
+
                         {/* Search */}
                         <div className="relative mb-4">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -147,7 +171,7 @@ export function ClaimStudentDialog() {
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-nwu-red dark:bg-gray-700 dark:text-white text-sm"
-                                placeholder="Search by name, SIN, or department..."
+                                placeholder={`Search ${activeTab === "in-dept" ? "department " : ""}by name, SIN...`}
                             />
                         </div>
 

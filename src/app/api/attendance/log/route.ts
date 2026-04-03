@@ -64,7 +64,26 @@ export async function POST(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
-        
+        const userAgent = request.headers.get("user-agent") || "";
+        const isHardware = userAgent.includes("ESP") || userAgent.includes("Arduino") || !request.headers.get("accept")?.includes("text/html");
+
+        // TIERED AUTHENTICATION: Non-Breaking Production Hardening
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            // WEB MODE: Do not trust URL params. Use the actual session email.
+            if (email && email.toLowerCase() !== user.email?.toLowerCase()) {
+                console.warn(`[SECURITY] Identity Spoof Blocked: User ${user.email} attempted to log as ${email}`);
+                return NextResponse.json({ error: "Identity mismatch: Browser sessions cannot spoof legacy emails." }, { status: 403 });
+            }
+        } else if (!isHardware) {
+            // ANONYMOUS BROWSER: Block legacy ?email= access to prevent easy URL spoofing
+            if (email) {
+                console.warn(`[SECURITY] Blocked anonymous browser attempt to use legacy ?email= auth.`);
+                return NextResponse.json({ error: "Unauthorized: Please log in to use web-based logging." }, { status: 401 });
+            }
+        }
+
         let bodyText = "";
         try {
             bodyText = await request.text();
@@ -96,10 +115,10 @@ export async function POST(request: Request) {
             console.error("JSON Syntax Error:", errorMessage);
             console.error("Malformed Body Snippet:", bodyText.substring(0, 300) + (bodyText.length > 300 ? "..." : ""));
             console.error("Total Body Length:", bodyText.length);
-            return NextResponse.json({ 
-                error: "Malformed JSON", 
+            return NextResponse.json({
+                error: "Malformed JSON",
                 details: errorMessage,
-                snippet: bodyText.substring(0, 100) 
+                snippet: bodyText.substring(0, 100)
             }, { status: 400 });
         }
 
@@ -109,6 +128,12 @@ export async function POST(request: Request) {
             .select('room_id, label')
             .eq('device_serial', body.device_id)
             .maybeSingle();
+
+        // SCHOOL-GUARD: Strict hardware verification for production deployment
+        if (isHardware && !kioskInfo && body.device_id) {
+            console.warn(`[SECURITY] REJECTED: Unregistered hardware device attempt: ${body.device_id}`);
+            return NextResponse.json({ error: "Unauthorized: Unregistered hardware device." }, { status: 403 });
+        }
 
         // --- ☢️ NUCLEAR INTERCEPT: ROOM CONTROL (REFINED v3.2) ---
         // Only triggers on PIN or explicit room activation commands.
@@ -282,8 +307,8 @@ export async function POST(request: Request) {
 
                 if (!enrollmentRes.data) {
                     console.error(`[API] 403 Forbidden: Student ${studentInfo.name} (ID: ${studentInfo.id}) is NOT enrolled in Class ID: ${classIdInput}`);
-                    return NextResponse.json({ 
-                        error: "Not enrolled", 
+                    return NextResponse.json({
+                        error: "Not enrolled",
                         student_name: studentInfo.name,
                         details: `Student is not enrolled in the requested class (ID: ${classIdInput})`
                     }, { status: 403 });

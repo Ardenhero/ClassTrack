@@ -10,6 +10,7 @@ interface StudentRowData {
     enrollmentId: string;
     studentId: string;
     studentName: string;
+    studentSin: string;
     studentImageUrl?: string | null;
     yearLevel: string;
     statusLabel: string;
@@ -43,7 +44,10 @@ export default function EnrolledStudentsList({
     const [sortBy, setSortBy] = useState<"name" | "attendance">("name");
 
     const filtered = students
-        .filter(s => s.studentName.toLowerCase().includes(searchQuery.toLowerCase()))
+        .filter(s => 
+            s.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.studentSin || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
         .sort((a, b) => {
             if (sortBy === "attendance") return a.attendanceRate - b.attendanceRate; // worst first
             return a.studentName.localeCompare(b.studentName);

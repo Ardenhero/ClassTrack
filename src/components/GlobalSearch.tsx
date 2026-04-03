@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Search as SearchIcon, Loader2, BookOpen, User } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 interface SearchResult {
     classes: { id: string; name: string }[];
-    students: { id: string; name: string; year_level: string }[];
+    students: { id: string; name: string; sin: string; year_level: string }[];
 }
 
 interface GlobalSearchProps {
@@ -24,6 +24,7 @@ export function GlobalSearch({ placeholder = "Search...", type = "all" }: Global
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
+    const pathname = usePathname();
 
     // Debounce query by 300ms
     const debouncedQuery = useDebouncedValue(query, 300);
@@ -82,16 +83,23 @@ export function GlobalSearch({ placeholder = "Search...", type = "all" }: Global
     }, []);
 
     const handleSelectClass = (name: string) => {
-        setQuery(name);
         setShowDropdown(false);
         router.push(`/classes?query=${encodeURIComponent(name)}`);
     };
 
-    const handleSelectStudent = (name: string) => {
-        // Navigate to students page filtered by this name
-        setQuery(name); // Keep name in input to persist filter
+    const handleSelectStudent = (student: { id: string, name: string, sin: string }) => {
         setShowDropdown(false);
-        router.push(`/students?query=${encodeURIComponent(name)}`);
+        
+        // Context-aware behavior: If on the attendance page, filter instead of redirecting
+        if (pathname?.includes("/attendance")) {
+            const params = new URLSearchParams(window.location.search);
+            // On attendance page, identifying by SIN is most accurate if available, otherwise name
+            params.set("q", student.sin || student.name);
+            router.push(`${pathname}?${params.toString()}`);
+            setQuery(""); // Clear search bar for next use
+        } else {
+            router.push(`/students/${student.id}`);
+        }
     };
 
     const hasResults = results.classes.length > 0 || results.students.length > 0;
@@ -163,7 +171,7 @@ export function GlobalSearch({ placeholder = "Search...", type = "all" }: Global
                                     key={s.id}
                                     onMouseDown={(e) => {
                                         e.preventDefault(); // Prevent input blur
-                                        handleSelectStudent(s.name);
+                                        handleSelectStudent(s);
                                     }}
                                     className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center group"
                                 >
@@ -172,7 +180,11 @@ export function GlobalSearch({ placeholder = "Search...", type = "all" }: Global
                                     </div>
                                     <div>
                                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.name}</div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">{s.year_level}</div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                            <span className="font-mono bg-gray-50 dark:bg-gray-800/80 px-1 rounded border border-gray-100 dark:border-gray-700">{s.sin}</span>
+                                            <span>•</span>
+                                            <span>{s.year_level}</span>
+                                        </div>
                                     </div>
                                 </button>
                             ))}

@@ -18,6 +18,25 @@ export async function POST(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
+        const userAgent = request.headers.get("user-agent") || "";
+        const isHardware = userAgent.includes("ESP") || userAgent.includes("Arduino") || !request.headers.get("accept")?.includes("text/html");
+
+        // TIERED AUTHENTICATION: Non-Breaking Production Hardening
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            // WEB MODE: Do not trust URL params. Use the actual session email.
+            if (email && email.toLowerCase() !== user.email?.toLowerCase()) {
+                console.warn(`[SECURITY] IOT Identity Spoof Blocked: User ${user.email} attempted to control as ${email}`);
+                return NextResponse.json({ error: "Identity mismatch: Browser sessions cannot spoof legacy emails." }, { status: 403 });
+            }
+        } else if (!isHardware) {
+            // ANONYMOUS BROWSER: Block legacy ?email= access to prevent easy URL spoofing
+            if (email) {
+                console.warn(`[SECURITY] Blocked anonymous browser attempt to use legacy IOT ?email= auth.`);
+                return NextResponse.json({ error: "Unauthorized: Please log in to control devices." }, { status: 401 });
+            }
+        }
 
         const body = await request.json();
         const { device_id, code, value, source, class_id, profile_id, group_id } = body;
@@ -37,7 +56,7 @@ export async function POST(request: Request) {
             const results = await Promise.all(members.map(async (member) => {
                 const realDeviceId = member.device_id.replace(/_ch\d+$/, '');
                 const result = await controlDevice(realDeviceId, member.dp_code, value);
-                
+
                 if (result.success) {
                     await supabase.from('iot_devices').update({ current_state: value, updated_at: new Date().toISOString() }).eq('id', member.device_id);
                     await supabase.from('iot_device_logs').insert({
@@ -132,6 +151,19 @@ export async function POST(request: Request) {
         } else if (email) {
             const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin').eq('email', email).single();
             instructor = data;
+        }
+
+        // 1. Resolve Device Identity (v3.2 Standard)
+        const { data: deviceInfo } = await supabase
+            .from('iot_devices')
+            .select('id, name')
+            .eq('id', device_id)
+            .maybeSingle();
+
+        // SCHOOL-GUARD: Strict hardware verification for production deployment
+        if (isHardware && !deviceInfo && device_id) {
+            console.warn(`[SECURITY] REJECTED: Unregistered IOT device attempt: ${device_id}`);
+            return NextResponse.json({ error: "Unauthorized: Unregistered hardware device." }, { status: 403 });
         }
 
         triggeredBy = instructor?.id || null;

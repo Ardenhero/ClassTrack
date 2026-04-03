@@ -3,6 +3,7 @@ import { getActiveDepartments, type Department } from "@/lib/departments";
 import { StudentsDirectory } from "./StudentsDirectory";
 import { checkIsSuperAdmin, getProfileRole } from "@/lib/auth-utils";
 import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 
 interface Student {
     id: string;
@@ -19,6 +20,7 @@ interface Student {
         instructorId: string;
         instructorName: string;
         instructorImageUrl: string | null;
+        department: string | null;
     }>;
 }
 
@@ -81,7 +83,8 @@ export default async function StudentsListContent({
             enrollments: s.enrollments?.map((e) => ({
                 instructorId: e.classes?.instructors?.id,
                 instructorName: e.classes?.instructors?.name,
-                instructorImageUrl: e.classes?.instructors?.image_url
+                instructorImageUrl: e.classes?.instructors?.image_url,
+                department: e.classes?.department
             })).filter((e) => e.instructorId)
         }));
     } catch (err: unknown) {
@@ -96,6 +99,19 @@ export default async function StudentsListContent({
         : null;
 
     const homeDeptCodes = activeDepts.filter(d => d.college === homeCollege).map(d => d.code);
+
+    // Dynamic Departments: Ensure any department present in the students list has a chip, 
+    // even if it's not in the administrator's default "Home" scope.
+    const presentDeptCodes = new Set(students.map(s => s.department).filter(Boolean));
+    const missingDepts = await Promise.all(
+        Array.from(presentDeptCodes)
+            .filter(code => !departments.some(d => d.code === code))
+            .map(async (code) => {
+                const { data } = await createClient().from('departments').select('id, name, code, college').eq('code', code).single();
+                return data as Department | null;
+            })
+    );
+    const finalDepts = [...departments, ...missingDepts.filter((d): d is Department => d !== null)];
 
     if (errorMsg) {
         return (
@@ -116,7 +132,7 @@ export default async function StudentsListContent({
     return (
         <StudentsDirectory
             students={students}
-            departments={departments}
+            departments={finalDepts}
             isSuperAdmin={internalIsSuperAdmin}
             isAdmin={internalIsAdmin}
             homeCollege={homeCollege}

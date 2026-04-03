@@ -40,18 +40,18 @@ function getDeviceDot(name: string): string {
     return "bg-gray-400";
 }
 
-export default function RoomsClient({ 
-    initialRooms, 
-    initialDevices, 
-    initialAdmins, 
+export default function RoomsClient({
+    initialRooms,
+    initialDevices,
+    initialAdmins,
     profile,
-    canManageRooms 
-}: { 
-    initialRooms: Room[], 
-    initialDevices: Device[], 
+    canManageRooms
+}: {
+    initialRooms: Room[],
+    initialDevices: Device[],
     initialAdmins: AdminUser[],
     profile: { id: string, name?: string, department_id?: string } | null,
-    canManageRooms: boolean 
+    canManageRooms: boolean
 }) {
     const supabase = createClient();
     const [rooms, setRooms] = useState<Room[]>(initialRooms);
@@ -84,7 +84,7 @@ export default function RoomsClient({
         // Re-fetch data on mutation (simplified for reliability)
         const { data: roomsData } = await supabase.from("rooms").select("*").order("name");
         const { data: devicesData } = await supabase.from("iot_devices").select("id, name, type, room_id, online").order("name");
-        
+
         if (roomsData) setRooms(roomsData);
         if (devicesData) setDevices(devicesData);
     }, [supabase]);
@@ -149,7 +149,7 @@ export default function RoomsClient({
                     const roomIds = a.assigned_room_ids || [];
                     return {
                         ...a,
-                        assigned_room_ids: isAuthorized 
+                        assigned_room_ids: isAuthorized
                             ? [...roomIds, roomId]
                             : roomIds.filter(id => id !== roomId)
                     };
@@ -284,7 +284,9 @@ export default function RoomsClient({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {rooms.length === 0 && !isCreating ? (
                     <div className="col-span-full border-2 border-dashed border-gray-200 dark:border-gray-700 p-10 text-center rounded-xl text-gray-500 dark:text-gray-400">
-                        No rooms created yet. Click &quot;Create Room&quot; to get started.
+                        {canManageRooms 
+                            ? "No rooms created yet. Click \"Create Room\" to get started."
+                            : "No rooms available. Please contact the administrator."}
                     </div>
                 ) : rooms.map(room => {
                     const roomDevices = devices.filter(d => d.room_id === room.id);
@@ -412,7 +414,7 @@ export default function RoomsClient({
                     </button>
                 )}
             </div>
-            
+
             <DynamicConfirmationModal
                 isOpen={confirmConfig.isOpen}
                 onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}

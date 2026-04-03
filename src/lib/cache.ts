@@ -25,6 +25,7 @@ interface StudentData {
     image_url?: string | null;
     enrollments?: Array<{
         classes: {
+            department: string | null;
             instructors: {
                 id: string;
                 name: string;
@@ -59,7 +60,7 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
             id, name, sin, year_level, department, created_at, instructor_id,
             is_archived, archived_by, fingerprint_slot_id, image_url,
             instructors:instructors!students_instructor_id_fkey(id, name, image_url)
-            ${(isActiveAdmin) ? ', enrollments(classes(instructors:instructors!classes_instructor_id_fkey(id, name, image_url)))' : ''}
+            ${(isActiveAdmin) ? ', enrollments(classes(department, instructors:instructors!classes_instructor_id_fkey(id, name, image_url)))' : ''}
         `;
 
         if (isActiveAdmin) {
@@ -69,7 +70,7 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
                     .from('students')
                     .select(columns)
                     .order('name');
-                if (query) queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                if (query) queryBuilder = queryBuilder.or(`name.ilike."%${query}%",sin.ilike."%${query}%"`);
                 if (deptFilter) queryBuilder = queryBuilder.eq('department', deptFilter);
                 if (yearFilter) queryBuilder = queryBuilder.eq('year_level', yearFilter);
                 const { data, error } = await queryBuilder;
@@ -79,45 +80,57 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
                 const result = (data || []) as unknown as StudentData[];
                 return result.filter((s: StudentData) => !(s.is_archived && s.archived_by === actualProfileId));
             } else {
-                // SYSTEM ADMIN: See students from THEIR account only
-                // ⚡ PARALLEL: Fetch admin record, then created + enrolled IDs in parallel
-                const { data: adminRecord } = await supabase
+                // SYSTEM ADMIN: See students from THEIR department + linked students
+                const { data: adminProfile } = await supabase
                     .from('instructors')
-                    .select('auth_user_id')
+                    .select('auth_user_id, department_id, departments(name)')
                     .eq('id', actualProfileId)
                     .single();
 
+                // @ts-expect-error - Join type
+                const adminDeptName = adminProfile?.departments?.name as string | undefined;
+
                 let accountInstructorIds: string[] = [];
-                if (adminRecord?.auth_user_id) {
+                if (adminProfile?.auth_user_id) {
                     const { data: accountInstructors } = await supabase
                         .from('instructors')
                         .select('id')
-                        .or(`auth_user_id.eq.${adminRecord.auth_user_id},owner_id.eq.${adminRecord.auth_user_id}`);
+                        .or(`auth_user_id.eq."${adminProfile.auth_user_id}",owner_id.eq."${adminProfile.auth_user_id}"`);
                     accountInstructorIds = (accountInstructors as { id: string }[] | null)?.map(i => i.id) || [];
                 }
 
-                if (accountInstructorIds.length === 0) return [];
+                // FETCH LINKED IDs: (Students created by instructors under this account OR enrolled in their classes)
+                let uniqueIds: string[] = [];
+                if (accountInstructorIds.length > 0) {
+                    const [{ data: createdIds }, { data: enrolledIds }] = await Promise.all([
+                        supabase.from('students').select('id').in('instructor_id', accountInstructorIds),
+                        supabase.from('enrollments').select('student_id, classes!inner(instructor_id)').in('classes.instructor_id', accountInstructorIds),
+                    ]);
 
-                // ⚡ PARALLEL: Fetch created + enrolled students simultaneously
-                const [{ data: createdIds }, { data: enrolledIds }] = await Promise.all([
-                    supabase.from('students').select('id').in('instructor_id', accountInstructorIds),
-                    supabase.from('enrollments').select('student_id, classes!inner(instructor_id)').in('classes.instructor_id', accountInstructorIds),
-                ]);
-
-                const uniqueIds = Array.from(new Set([
-                    ...(createdIds as { id: string }[] | null)?.map(s => s.id) || [],
-                    ...(enrolledIds as { student_id: string }[] | null)?.map(e => e.student_id) || []
-                ]));
-
-                if (uniqueIds.length === 0) return [];
+                    uniqueIds = Array.from(new Set([
+                        ...(createdIds as { id: string }[] | null)?.map(s => s.id) || [],
+                        ...(enrolledIds as { student_id: string }[] | null)?.map(e => e.student_id) || []
+                    ]));
+                }
 
                 let queryBuilder = supabase
                     .from('students')
                     .select(columns)
-                    .in('id', uniqueIds)
                     .order('name');
 
-                if (query) queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+                // BASE SCOPING: (My Dept) OR (Explicitly Linked IDs)
+                if (adminDeptName && uniqueIds.length > 0) {
+                    queryBuilder = queryBuilder.or(`department.eq."${adminDeptName}",id.in.(${uniqueIds.join(',')})`);
+                } else if (adminDeptName) {
+                    queryBuilder = queryBuilder.eq('department', adminDeptName);
+                } else if (uniqueIds.length > 0) {
+                    queryBuilder = queryBuilder.in('id', uniqueIds);
+                } else {
+                    return []; // No access
+                }
+
+                // Add search/filters
+                if (query) queryBuilder = queryBuilder.or(`name.ilike."%${query}%",sin.ilike."%${query}%"`);
                 if (deptFilter) queryBuilder = queryBuilder.eq('department', deptFilter);
                 if (yearFilter) queryBuilder = queryBuilder.eq('year_level', yearFilter);
 
@@ -140,7 +153,7 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
                     .eq('instructor_id', actualProfileId);
 
                 if (query) {
-                    createdQuery = createdQuery.ilike('name', `%${query}%`);
+                    createdQuery = createdQuery.or(`name.ilike."%${query}%",sin.ilike."%${query}%"`);
                 }
                 if (deptFilter) createdQuery = createdQuery.eq('department', deptFilter);
                 if (yearFilter) createdQuery = createdQuery.eq('year_level', yearFilter);
@@ -166,6 +179,9 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
                     `)
                     .eq('enrollments.classes.instructor_id', actualProfileId);
 
+                if (query) {
+                    enrolledQuery = enrolledQuery.or(`name.ilike."%${query}%",sin.ilike."%${query}%"`);
+                }
                 if (deptFilter) enrolledQuery = enrolledQuery.eq('department', deptFilter);
                 if (yearFilter) enrolledQuery = enrolledQuery.eq('year_level', yearFilter);
 
@@ -212,7 +228,8 @@ export const getCachedStudents = async (query?: string, deptFilter?: string, yea
                 if (query) {
                     const lowerQuery = query.toLowerCase();
                     return result.filter(s =>
-                        (s.name || '').toLowerCase().includes(lowerQuery)
+                        (s.name || '').toLowerCase().includes(lowerQuery) ||
+                        (s.sin || '').toLowerCase().includes(lowerQuery)
                     );
                 }
 

@@ -20,11 +20,16 @@ export async function getProfileRole() {
         return null;
     }
 
-    // If it's a UUID, check the database
+    // If it's a UUID, check the database - SECURED: Scope to auth_user_id
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) return null;
+
     const { data: profileData, error } = await supabase
         .from('instructors')
         .select('role, is_super_admin')
         .eq('id', profileId)
+        .eq('auth_user_id', user.id)
         .maybeSingle();
 
     if (error) {
@@ -48,10 +53,15 @@ export async function getProfile() {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     if (uuidRegex.test(profileId)) {
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
+        if (!user) return null;
+
         const { data, error } = await supabase
             .from('instructors')
             .select('*')
             .eq('id', profileId)
+            .eq('auth_user_id', user.id)
             .maybeSingle();
 
         if (error) {
@@ -90,10 +100,15 @@ export async function checkIsSuperAdmin() {
 
     // CASE 1: Valid UUID Profile ID
     if (uuidRegex.test(profileId)) {
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
+        if (!user) return false;
+
         const { data } = await supabase
             .from('instructors')
             .select('is_super_admin')
             .eq('id', profileId)
+            .eq('auth_user_id', user.id)
             .maybeSingle();
         return data?.is_super_admin === true;
     }

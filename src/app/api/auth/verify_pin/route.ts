@@ -1,5 +1,6 @@
 import { createClient } from "../../../../utils/supabase/server";
 import { NextResponse } from "next/server";
+import { verifyCredential } from "@/lib/auth-crypto";
 
 export async function POST(request: Request) {
     try {
@@ -28,7 +29,20 @@ export async function POST(request: Request) {
         const inputPin = String(pin).trim();
         const storedPin = data.pin_code ? String(data.pin_code).trim() : null;
 
-        if (storedPin && inputPin === storedPin) {
+        if (!storedPin) {
+            return NextResponse.json({ error: "PIN not set" }, { status: 401 });
+        }
+
+        // Check if stored PIN is hashed (contains ":") or legacy plain-text
+        let isValid = false;
+        if (storedPin.includes(":")) {
+            isValid = verifyCredential(inputPin, storedPin);
+        } else {
+            // Legacy plain-text check
+            isValid = inputPin === storedPin;
+        }
+
+        if (isValid) {
             return NextResponse.json({ success: true });
         } else {
             return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });

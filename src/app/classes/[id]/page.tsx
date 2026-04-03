@@ -24,6 +24,7 @@ interface Enrollment {
     students: {
         id: string;
         name: string;
+        sin: string;
         year_level: string;
         fingerprint_id: number;
         image_url: string | null;
@@ -536,6 +537,7 @@ export default async function ClassDetailsPage({ params, searchParams }: { param
                         enrollmentId: e.id,
                         studentId: e.students.id,
                         studentName: e.students.name,
+                        studentSin: e.students.sin,
                         yearLevel: e.students.year_level,
                         statusLabel,
                         badgeColor,

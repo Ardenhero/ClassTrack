@@ -27,6 +27,8 @@ import {
     GraduationCap,
     Moon,
     Sun,
+    Trash2,
+    History,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -60,6 +62,8 @@ const superAdminNavigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Attendance", href: "/attendance", icon: ClipboardList },
     { name: "Admin Management", href: "/dashboard/admin/provisioning", icon: ShieldCheck },
+    { name: "Deletion Requests", href: "/dashboard/admin/deletion-requests", icon: Trash2 },
+    { name: "Audit Trail", href: "/dashboard/admin/audit-logs", icon: History },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "System Info", href: "/about", icon: Info },
 ];

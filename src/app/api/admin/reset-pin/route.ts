@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "../../../../utils/supabase/server";
 import { cookies } from "next/headers";
+import { hashCredential } from "@/lib/auth-crypto";
 
 export const dynamic = 'force-dynamic';
 
@@ -71,18 +72,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Forbidden: Instructor is in a different department" }, { status: 403 });
         }
 
-        // Update the PIN — store as plain text in pin_code column on instructors (matching existing pattern)
+        // Hash the PIN for security
+        const hashedPin = hashCredential(new_pin);
+
+        // Update the PIN — store as hashed in pin_code column (security hardening)
         await supabase
             .from("instructors")
-            .update({ pin_code: new_pin, pin_enabled: true })
+            .update({ pin_code: hashedPin, pin_enabled: true })
             .eq("id", target_instructor_id);
 
-        // Also upsert instructor_pins (hashed or plain, matching existing system)
+        // Also upsert instructor_pins (security hardening)
         await supabase
             .from("instructor_pins")
             .upsert({
                 user_id: target.auth_user_id,
-                pin_hash: new_pin,
+                pin_hash: hashedPin,
                 updated_at: new Date().toISOString(),
             }, { onConflict: "user_id" });
 

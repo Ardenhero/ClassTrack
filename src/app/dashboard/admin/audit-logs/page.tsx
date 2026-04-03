@@ -19,7 +19,7 @@ export default async function AuditLogsPage({
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
                         <ShieldAlert className="mr-2 h-6 w-6 text-nwu-red" aria-hidden="true" />
-                        Master Audit Trail
+                        System Audit Trail
                     </h1>
                     <p className="text-sm text-gray-500">Forensic log of all administrative actions</p>
                 </div>
