@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
 
@@ -19,10 +19,21 @@ You are the ClassTrack AI Assistant. Your goal is to provide helpful, well-forma
 - **MIXED FORMAT:** Use natural paragraphs for general explanations and a warmer, human-like tone.
 - **INSTRUCTIONAL BULLETS:** Use bullet points ONLY for step-by-step instructions.
 - **SCOPE:** ClassTrack ONLY. Decline all other topics.
-... (rest of system prompt same as original)
 `;
 
 export async function POST(req: Request) {
+    // --- 🛡️ PRE-FLIGHT CHECK (Identity Verification) ---
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (!apiKey) {
+        return new Response(JSON.stringify({ 
+            error: "brain_key_missing",
+            message: "My AI brain key is missing on the server! Please verify GOOGLE_GENERATIVE_AI_API_KEY in Vercel or .env.local."
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Initialize the Google provider with the explicit API key for Edge runtime reliability
+    const google = createGoogleGenerativeAI({ apiKey });
+
     try {
         // --- 🛡️ RATE LIMITING (Anti-Abuse) ---
         const ip = getClientIP(req);
@@ -31,7 +42,7 @@ export async function POST(req: Request) {
         if (!success) {
             return new Response(JSON.stringify({
                 error: "Rate limit exceeded",
-                message: `You've reached your limit of ${limit} messages. Please try again tomorrow.`
+                message: `You've reached your daily limit of ${limit} messages. Please try again tomorrow.`
             }), { status: 429, headers: { 'Content-Type': 'application/json' } });
         }
 
@@ -41,12 +52,8 @@ export async function POST(req: Request) {
         // --- 🛡️ INPUT FILTERING (Anti-Injection) ---
         const lastMessage = messages?.[messages.length - 1]?.content?.toLowerCase() || "";
         const injectionPatterns = [
-            "ignore previous instructions",
-            "reveal your system prompt",
-            "system prompt",
-            "ignore instructions",
-            "forget about",
-            "new rules"
+            "ignore previous instructions", "reveal your system prompt", "system prompt",
+            "ignore instructions", "forget about", "new rules"
         ];
 
         if (injectionPatterns.some(p => lastMessage.includes(p))) {
@@ -57,10 +64,10 @@ export async function POST(req: Request) {
             }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // Ensure messages is always an array and slice context (Security + Cost)
+        // Ensure messages format
         if (!messages || !Array.isArray(messages)) {
             if (body.content && body.role) {
-                messages = [body];
+                messages = [{ role: body.role, content: body.content }];
             } else {
                 return new Response("Invalid messages payload format", { status: 400 });
             }
@@ -75,7 +82,7 @@ export async function POST(req: Request) {
             model: google('gemini-2.0-flash'),
             system: SYSTEM_PROMPT,
             messages,
-            temperature: 0.4, // Reduced for higher accuracy/safety
+            temperature: 0.4,
         });
 
         const response = result.toTextStreamResponse();
@@ -89,15 +96,9 @@ export async function POST(req: Request) {
         const error = err as Error;
         console.error("Chat API Detailed Error:", error);
 
-        // Map internal Gemini errors to user-friendly messages
-        let userMessage = "Actually, I ran into a bit of trouble connecting to my brain. Please try again in a moment!";
-        if (error.message?.includes("API key")) {
-            userMessage = "My AI key is missing or invalid on the server! Please verify GOOGLE_GENERATIVE_AI_API_KEY in Vercel.";
-        }
-
         return new Response(JSON.stringify({
             error: "brain_failure",
-            message: userMessage,
+            message: "Actually, I ran into a bit of trouble connecting to my brain. Please try again in a moment!",
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         }), {
             status: 500,
