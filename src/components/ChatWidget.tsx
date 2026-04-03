@@ -145,7 +145,7 @@ export function ChatWidget() {
     };
 
     return (
-        <div className="fixed bottom-6 md:bottom-24 right-6 z-[9999] flex flex-col items-end">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
             {isOpen && (
                 <div className="mb-4 w-80 sm:w-[400px] h-[520px] bg-white dark:bg-gray-950 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
                     {/* Header */}
