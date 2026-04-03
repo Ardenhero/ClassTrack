@@ -80,17 +80,25 @@ export async function POST(req: Request) {
 
         const response = result.toTextStreamResponse();
         
-        // Add rate limit headers for transparency
+        // Add rate limit headers for transparency (Synced with ChatWidget UI)
         response.headers.set('X-RateLimit-Remaining', remaining.toString());
+        response.headers.set('X-RateLimit-Limit', limit.toString());
         
         return response;
     } catch (err: unknown) {
         const error = err as Error;
         console.error("Chat API Detailed Error:", error);
 
+        // Map internal Gemini errors to user-friendly messages
+        let userMessage = "Actually, I ran into a bit of trouble connecting to my brain. Please try again in a moment!";
+        if (error.message?.includes("API key")) {
+            userMessage = "My AI key is missing or invalid on the server! Please verify GOOGLE_GENERATIVE_AI_API_KEY in Vercel.";
+        }
+
         return new Response(JSON.stringify({
-            error: "An error occurred while processing your request.",
-            details: error.message
+            error: "brain_failure",
+            message: userMessage,
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }

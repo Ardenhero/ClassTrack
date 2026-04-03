@@ -20,6 +20,7 @@ export function ChatWidget() {
     const [isLoading, setIsLoading] = useState(false);
     const [didHydrate, setDidHydrate] = useState(false);
     const [remaining, setRemaining] = useState<number | null>(null);
+    const [limit, setLimit] = useState<number>(10);
 
     // Load chat history from localStorage on first mount
     useEffect(() => {
@@ -65,11 +66,12 @@ export function ChatWidget() {
                 body: JSON.stringify({ messages: [...refinedMessages, currentMessage] })
             });
 
-            // Capture rate limit info from headers
+            // Capture rate limit info from headers (Synced with Chat-10 Guard)
             const remainingHeader = response.headers.get('X-RateLimit-Remaining');
-            if (remainingHeader) {
-                setRemaining(parseInt(remainingHeader));
-            }
+            const limitHeader = response.headers.get('X-RateLimit-Limit');
+            
+            if (remainingHeader) setRemaining(parseInt(remainingHeader));
+            if (limitHeader) setLimit(parseInt(limitHeader));
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -220,7 +222,7 @@ export function ChatWidget() {
                             <p className="text-[9px] text-gray-400 font-medium uppercase tracking-wider">Powered by ClassTrack AI</p>
                             {remaining !== null && (
                                 <p className="text-[9px] font-bold text-nwu-red bg-nwu-red/5 px-2 py-0.5 rounded-full border border-nwu-red/10">
-                                    {remaining} / 40 Left Today
+                                    {remaining} / {limit} Left Today
                                 </p>
                             )}
                         </div>

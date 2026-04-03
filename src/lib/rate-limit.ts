@@ -50,10 +50,10 @@ export const rateLimiters = {
         prefix: "ratelimit:mutations",
     }) : null,
 
-    // AI Chatbot: 40 requests per day per user (to prevent cost explosion)
+    // AI Chatbot: 10 requests per day per user (to prevent cost explosion)
     chat: redis ? new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(40, "1 d"),
+        limiter: Ratelimit.slidingWindow(10, "1 d"),
         analytics: true,
         prefix: "ratelimit:chat",
     }) : null,
@@ -98,8 +98,11 @@ export class RateLimiter {
     }
 }
 
-// Global fallback instance for when Redis is not available
-export const globalLimiter = new RateLimiter(500, 15 * 60 * 1000);
+// Global fallback instance for general APIs (300/min)
+export const globalLimiter = new RateLimiter(300, 60 * 1000);
+
+// Specific fallback for AI Chatbot (10/day)
+export const chatFallbackLimiter = new RateLimiter(10, 24 * 60 * 60 * 1000);
 
 // ============================================
 // UNIFIED RATE LIMIT CHECK
@@ -140,13 +143,17 @@ export async function checkRateLimit(
         }
     }
 
-    // Fallback to in-memory rate limiter
-    const result = globalLimiter.check(identifier);
+    // Fallback to in-memory rate limiter based on type
+    const isChat = type === "chat";
+    const limiterToUse = isChat ? chatFallbackLimiter : globalLimiter;
+    const fallbackLimit = isChat ? 10 : 300;
+
+    const result = limiterToUse.check(identifier);
     return {
         success: result.success,
         remaining: result.remaining,
-        reset: Date.now() + 60000,
-        limit: 100,
+        reset: Date.now() + (isChat ? 24 * 60 * 60 * 1000 : 60000),
+        limit: fallbackLimit,
     };
 }
 
