@@ -117,12 +117,13 @@ export async function middleware(request: NextRequest) {
     }
 
     // ============================================
-    // 4. CSP & Security Headers (Strict Configuration)
+    // 4. CSP & Security Headers (Strict A+ Configuration)
     // ============================================
+    const isProd = process.env.NODE_ENV === 'production';
     const cspHeader = `
-        default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL};
-        style-src 'self' 'unsafe-inline' fonts.googleapis.com;
+        default-src 'none';
+        script-src 'self' 'nonce-${nonce}' ${isProd ? '' : "'unsafe-eval'"} *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL};
+        style-src 'self' 'nonce-${nonce}' fonts.googleapis.com;
         img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL};
         font-src 'self' fonts.gstatic.com;
         connect-src 'self' *.supabase.co wss://*.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} ${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', 'wss://')} *.vercel-analytics.com *.vitals.vercel-insights.com;
