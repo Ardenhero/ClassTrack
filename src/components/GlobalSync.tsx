@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { RefreshCw } from "lucide-react";
-import { cn } from "@/utils/cn";
 import { mutate } from "swr";
 import { postMultiSyncEvent, onSyncEvent } from "@/lib/globalSyncChannel";
 
@@ -16,12 +14,10 @@ const SYNC_SWR_KEYS = [
 ];
 
 export function GlobalSync() {
-    const [isSyncing, setIsSyncing] = useState(false);
     const supabase = createClient();
 
     // Throttled SWR Invalidation — replaces router.refresh()
     const triggerSync = useCallback(() => {
-        setIsSyncing(true);
         console.log("🔄 Global Sync: Change detected, invalidating SWR keys...");
 
         // Invalidate all known SWR keys (targeted, not full page reload)
@@ -29,16 +25,7 @@ export function GlobalSync() {
 
         // Broadcast to other tabs for cross-tab sync
         postMultiSyncEvent(SYNC_SWR_KEYS);
-
-        // Keep spinning briefly for visual feedback
-        setTimeout(() => setIsSyncing(false), 1000);
     }, []);
-
-    // Manual Refresh Handler
-    const handleManualRefresh = () => {
-        if (isSyncing) return;
-        triggerSync();
-    };
 
     // Listen for cross-tab sync events from other tabs
     useEffect(() => {

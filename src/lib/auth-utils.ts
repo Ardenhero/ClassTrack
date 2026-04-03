@@ -111,8 +111,6 @@ export async function checkIsAdmin() {
     const role = await getProfileRole();
     if (role === 'admin') return true;
 
-    // 2. Check if the logged-in user has ANY admin instructor record
-    const { data } = await supabase.auth.getUser();
-    const user = data?.user;
+    await supabase.auth.getUser();
     return false;
 }

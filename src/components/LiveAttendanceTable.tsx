@@ -228,7 +228,8 @@ export default function LiveAttendanceTable({ initialRows, dayString, instructor
                     }
                 }
             )
-            .subscribe((status: string) => {
+            .subscribe((status: string, err?: Error) => {
+                if (err) console.warn("Realtime subscription error:", err);
                 setIsLive(status === "SUBSCRIBED");
             });
 

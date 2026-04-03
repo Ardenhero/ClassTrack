@@ -15,6 +15,33 @@ const ControlSchema = z.object({
     group_id: z.string().uuid().or(z.string()).optional(),
 });
 
+interface InstructorProfile {
+    id: string;
+    department_id: string | null;
+    is_super_admin: boolean;
+    assigned_room_ids: string[] | null;
+    name?: string;
+}
+
+interface IotDevice {
+    id: string;
+    name: string;
+    room_id: string | null;
+    department_id: string | null;
+    rooms?: { name: string } | null;
+}
+
+interface IotRoom {
+    id: string;
+    name: string;
+    department_id: string | null;
+}
+
+interface IotGroup {
+    id: string;
+    room_id: string | null;
+}
+
 export async function POST(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,16 +77,16 @@ export async function POST(request: Request) {
              return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        let instructor: { id: string, name: string, can_activate_room: boolean, is_super_admin: boolean, assigned_room_ids: string[] | null } | null = null;
+        let instructor: InstructorProfile | null = null;
         
         // Resolve instructor from session
         if (user) {
-            const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin, assigned_room_ids').eq('auth_user_id', user.id).maybeSingle();
-            instructor = data;
+            const { data } = await supabase.from('instructors').select('id, department_id, is_super_admin, assigned_room_ids, name').eq('auth_user_id', user.id).maybeSingle();
+            instructor = data as InstructorProfile | null;
         } else if (email) {
             // Hardware/System fallback still allowed if email provided (required for kiosk control)
-            const { data } = await supabase.from('instructors').select('id, name, can_activate_room, is_super_admin, assigned_room_ids').eq('email', email).single();
-            instructor = data;
+            const { data } = await supabase.from('instructors').select('id, department_id, is_super_admin, assigned_room_ids, name').eq('email', email).single();
+            instructor = data as InstructorProfile | null;
         }
 
         if (!instructor && !email) {
@@ -73,7 +100,7 @@ export async function POST(request: Request) {
             if (device_id) {
                 const { data: device } = await supabase.from('iot_devices').select('room_id').eq('id', device_id).single();
                 if (device?.room_id && !roomIds.includes(device.room_id)) {
-                    console.warn(`[SECURITY] Unauthorized IoT access attempt: ${instructor.name} -> ${device_id}`);
+                    console.warn(`[SECURITY] Unauthorized IoT access attempt: ${instructor.name || 'Unknown'} -> ${device_id}`);
                     return NextResponse.json({ error: "unauthorized_room_access" }, { status: 403 });
                 }
             } else if (group_id) {
@@ -120,9 +147,6 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Missing device_id or code" }, { status: 400 });
         }
 
-        // --- GRACE BUFFER (Omitted for brevity, but structurally required) ---
-        // ... (Same logic as before, using device_id to check occupancy)
-
         const realDeviceId = device_id.replace(/_ch\d+$/, '');
         const resultCommand = await controlDevice(realDeviceId, code, value);
 
@@ -144,11 +168,11 @@ export async function POST(request: Request) {
 
     } catch (err) {
         console.error("[IoT Control] Error:", err);
-        return NextResponse.json({ error: "Internal server error", details: String(err) }, { status: 500 });
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
     const { cookies } = await import("next/headers");
     const { createServerClient } = await import("@supabase/ssr");
 
@@ -184,14 +208,15 @@ export async function GET(request: Request) {
         // Fetch instructor profile
         const { data: instructors } = await adminClient
             .from('instructors')
-            .select('id, department_id, is_super_admin, assigned_room_ids')
+            .select('id, department_id, is_super_admin, assigned_room_ids, name')
             .eq('auth_user_id', user.id);
 
         if (!instructors || instructors.length === 0) {
             return NextResponse.json({ error: "no_instructor_profile" }, { status: 403 });
         }
 
-        const instructor = instructors.find(i => i.department_id) || instructors[0];
+        // Use strict casting to known interface
+        const instructor = (instructors.find(i => i.department_id) || instructors[0]) as unknown as InstructorProfile;
         const departmentId = instructor.department_id;
         const isSuperAdmin = instructor.is_super_admin;
 
@@ -203,18 +228,18 @@ export async function GET(request: Request) {
 
         const { data: roomsData } = await adminClient
             .from('rooms')
-            .select('id, name')
+            .select('id, name, department_id')
             .order('name');
 
-        // Apply Visibility Rules
-        const filteredDevices = (allDevices || []).filter((device: any) => {
+        // Apply Visibility Rules with Correct Typing
+        const filteredDevices = (allDevices as unknown as IotDevice[] || []).filter((device) => {
             if (isSuperAdmin) return true;
-            if (instructor.assigned_room_ids?.includes(device.room_id)) return true;
+            if (instructor.assigned_room_ids?.includes(device.room_id || "")) return true;
             if (device.department_id === departmentId) return true;
             return false;
         });
 
-        const filteredRooms = (roomsData || []).filter((room: any) => {
+        const filteredRooms = (roomsData as unknown as IotRoom[] || []).filter((room) => {
             if (isSuperAdmin) return true;
             if (instructor.assigned_room_ids?.includes(room.id)) return true;
             if (room.department_id === departmentId) return true;
@@ -226,19 +251,19 @@ export async function GET(request: Request) {
             .from('iot_device_groups')
             .select('*, members:iot_group_members(device_id, dp_code)');
 
-        const filteredGroups = (groupsData || []).filter((group: any) => {
+        const filteredGroups = (groupsData as unknown as IotGroup[] || []).filter((group) => {
             if (isSuperAdmin) return true;
-            if (instructor.assigned_room_ids?.includes(group.room_id)) return true;
+            if (instructor.assigned_room_ids?.includes(group.room_id || "")) return true;
             return false;
         });
 
         return NextResponse.json({
-            devices: filteredDevices.map((d: any) => ({ ...d, room: d.rooms?.name || "Unassigned" })),
+            devices: filteredDevices.map((d) => ({ ...d, room: d.rooms?.name || "Unassigned" })),
             rooms: filteredRooms,
             groups: filteredGroups
         });
 
-    } catch (err) {
+    } catch {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
