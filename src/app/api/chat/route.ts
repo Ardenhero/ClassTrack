@@ -1,8 +1,10 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { checkRateLimit, getClientIP } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-// Next.js App Router route settings for unbuffered streaming - Perfect Mirror from working CHATBOT
+// Next.js App Router route settings for unbuffered streaming - Perfect Mirror + Zero-Spam Hardening
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -18,15 +20,15 @@ You are the ClassTrack AI Assistant. Your goal is to provide helpful, well-forma
 
 ### SYSTEM KNOWLEDGE
 - **ESP32 Kiosk:** Hardware station with AS608 fingerprint sensor for biometric attendance.
-- **QR Attendance:** Instructors generate a QR code for their class on the main platform. Students use the built-in QR scanner on their student portal to scan it and check in.
-- **Student Portal:** View attendance history, submit Leave of Absence (LOA) evidence, see real-time academic info.
-- **Suspensions:** Dept Admins declare these; students see a high-priority modal immediately.
-- **No Class:** Instructors can mark "No Class" for multiple subjects at once.
-- **Administrator:** Top-level admins who manage the system setup and overall structure.
-- **Team:** Created by Arden Hero Damaso (Lead Designer), Clemen Jay Luis, and Ace Donner Dane Asuncion.
+- **QR Attendance:** Instructors generate a QR code for their class. Students use the student portal to scan it and check in.
+- **Student Portal:** View attendance history, submit LOA evidence, see real-time academic info.
+- **Suspensions:** Dept Admins declare these; students see a high-priority modal.
+- **No Class:** Instructors can mark "No Class" for multiple subjects.
+- **Administrator:** Top-level admins manage system setup.
+- **Team:** Arden Hero Damaso (Lead Designer), Clemen Jay Luis, and Ace Donner Dane Asuncion.
 
 ### TROUBLESHOOTING
-- **Login Fail:** Check email spelling or reset password.
+- **Login Fail:** Check email or reset password.
 - **QR Link:** Must be within class schedule time.
 - **Sensor:** Clean finger/sensor or re-enroll.
 
@@ -34,22 +36,52 @@ Balance your response with a helpful opening paragraph followed by clear bullete
 `;
 
 export async function POST(req: Request) {
+    // --- 🛡️ IDENTITY VERIFICATION (Zero-Spam Hardening) ---
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() { return cookieStore.getAll(); },
+            },
+        }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Block Guests: Total spam protection
+    if (!user) {
+        return new Response(JSON.stringify({ 
+            error: "unauthorized",
+            message: "Please log in to use ClassTrack Intelligence."
+        }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // --- 🛡️ PRE-FLIGHT CHECK (Brain Identity) ---
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    if (!apiKey) {
+        return new Response(JSON.stringify({ 
+            error: "brain_key_missing",
+            message: "My AI brain key is missing on the server! Please verify GOOGLE_GENERATIVE_AI_API_KEY."
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
     try {
-        // --- 🛡️ RATE LIMITING (Anti-Abuse Gatekeeper) ---
-        const ip = getClientIP(req);
-        const { success, limit, remaining } = await checkRateLimit(ip, "chat");
+        // --- 🛡️ RATE LIMITING (Account-Based UUID Guard) ---
+        // We use user.id (UUID) instead of IP to prevent evasion via devices/networks
+        const { success, limit, remaining } = await checkRateLimit(user.id, "chat");
 
         if (!success) {
             return new Response(JSON.stringify({
                 error: "Rate limit exceeded",
-                message: `You've reached your daily limit of ${limit} messages. Please try again tomorrow.`
+                message: `You've reached your daily limit of ${limit} messages for your account. Please try again tomorrow.`
             }), { status: 429, headers: { 'Content-Type': 'application/json' } });
         }
 
         const body = await req.json().catch(() => ({}));
         let { messages } = body;
 
-        // Ensure messages is always an array (Mirrored logic)
         if (!messages || !Array.isArray(messages)) {
             if (body.content && body.role) {
                 messages = [{ role: body.role, content: body.content }];
@@ -63,8 +95,9 @@ export async function POST(req: Request) {
             messages = messages.slice(-10);
         }
 
+        const google = createGoogleGenerativeAI({ apiKey });
         const result = await streamText({
-            model: google('gemini-2.5-flash'), // Using the specific WORKING string from classtrack folder
+            model: google('gemini-2.5-flash'),
             system: SYSTEM_PROMPT,
             messages,
             temperature: 0.7,
@@ -72,18 +105,18 @@ export async function POST(req: Request) {
 
         const response = result.toTextStreamResponse();
         
-        // Add rate limit headers for transparency (Synced with ChatWidget UI)
+        // Add rate limit headers for transparency
         response.headers.set('X-RateLimit-Remaining', remaining.toString());
         response.headers.set('X-RateLimit-Limit', limit.toString());
         
         return response;
     } catch (err: unknown) {
         const error = err as Error;
-        console.error("Chat API Detailed Error:", error);
+        console.error("Chat API Identity Failure:", error);
 
         return new Response(JSON.stringify({
             error: "brain_failure",
-            message: "Actually, I ran into a bit of trouble connecting to my brain. Please try again in a moment!",
+            message: "Actually, I ran into a bit of trouble connecting to my brain. Please try again!",
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         }), {
             status: 500,
