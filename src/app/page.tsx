@@ -55,7 +55,7 @@ export default async function Dashboard() {
   }
 
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const isValidProfileId = profileId && (uuidRegex.test(profileId) || profileId === 'admin-profile');
+  const isValidProfileId = profileId && uuidRegex.test(profileId);
   const isActiveAdmin = activeRole === 'admin';
   const user = authUser;
 

@@ -117,9 +117,10 @@ export async function POST(request: Request) {
         if (isRoomIntent && body.device_id) {
             console.log(`[ROOM CONTROL] PIN/System Trigger: Device=${body.device_id}, Action=${typeStr}`);
 
-            const targetRoomId = kioskInfo?.room_id || body.room_id || null;
+            const targetRoomId = kioskInfo?.room_id || null;
             if (!targetRoomId) {
-                return NextResponse.json({ error: "no_room_assigned", device_serial: body.device_id }, { status: 404 });
+                console.warn(`[SECURITY] Blocked room control attempt for unmapped device: ${body.device_id}`);
+                return NextResponse.json({ error: "no_room_assigned", device_serial: body.device_id }, { status: 403 });
             }
 
             let instructor = null;

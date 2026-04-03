@@ -30,7 +30,7 @@ export async function markAllAsRead() {
         .update({ read: true })
         .eq("read", false);
 
-    if (profileId && profileId !== 'admin-profile') {
+    if (profileId) {
         query = query.eq("instructor_id", profileId);
     } else {
         query = query.eq("user_id", user.id);

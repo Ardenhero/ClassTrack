@@ -57,13 +57,18 @@ export async function POST(req: Request) {
             }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // Ensure messages is always an array
+        // Ensure messages is always an array and slice context (Security + Cost)
         if (!messages || !Array.isArray(messages)) {
             if (body.content && body.role) {
                 messages = [body];
             } else {
                 return new Response("Invalid messages payload format", { status: 400 });
             }
+        }
+
+        // Limit to last 10 messages to prevent context hijacking / massive token usage
+        if (messages.length > 10) {
+            messages = messages.slice(-10);
         }
 
         const result = await streamText({

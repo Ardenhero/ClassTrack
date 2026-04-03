@@ -208,6 +208,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Student not found" }, { status: 404 });
         }
 
+        // MASK STUDENT NAME FOR PRIVACY (SIN Doxing Protection)
+        const parts = student.name.split(" ");
+        const maskedName = parts.map((p: string) => p[0] + "*".repeat(Math.max(0, p.length - 1))).join(" ");
+
         // Get classes this student is ENROLLED in (via enrollments table)
         // Explicitly join classes and instructors
         // NOTE: classes table uses 'name' not 'subject_name', and lacks 'section'
@@ -235,33 +239,26 @@ export async function GET(request: NextRequest) {
 
         let classesWithInstructor: {
             id: number;
-            subject_name: string; // Frontend expects this
-            section: string;      // Frontend expects this
-            year_level: string;
+            subject_name: string;
             instructor_id: string;
             instructor_name: string;
-            instructor_role: string;
         }[] = [];
 
         if (enrollments && enrollments.length > 0) {
-            // Build classes list from enrollment data
+            // Build redacted classes list (ID + Name Only)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             classesWithInstructor = enrollments.map((e: any) => {
                 const c = Array.isArray(e.classes) ? e.classes[0] : e.classes;
                 if (!c) return null;
 
-                // Handle explicitly named relationship or aliased name
                 const instructorRaw = c['instructors!classes_instructor_id_fkey'] || c.instructors;
                 const instructor = Array.isArray(instructorRaw) ? instructorRaw[0] : instructorRaw;
 
                 return {
                     id: c.id,
                     subject_name: c.name,
-                    section: "",
-                    year_level: c.year_level,
                     instructor_id: instructor?.id || c.instructor_id || "",
-                    instructor_name: instructor?.name || "Unknown Instructor",
-                    instructor_role: instructor?.role || ""
+                    instructor_name: instructor?.name || "Unknown Instructor"
                 };
             }).filter((item): item is NonNullable<typeof item> => item !== null && !!item.id);
         }
@@ -292,9 +289,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             student: {
                 id: student.id,
-                name: student.name,
+                name: maskedName,
                 sin: student.sin,
-                year_level: student.year_level,
             },
             classes: classesWithInstructor,
             instructors,

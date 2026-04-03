@@ -50,7 +50,7 @@ export default function ProfilePage() {
 
                 const { data: instructor, error: fetchError } = await query.maybeSingle();
 
-                if (!instructor && (!activeProfileId || activeProfileId === 'admin-profile')) {
+                if (!instructor && !activeProfileId) {
                     // Try one more time by role for safety
                     const { data: adminRecord } = await supabase
                         .from("instructors")
