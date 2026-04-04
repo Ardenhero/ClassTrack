@@ -52,11 +52,11 @@ export default function RootLayout({
           {children}
           <ChatWidget />
         </Providers>
-        {/* @ts-ignore */}
+        {/* @ts-expect-error */}
         <Analytics nonce={nonce} />
-        {/* @ts-ignore */}
+        {/* @ts-expect-error */}
         <SpeedInsights nonce={nonce} />
-        {/* @ts-ignore */}
+        {/* @ts-expect-error */}
         <GlobalSync nonce={nonce} />
       </body>
     </html>
