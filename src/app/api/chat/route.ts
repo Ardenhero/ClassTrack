@@ -3,7 +3,7 @@ import { streamText } from 'ai';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getStudentSession } from "@/app/student/portal/actions";
+import { getStudentSession } from "@/lib/student-session";
 
 // Next.js App Router route settings for unbuffered streaming - Perfect Mirror + Zero-Spam Hardening
 export const runtime = 'edge';
@@ -51,14 +51,12 @@ export async function POST(req: Request) {
 
     const { data: { user } } = await supabase.auth.getUser();
     let userId = user?.id;
-    let userRole = "instructor";
 
     // --- 🛡️ STUDENT SESSION CHECK ---
     if (!userId) {
         const studentSession = await getStudentSession();
         if (studentSession) {
             userId = studentSession.id;
-            userRole = "student";
         }
     }
 

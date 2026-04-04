@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { getStudentSession } from '@/app/student/portal/actions';
+import { getStudentSession } from "@/lib/student-session";
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { subDays, differenceInDays } from 'date-fns';
 

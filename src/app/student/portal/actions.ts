@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cookies } from "next/headers";
 import { hashPassword, verifyPassword } from "@/utils/supabase/password-utils";
+import { getStudentSession } from "@/lib/student-session";
 
 // Security utilities imported from @/utils/supabase/password-utils
 
@@ -75,23 +76,7 @@ export async function loginStudent(formData: FormData) {
     return { success: true };
 }
 
-export async function getStudentSession() {
-    const cookieStore = cookies();
-    const sessionCookie = cookieStore.get("student_session");
-
-    if (!sessionCookie) return null;
-
-    try {
-        const session = JSON.parse(sessionCookie.value);
-        // Basic validation: check if it's not too old (e.g., 30 days)
-        if (Date.now() - session.timestamp > 1000 * 60 * 60 * 24 * 30) {
-            return null;
-        }
-        return session;
-    } catch {
-        return null;
-    }
-}
+// getStudentSession removed (now in @/lib/student-session)
 
 export async function logoutStudent() {
     const cookieStore = cookies();

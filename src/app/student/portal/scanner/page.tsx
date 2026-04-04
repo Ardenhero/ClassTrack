@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getStudentSession, getLatestStudentRecord } from "../actions";
+import { getLatestStudentRecord } from "../actions";
+import { getStudentSession } from "@/lib/student-session";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import { 
     Loader2, 

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
     try {
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.auth.getSession();
         
         // Note: IoT status is primarily for web admin, but we allowed hardware before.
         // We'll keep the session check for web users. 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStudentSession } from "../actions";
+import { getStudentSession } from "@/lib/student-session";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import { Zap, Loader2 } from "lucide-react";
 import Image from "next/image";

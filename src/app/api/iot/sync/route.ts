@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getDeviceStatus } from "../../../../lib/tuya";
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/iot/sync — Background worker to sync Tuya Cloud state to Supabase.
  * Call this every 30-60 minutes via Cron.
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
 
     const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,

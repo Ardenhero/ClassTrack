@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStudentSession, getLatestStudentRecord } from "../actions";
+import { getLatestStudentRecord } from "../actions";
+import { getStudentSession } from "@/lib/student-session";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import { FileText, Loader2, Info, ShieldCheck } from "lucide-react";
 import { SubmitEvidenceContent } from "@/components/SubmitEvidenceContent";

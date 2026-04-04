@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStudentSession, getStudentNotifications, getLatestStudentRecord, markNotificationAsRead } from "../actions";
+import { getStudentNotifications, getLatestStudentRecord, markNotificationAsRead } from "../actions";
+import { getStudentSession } from "@/lib/student-session";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import {
     Calendar,

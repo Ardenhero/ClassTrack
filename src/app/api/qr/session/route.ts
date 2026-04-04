@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { encryptPayload, decryptPayload } from "@/lib/qr-utils";
 import crypto from "crypto";
-import { getStudentSession } from '@/app/student/portal/actions';
+import { getStudentSession } from "@/lib/student-session";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 
 export const dynamic = 'force-dynamic';
