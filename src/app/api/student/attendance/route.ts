@@ -384,7 +384,12 @@ export async function GET(request: Request) {
                     total_logs_fetched: attendanceLogs.length
                 }
             } : {})
-        }, { status: 200 });
+        }, {
+            status: 200,
+            headers: {
+                'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+            },
+        });
 
     } catch (error) {
         console.error('API Error:', error);

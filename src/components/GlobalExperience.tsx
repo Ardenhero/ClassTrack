@@ -6,6 +6,11 @@ import { useEffect } from "react";
  * GlobalExperience Component
  * Handles the application-wide particle background (HeroCanvas)
  * and the custom "dot and ring" cursor animation.
+ *
+ * Performance optimizations:
+ * - Page Visibility API: pauses animation when tab is hidden
+ * - Mobile: skip particle connection lines (O(n²) → O(n))
+ * - Reduced connection distance: 95px → 80px
  */
 export default function GlobalExperience() {
 
@@ -127,8 +132,19 @@ export default function GlobalExperience() {
       document.addEventListener('mousemove', handleCanvasMouse);
       
       let canvasRaf: number;
+      let isVisible = true;
+
+      // Page Visibility API — pause animation when tab is hidden
+      const handleVisibility = () => {
+        isVisible = !document.hidden;
+        if (isVisible) canvasRaf = requestAnimationFrame(draw);
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+
+      const isMobile = window.innerWidth < 768;
+
       const draw = () => {
-        if(!ctx) return;
+        if (!ctx || !isVisible) return;
         ctx.clearRect(0, 0, W, H); 
         t += 0.0015;
 
@@ -150,18 +166,21 @@ export default function GlobalExperience() {
         
         parts.forEach(p => { p.u(); p.d() });
         
-        for (let i = 0; i < parts.length; i++) {
-          for (let j = i + 1; j < parts.length; j++) {
-            const dx = parts[i].x - parts[j].x;
-            const dy = parts[i].y - parts[j].y;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d < 95) {
-              ctx.beginPath(); 
-              ctx.moveTo(parts[i].x, parts[i].y); 
-              ctx.lineTo(parts[j].x, parts[j].y); 
-              ctx.strokeStyle = `rgba(${pColor}, ${0.05 * (1 - d / 95)})`; 
-              ctx.lineWidth = 0.5; 
-              ctx.stroke();
+        // Skip connection lines on mobile (O(n²) → O(n))
+        if (!isMobile) {
+          for (let i = 0; i < parts.length; i++) {
+            for (let j = i + 1; j < parts.length; j++) {
+              const dx = parts[i].x - parts[j].x;
+              const dy = parts[i].y - parts[j].y;
+              const d = dx * dx + dy * dy; // Skip sqrt — compare squared distance
+              if (d < 6400) { // 80² = 6400
+                ctx.beginPath(); 
+                ctx.moveTo(parts[i].x, parts[i].y); 
+                ctx.lineTo(parts[j].x, parts[j].y); 
+                ctx.strokeStyle = `rgba(${pColor}, ${0.05 * (1 - Math.sqrt(d) / 80)})`; 
+                ctx.lineWidth = 0.5; 
+                ctx.stroke();
+              }
             }
           }
         }
@@ -172,6 +191,7 @@ export default function GlobalExperience() {
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mousemove', handleCanvasMouse);
+        document.removeEventListener('visibilitychange', handleVisibility);
         window.removeEventListener('resize', resize);
         cancelAnimationFrame(cursorRaf);
         cancelAnimationFrame(canvasRaf);

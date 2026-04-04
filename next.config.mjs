@@ -10,7 +10,19 @@ const nextConfig = {
         },
     },
     experimental: {
-        optimizePackageImports: ['lucide-react', 'date-fns', 'recharts'],
+        optimizePackageImports: [
+            'lucide-react',
+            'date-fns',
+            'date-fns-tz',
+            'recharts',
+            '@supabase/supabase-js',
+            'clsx',
+            'swr',
+            'zod',
+            'ai',
+            '@ai-sdk/google',
+            '@ai-sdk/react',
+        ],
     },
     images: {
         remotePatterns: [

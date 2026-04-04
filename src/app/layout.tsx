@@ -5,9 +5,20 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { GlobalSync } from "@/components/GlobalSync";
-import { ChatWidget } from "@/components/ChatWidget";
-import GlobalExperience from "@/components/GlobalExperience";
+import dynamic from "next/dynamic";
+
+// Lazy-load ChatWidget — only loaded when the page hydrates, not in initial bundle
+const ChatWidget = dynamic(() => import("@/components/ChatWidget").then(mod => ({ default: mod.ChatWidget })), {
+  ssr: false,
+});
+
+const GlobalExperience = dynamic(() => import("@/components/GlobalExperience"), {
+  ssr: false,
+});
+
+const GlobalSync = dynamic(() => import("@/components/GlobalSync").then(mod => mod.GlobalSync), {
+  ssr: false,
+});
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 

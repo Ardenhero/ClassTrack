@@ -21,7 +21,12 @@ export async function GET() {
             return NextResponse.json({ error: 'Failed to fetch active term' }, { status: 500 });
         }
 
-        return NextResponse.json({ data }, { status: 200 });
+        return NextResponse.json({ data }, {
+            status: 200,
+            headers: {
+                'Cache-Control': 'private, max-age=300, stale-while-revalidate=600',
+            },
+        });
     } catch (error) {
         console.error('[Term API] Unexpected error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
