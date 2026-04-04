@@ -75,14 +75,14 @@ export async function updateSession(request: NextRequest) {
     }
 
     // --- 🛡️ CONTENT SECURITY POLICY (CSP) ---
-    // High-Security A+ Configuration: Nonce-based protection with perfect style hardening.
+    // High-Security A+ Configuration: Nonce-based protection with style hashing for third-party scripts.
     const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
     const cspHeader = `
         default-src 'none';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-Jd9G33bjhwopGiRZtfUvGvWzmU+Il8JS3V7ejGjBVgc=';
         script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-Jd9G33bjhwopGiRZtfUvGvWzmU+Il8JS3V7ejGjBVgc=';
-        style-src 'self' 'nonce-${nonce}' fonts.googleapis.com;
-        style-src-elem 'self' 'nonce-${nonce}' fonts.googleapis.com;
+        style-src 'self' 'nonce-${nonce}' fonts.googleapis.com 'sha256-Vw9WV3SMnQjKSHaaXTz6/TmRsmC9/FgweoFY3xRXghY=' 'sha256-y/7CwTPJQbRWG8gKg35rzYn/jkpp5kIr6Q+32kEMKTA=' 'sha256-fxkN4c/2nO1SmeNIKDXcFVD1poH21fkzl8F/PSmJ8GE=' 'sha256-p2PSMpDa/5boo5l1b0wQgMtThA/LasMB1Ezif8auRsA=';
+        style-src-elem 'self' 'nonce-${nonce}' fonts.googleapis.com 'sha256-Vw9WV3SMnQjKSHaaXTz6/TmRsmC9/FgweoFY3xRXghY=' 'sha256-y/7CwTPJQbRWG8gKg35rzYn/jkpp5kIr6Q+32kEMKTA=' 'sha256-fxkN4c/2nO1SmeNIKDXcFVD1poH21fkzl8F/PSmJ8GE=' 'sha256-p2PSMpDa/5boo5l1b0wQgMtThA/LasMB1Ezif8auRsA=';
         style-src-attr 'unsafe-inline';
         img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.com https://vercel.live;
         font-src 'self' fonts.gstatic.com;
