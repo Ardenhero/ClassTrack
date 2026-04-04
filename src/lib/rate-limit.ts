@@ -98,8 +98,8 @@ export class RateLimiter {
     }
 }
 
-// Global fallback instance for general APIs (300/min)
-export const globalLimiter = new RateLimiter(300, 60 * 1000);
+// Global fallback instance for general APIs (1000/min for shared school data)
+export const globalLimiter = new RateLimiter(1000, 60 * 1000);
 
 // Specific fallback for AI Chatbot (10/day)
 export const chatFallbackLimiter = new RateLimiter(10, 24 * 60 * 60 * 1000);
