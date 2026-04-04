@@ -99,7 +99,7 @@ export default function AboutPage() {
       tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7\" Touch LCD','UART + SPI + I²C']
     },
     as608:{
-      fb:'<svg viewBox="52 4 105 105" style="width:1.8em; height:1.8em; overflow:visible; filter:drop-shadow(0 20px 30px rgba(0,0,0,0.6));"><defs><linearGradient id="gYellowTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a" /><stop offset="100%" stop-color="#eab308" /></linearGradient><linearGradient id="gYellowRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ca8a04" /><stop offset="100%" stop-color="#854d0e" /></linearGradient><linearGradient id="gBlackTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3f3f46" /><stop offset="100%" stop-color="#18181b" /></linearGradient><linearGradient id="gBlackRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#18181b" /><stop offset="100%" stop-color="#000000" /></linearGradient><linearGradient id="gBlackSlant" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#27272a" /><stop offset="100%" stop-color="#09090b" /></linearGradient><linearGradient id="gGlass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e4e4e7" /><stop offset="30%" stop-color="#71717a" /><stop offset="60%" stop-color="#27272a" /><stop offset="100%" stop-color="#000000" /></linearGradient></defs><!-- Yellow Block --><polygon points="127.3,15.8 151.5,29.8 144.2,34.0 120.0,20.0" fill="url(#gYellowTop)" /><polygon points="151.5,29.8 144.2,34.0 144.2,64.1 151.5,59.9" fill="url(#gYellowRight)" /><ellipse cx="128.8" cy="20.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 128.8 20.9)" /><ellipse cx="131.1" cy="22.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 131.1 22.2)" /><ellipse cx="133.4" cy="23.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 133.4 23.6)" /><ellipse cx="135.8" cy="24.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 135.8 24.9)" /><ellipse cx="138.1" cy="26.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 138.1 26.2)" /><ellipse cx="140.4" cy="27.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 140.4 27.6)" /><ellipse cx="142.7" cy="28.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 142.7 28.9)" /><!-- Black Body --><polygon points="120.0,20.0 144.2,34.0 120.0,48.0 95.8,34.0" fill="url(#gBlackTop)" /><polygon points="144.2,34.0 120.0,48.0 83.6,92.1 83.6,99.1 144.2,64.1" fill="url(#gBlackRight)" /><!-- Split line right face --><line x1="129.7" y1="42.4" x2="129.7" y2="72.5" stroke="#000" stroke-width="1.2" /><line x1="130.2" y1="42.9" x2="130.2" y2="73.0" stroke="#3f3f46" stroke-width="0.6" /><!-- Details on top face --><ellipse cx="120.0" cy="34.0" rx="2" ry="1.2" fill="#09090b" transform="rotate(30 120.0 34.0)" /><ellipse cx="120.0" cy="34.0" rx="0.8" ry="0.5" fill="#3f3f46" transform="rotate(30 120.0 34.0)" /><polygon points="95.8,34.0 120.0,48.0 83.6,92.1 59.4,78.1" fill="url(#gBlackSlant)" /><polygon points="59.4,78.1 83.6,92.1 83.6,99.1 59.4,85.1" fill="#050505" /><!-- Window --><polygon points="88.3,48.2 106.8,58.9 105.0,65.5 86.5,54.8" fill="#09090b" /><polygon points="106.8,58.9 87.5,82.3 85.7,88.9 105.0,65.5" fill="#000000" /><polygon points="88.3,48.2 68.9,71.6 67.2,78.2 86.5,54.8" fill="#27272a" /><polygon points="68.9,71.6 87.5,82.3 85.7,88.9 67.2,78.2" fill="#3f3f46" /><polygon points="86.5,54.8 105.0,65.5 85.7,88.9 67.2,78.2" fill="url(#gGlass)" /><!-- Glass Reflection --><polygon points="86.5,54.8 105.0,65.5 97.3,74.9 78.8,64.2" fill="white" opacity="0.08" /></svg>',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'// OPTICAL FINGERPRINT MODULE',
+      fb:'<svg viewBox="52 4 105 105" class="as608-svg"><defs><linearGradient id="as608-gYellowTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a" /><stop offset="100%" stop-color="#eab308" /></linearGradient><linearGradient id="as608-gYellowRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ca8a04" /><stop offset="100%" stop-color="#854d0e" /></linearGradient><linearGradient id="as608-gBlackTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3f3f46" /><stop offset="100%" stop-color="#18181b" /></linearGradient><linearGradient id="as608-gBlackRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#18181b" /><stop offset="100%" stop-color="#000000" /></linearGradient><linearGradient id="as608-gBlackSlant" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#27272a" /><stop offset="100%" stop-color="#09090b" /></linearGradient><linearGradient id="as608-gGlass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e4e4e7" /><stop offset="30%" stop-color="#71717a" /><stop offset="60%" stop-color="#27272a" /><stop offset="100%" stop-color="#000000" /></linearGradient></defs><!-- Yellow Block --><polygon points="127.3,15.8 151.5,29.8 144.2,34.0 120.0,20.0" fill="url(#as608-gYellowTop)" /><polygon points="151.5,29.8 144.2,34.0 144.2,64.1 151.5,59.9" fill="url(#as608-gYellowRight)" /><ellipse cx="128.8" cy="20.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 128.8 20.9)" /><ellipse cx="131.1" cy="22.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 131.1 22.2)" /><ellipse cx="133.4" cy="23.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 133.4 23.6)" /><ellipse cx="135.8" cy="24.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 135.8 24.9)" /><ellipse cx="138.1" cy="26.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 138.1 26.2)" /><ellipse cx="140.4" cy="27.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 140.4 27.6)" /><ellipse cx="142.7" cy="28.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 142.7 28.9)" /><!-- Black Body --><polygon points="120.0,20.0 144.2,34.0 120.0,48.0 95.8,34.0" fill="url(#as608-gBlackTop)" /><polygon points="144.2,34.0 120.0,48.0 83.6,92.1 83.6,99.1 144.2,64.1" fill="url(#as608-gBlackRight)" /><!-- Split line right face --><line x1="129.7" y1="42.4" x2="129.7" y2="72.5" stroke="#000" stroke-width="1.2" /><line x1="130.2" y1="42.9" x2="130.2" y2="73.0" stroke="#3f3f46" stroke-width="0.6" /><!-- Details on top face --><ellipse cx="120.0" cy="34.0" rx="2" ry="1.2" fill="#09090b" transform="rotate(30 120.0 34.0)" /><ellipse cx="120.0" cy="34.0" rx="0.8" ry="0.5" fill="#3f3f46" transform="rotate(30 120.0 34.0)" /><polygon points="95.8,34.0 120.0,48.0 83.6,92.1 59.4,78.1" fill="url(#as608-gBlackSlant)" /><polygon points="59.4,78.1 83.6,92.1 83.6,99.1 59.4,85.1" fill="#050505" /><!-- Window --><polygon points="88.3,48.2 106.8,58.9 105.0,65.5 86.5,54.8" fill="#09090b" /><polygon points="106.8,58.9 87.5,82.3 85.7,88.9 105.0,65.5" fill="#000000" /><polygon points="88.3,48.2 68.9,71.6 67.2,78.2 86.5,54.8" fill="#27272a" /><polygon points="68.9,71.6 87.5,82.3 85.7,88.9 67.2,78.2" fill="#3f3f46" /><polygon points="86.5,54.8 105.0,65.5 85.7,88.9 67.2,78.2" fill="url(#as608-gGlass)" /><!-- Glass Reflection --><polygon points="86.5,54.8 105.0,65.5 97.3,74.9 78.8,64.2" fill="white" opacity="0.08" /></svg>',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'// OPTICAL FINGERPRINT MODULE',
       desc:'An optical fingerprint sensor with a built-in DSP chip. Captures high-resolution fingerprint images at 500 DPI, extracts minutiae points, and performs template matching entirely onboard — delivering a match result to the ESP32-S3 via UART in under one second. Supports 360° finger placement rotation.',
       dims:'Module: ~20 × 21 × 21.5mm · Connector: UART TTL · Power: 3.3V/5V',
       specs:[{k:'Scan Resolution',v:'500 DPI'},{k:'Template Storage',v:'Up to 162 templates'},{k:'Match Time',v:'< 1 second'},{k:'Interface',v:'UART TTL 3.3V / 5V'},{k:'Baud Rate',v:'57600 bps'},{k:'FAR',v:'< 0.001%'},{k:'FRR',v:'< 0.1%'},{k:'Rotation Support',v:'360° recognition'}],
@@ -111,7 +111,15 @@ export default function AboutPage() {
   const openModal = (key: string) => {
     const d = hwData[key];
     const mfb = document.getElementById('mfb');
-    if(mfb) mfb.innerHTML = d.fb;
+    if(mfb) {
+      mfb.innerHTML = d.fb;
+      // If it's the sensor, ensure we add the modal container class if it was stripped
+      if (key === 'as608') {
+        mfb.className = 'mimg-as608-container';
+      } else {
+        mfb.className = '';
+      }
+    }
     
     document.getElementById('mdims')!.textContent = d.dims;
     document.getElementById('mbadge-txt')!.textContent = d.badge;
@@ -336,7 +344,7 @@ export default function AboutPage() {
         <section id="hardware">
           <div className="si" style={{padding:'0 52px'}}>
             <div className="slbl rv">The Machines</div>
-            <h2 className="stit rv d1">Hardware Deep-Dive</h2>
+            <h2 className="stit rv d1">Hardware Components</h2>
             <p className="sdesc rv d2">Click either hardware component to explore its full spec sheet, technical role, and how it fits into ClassTrack.</p>
             <div className="hwcards">
               <div className="hwc rv d2" onClick={() => openModal('esp')}>
@@ -385,7 +393,7 @@ export default function AboutPage() {
               <div id="mlglow"></div>
               <div id="miwrap">
                 <div id="mimg-container" style={{display:'flex', alignItems:'center', justifyContent:'center', width:'100%', minHeight:'200px'}}>
-                  <div id="mfb" style={{fontSize:'120px', animation:'mfl 4s ease-in-out infinite', filter:'drop-shadow(0 30px 60px rgba(123, 17, 19, 0.38))'}}></div>
+                  <div id="mfb"></div>
                 </div>
                 <div id="mdims" style={{fontFamily:'var(--fm)', fontSize:'.65rem', color:'var(--mu)', letterSpacing:'.1em', textAlign:'center', lineHeight:1.6, marginBottom:'24px'}}></div>
                 <div id="mtagbar" style={{display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center', marginTop:'4px'}}></div>
@@ -414,7 +422,7 @@ export default function AboutPage() {
             <div className="kwrap">
               <div className="kdev rv">
                 <div className="kscr">
-                  <div className="kstat">CLASSTRACK KIOSK v2.1 · ESP32-S3</div>
+                  <div className="kstat">CLASSTRACK KIOSK v1 · ESP32-S3</div>
                   <div className="kmain idle" id="ksm">READY</div>
                   <div className="ksub" id="kss">Place finger on sensor</div>
                 </div>

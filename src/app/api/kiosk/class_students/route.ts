@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,13 +13,19 @@ interface EnrollmentRecord {
     };
 }
 
-export async function GET(request: Request) {
+/**
+ * GET /api/kiosk/class_students?class_id=<uuid>
+ * Returns all students enrolled in a specific class.
+ * Supports Hybrid Auth: Hardware API Key or Session Token.
+ */
+export async function GET(req: NextRequest) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { searchParams } = new URL(request.url);
+
+    const { searchParams } = new URL(req.url);
     const class_id = searchParams.get('class_id') || searchParams.get('classId') || searchParams.get('id');
 
     if (!class_id) {

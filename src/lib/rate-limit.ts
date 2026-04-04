@@ -34,12 +34,20 @@ export const rateLimiters = {
         prefix: "ratelimit:auth",
     }) : null,
 
-    // Attendance API: 200 requests per minute (for IoT devices)
+    // Attendance API: 50 requests per minute (for IoT devices)
     attendance: redis ? new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(200, "1 m"),
+        limiter: Ratelimit.slidingWindow(50, "1 m"),
         analytics: true,
         prefix: "ratelimit:attendance",
+    }) : null,
+
+    // Audit/Log Writes: 5 per minute (prevents log-injection spam)
+    audit: redis ? new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(5, "1 m"),
+        analytics: true,
+        prefix: "ratelimit:audit",
     }) : null,
 
     // Student mutations: 20 per minute

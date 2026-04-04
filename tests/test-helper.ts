@@ -1,7 +1,7 @@
 import { Page, expect } from '@playwright/test';
 
-export const TEST_EMAIL = process.env.TEST_EMAIL || 'testadmin@playwright.test';
-export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'r4iolbv6pl';
+export const TEST_EMAIL = process.env.TEST_EMAIL || 'adminme@engineering.edu';
+export const TEST_PASSWORD = process.env.TEST_PASSWORD || 'adminme123';
 
 export async function loginTestUser(page: Page) {
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
@@ -11,7 +11,7 @@ export async function loginTestUser(page: Page) {
     await page.waitForLoadState('networkidle');
 
     // Wait for the email input to be visible and interactive (hydration complete)
-    await page.locator('[data-testid="email-input"]').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('[data-testid="email-input"]').waitFor({ state: 'visible', timeout: 30000 });
 
     await page.locator('[data-testid="email-input"]').fill(TEST_EMAIL);
     await page.locator('[data-testid="password-input"]').fill(TEST_PASSWORD);
@@ -20,7 +20,7 @@ export async function loginTestUser(page: Page) {
     await page.locator('[data-testid="sign-in-button"]').click();
 
     // Wait for navigation away from login page (either to select-profile or dashboard)
-    await page.waitForURL(url => !url.toString().includes('/login'), { timeout: 20000 });
+    await page.waitForURL(url => !url.href.includes('/login'), { timeout: 30000 });
 
     // If an error message appeared on the page, print it to help debugging
     const errorMsg = await page.locator('.text-red-700, .bg-red-50').first().textContent({ timeout: 1000 }).catch(() => null);

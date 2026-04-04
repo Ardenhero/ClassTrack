@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +18,17 @@ export async function POST(req: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+
+    // --- 🛡️ FINANCIAL GUARD: Rate-limit audit log writes ---
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const { success } = await checkRateLimit(ip, "audit");
+    if (!success) {
+        return NextResponse.json({
+            error: "Too many requests",
+            message: "Database logging is throttled. Please try again later."
+        }, { status: 429 });
+    }
 
     const body = await req.json();
     const { instructor_id, slot_id, device_serial } = body;

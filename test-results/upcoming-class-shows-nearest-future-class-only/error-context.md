@@ -1,0 +1,232 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - img "NWU Seal" [ref=e7]
+          - generic [ref=e8]:
+            - generic [ref=e9]: NORTHWESTERN
+            - generic [ref=e10]: UNIVERSITY
+        - generic:
+          - img "NWU Seal"
+        - button "Collapse sidebar" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+      - navigation [ref=e14]:
+        - link "Dashboard" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - img [ref=e16]
+          - generic [ref=e21]: Dashboard
+        - generic [ref=e22]:
+          - link "Attendance" [ref=e23] [cursor=pointer]:
+            - /url: /attendance
+            - img [ref=e24]
+            - generic [ref=e27]: Attendance
+          - button "Expand Directory" [ref=e29] [cursor=pointer]:
+            - generic [ref=e30]:
+              - img [ref=e31]
+              - generic [ref=e34]: Directory
+            - img [ref=e35]
+        - link "Mails" [ref=e37] [cursor=pointer]:
+          - /url: /mails
+          - img [ref=e38]
+          - generic [ref=e41]: Mails
+        - link "QR Attendance" [ref=e42] [cursor=pointer]:
+          - /url: /dashboard/scanner
+          - img [ref=e43]
+          - generic [ref=e49]: QR Attendance
+        - link "Enrollment List" [ref=e50] [cursor=pointer]:
+          - /url: /enrollment-list
+          - img [ref=e51]
+          - generic [ref=e54]: Enrollment List
+        - link "Admin Console" [ref=e55] [cursor=pointer]:
+          - /url: /dashboard/admin
+          - img [ref=e56]
+          - generic [ref=e59]: Admin Console
+        - link "Settings" [ref=e60] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e61]
+          - generic [ref=e64]: Settings
+        - link "System Info" [ref=e65] [cursor=pointer]:
+          - /url: /about
+          - img [ref=e66]
+          - generic [ref=e68]: System Info
+      - generic [ref=e69]:
+        - link "M ME Department Admin View Profile" [ref=e70] [cursor=pointer]:
+          - /url: /profile
+          - generic [ref=e71]: M
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: ME Department Admin
+            - paragraph [ref=e74]: View Profile
+        - button "Dark Mode" [ref=e75] [cursor=pointer]:
+          - img [ref=e76]
+          - generic [ref=e78]: Dark Mode
+        - button "Switch Profile" [ref=e79] [cursor=pointer]:
+          - img [ref=e80]
+          - text: Switch Profile
+        - button "Sign Out" [ref=e84] [cursor=pointer]:
+          - img [ref=e85]
+          - text: Sign Out
+    - main [ref=e88]:
+      - generic [ref=e89]:
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - paragraph [ref=e92]: 4/3/2026
+            - 'heading "Smart Classroom: Attendance System" [level=1] [ref=e93]'
+            - paragraph [ref=e94]: Institute of Computer Engineers of the Philippines-Student Edition
+          - img "ICPEP.SE Logo" [ref=e96]
+        - generic [ref=e97]:
+          - generic [ref=e100]:
+            - img [ref=e102]
+            - textbox "Search..." [ref=e105]
+            - generic [ref=e106]: /
+          - button "Open profile menu" [ref=e109] [cursor=pointer]:
+            - generic [ref=e110]: M
+            - generic [ref=e111]:
+              - paragraph [ref=e112]: ME Department Admin
+              - paragraph [ref=e113]: Administrator
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - heading "Admin Dashboard" [level=1] [ref=e116]
+            - paragraph [ref=e117]: Department-wide metrics and oversight
+          - generic [ref=e118]:
+            - button "Create Class" [ref=e120] [cursor=pointer]:
+              - img [ref=e121]
+              - text: Create Class
+            - link "Manage Faculty" [ref=e122] [cursor=pointer]:
+              - /url: /dashboard/admin/instructors
+        - generic [ref=e123]:
+          - link "Total Dept. Enrollment 3 Students enrolled across dept." [ref=e124] [cursor=pointer]:
+            - /url: /students
+            - generic [ref=e125]:
+              - img [ref=e127]
+              - generic [ref=e130]:
+                - generic [ref=e131]:
+                  - paragraph [ref=e132]: Total Dept. Enrollment
+                  - img [ref=e134]
+                - heading "3" [level=2] [ref=e137]
+                - paragraph [ref=e138]: Students enrolled across dept.
+          - link "Faculty Status 0 / 1 Instructors currently teaching" [ref=e139] [cursor=pointer]:
+            - /url: /dashboard/admin/instructors
+            - generic [ref=e140]:
+              - generic [ref=e141]:
+                - generic [ref=e142]:
+                  - paragraph [ref=e143]: Faculty Status
+                  - heading "0 / 1" [level=2] [ref=e144]:
+                    - text: "0"
+                    - generic [ref=e145]: / 1
+                - img [ref=e147]
+              - paragraph [ref=e152]: Instructors currently teaching
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - paragraph [ref=e156]: Attendance Rate
+                - heading "0%" [level=2] [ref=e157]
+              - img [ref=e159]
+            - generic [ref=e162]:
+              - generic [ref=e163]: Last 7 days
+              - generic [ref=e164]: •
+              - generic [ref=e165]: 0 present today
+          - link "Active Classes 0 / 0 Currently ongoing vs today's total" [ref=e166] [cursor=pointer]:
+            - /url: /classes
+            - generic [ref=e167]:
+              - generic [ref=e168]:
+                - generic [ref=e169]:
+                  - paragraph [ref=e170]: Active Classes
+                  - heading "0 / 0" [level=2] [ref=e171]:
+                    - text: "0"
+                    - generic [ref=e172]: / 0
+                - img [ref=e174]
+              - paragraph [ref=e176]: Currently ongoing vs today's total
+        - generic [ref=e177]:
+          - generic [ref=e179]:
+            - generic [ref=e180]:
+              - heading "Department Attendance Analytics" [level=3] [ref=e181]
+              - paragraph [ref=e182]: Combined attendance trend across all instructors in the department (last 14 days)
+            - generic [ref=e185]:
+              - list [ref=e187]:
+                - listitem [ref=e188]:
+                  - img "Absent legend icon" [ref=e189]
+                  - text: Absent
+                - listitem [ref=e191]:
+                  - img "Late legend icon" [ref=e192]
+                  - text: Late
+                - listitem [ref=e194]:
+                  - img "Present legend icon" [ref=e195]
+                  - text: Present
+              - application [ref=e197]:
+                - generic [ref=e203]:
+                  - generic [ref=e204]:
+                    - generic [ref=e206]: Mar 21
+                    - generic [ref=e208]: Mar 22
+                    - generic [ref=e210]: Mar 23
+                    - generic [ref=e212]: Mar 24
+                    - generic [ref=e214]: Mar 25
+                    - generic [ref=e216]: Mar 26
+                    - generic [ref=e218]: Mar 27
+                    - generic [ref=e220]: Mar 28
+                    - generic [ref=e222]: Mar 29
+                    - generic [ref=e224]: Mar 30
+                    - generic [ref=e226]: Mar 31
+                    - generic [ref=e228]: Apr 01
+                    - generic [ref=e230]: Apr 03
+                  - generic [ref=e231]:
+                    - generic [ref=e233]: "0"
+                    - generic [ref=e235]: "1"
+                    - generic [ref=e237]: "2"
+                    - generic [ref=e239]: "3"
+                    - generic [ref=e241]: "4"
+          - generic [ref=e242]:
+            - generic [ref=e244]:
+              - heading "Faculty Overview" [level=3] [ref=e245]
+              - paragraph [ref=e246]: Classes and student load per instructor
+            - link "A Arden Hero Damaso 1 class 1 student" [ref=e248] [cursor=pointer]:
+              - /url: /classes?instructor=bf9d7549-d537-4900-98b0-2b22a7838036
+              - generic [ref=e249]:
+                - generic [ref=e250]: A
+                - paragraph [ref=e252]: Arden Hero Damaso
+              - generic [ref=e253]:
+                - generic [ref=e254]:
+                  - paragraph [ref=e255]: 1 class
+                  - paragraph [ref=e256]: 1 student
+                - img [ref=e257]
+        - generic [ref=e259]:
+          - generic [ref=e261]:
+            - generic [ref=e262]:
+              - generic [ref=e263]:
+                - heading "Department Room Controls" [level=3] [ref=e264]
+                - paragraph [ref=e265]: Command center for all IoT infrastructure
+              - generic [ref=e266]:
+                - generic [ref=e267]: "Filter:"
+                - combobox [ref=e268]:
+                  - option "All Rooms" [selected]
+            - generic [ref=e269]:
+              - generic [ref=e271]:
+                - img [ref=e272]
+                - paragraph [ref=e274]: No devices found matching your search
+              - generic [ref=e276]:
+                - generic [ref=e277]:
+                  - img [ref=e278]
+                  - text: System Live
+                - generic [ref=e282]:
+                  - img [ref=e283]
+                  - text: "Refresh: 60s"
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - generic [ref=e289]:
+                - img [ref=e290]
+                - heading "Kiosk Health" [level=3] [ref=e294]
+              - generic [ref=e295]:
+                - generic [ref=e296]: 0/0 Online
+                - button [ref=e297] [cursor=pointer]:
+                  - img [ref=e298]
+            - generic [ref=e304]:
+              - img [ref=e305]
+              - paragraph [ref=e312]: No sensors mapped
+  - button [ref=e314] [cursor=pointer]:
+    - img [ref=e316]
+  - alert [ref=e318]
+  - generic [ref=e319]: "0"
+```

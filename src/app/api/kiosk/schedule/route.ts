@@ -1,21 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/kiosk/schedule?room_id=<uuid>
- * Returns today's classes for a specific room, with the currently-active
- * class marked as "recommended" for Smart Suggest on the kiosk.
+ * Returns today's classes for a specific room.
+ * Supports: Room ID query param.
  */
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+
     try {
-        const { searchParams } = new URL(request.url);
+        const { searchParams } = new URL(req.url);
         const roomId = searchParams.get("room_id");
 
         if (!roomId) {

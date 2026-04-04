@@ -1,11 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
+    const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+
     try {
-        const body = await request.json();
+        const body = await req.json();
         const { device_serial, slot_id } = body;
 
         if (!device_serial || !slot_id) {

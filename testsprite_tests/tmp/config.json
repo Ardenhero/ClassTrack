@@ -1,0 +1,20 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "adminme@engineering.edu",
+  "loginPassword": "adminme123",
+  "executionArgs": {
+    "projectName": "icpep-classtrack",
+    "projectPath": "/Users/heroo/Downloads/icpep-classtrack",
+    "testIds": [],
+    "additionalInstruction": "Use student SIN '22-00555' for student portal. For instructor/admin, use email 'adminme@engineering.edu' and password 'adminme123'. Test the dashboard, classes, students, and attendance views for both roles. Ensure student can see their records and instructors can see theirs.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-pVMdfQlFa5QOPNezwot7TJ-FJzhDQihWm2Ia2ipPswdd9IdaUHbkMwhBBNuEBQGHWUgnc1X5BCiu40jMdjAzBu_fV1Szlq4QZDZLRoKADCyR8aREorLt3YZBJzdY2atTyg0"
+    }
+  },
+  "serverPort": 54619,
+  "proxy": "http://a5989b8e-c40c-4580-b440-11efa4778a40:2z0YWdS1uT62zxaObvwQtUDwZpUnGD9f@tun.testsprite.com:8080"
+}

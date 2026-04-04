@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
@@ -8,6 +9,7 @@ export async function GET(request: Request) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
 
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");

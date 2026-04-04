@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const EnrollSchema = z.object({
     student_id: z.number().int().positive().optional(),
@@ -12,6 +15,36 @@ const EnrollSchema = z.object({
 });
 
 export async function POST(request: Request) {
+    // --- 🛡️ IDENTITY GUARD: Only instructors can enroll students ---
+    const cookieStore = cookies();
+    const supabaseAuth = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() { return cookieStore.getAll(); },
+            },
+        }
+    );
+
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (!user) {
+        return NextResponse.json({ 
+            error: "Unauthorized",
+            message: "Authentication required to enroll fingerprints."
+        }, { status: 401 });
+    }
+
+    // --- 🛡️ FINANCIAL GUARD: Rate-limit expensive database writes ---
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const { success } = await checkRateLimit(ip, "audit");
+    if (!success) {
+        return NextResponse.json({
+            error: "Too many requests",
+            message: "Enrollment is throttled. Please try again in a minute."
+        }, { status: 429 });
+    }
+
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!

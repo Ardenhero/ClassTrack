@@ -1,0 +1,503 @@
+[
+  {
+    "id": "TC001",
+    "title": "Attendance page loads and shows records after login",
+    "description": "Verifies an authenticated user can access the attendance page and see attendance records displayed.",
+    "category": "Attendance Tracking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to view attendance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance records are displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Filter attendance records by date",
+    "description": "Verifies the attendance list can be filtered using a valid date selection.",
+    "category": "Attendance Tracking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to view attendance"
+      },
+      {
+        "type": "action",
+        "description": "Filter attendance by selecting a valid date"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filtered attendance records are displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Search for a specific student in attendance",
+    "description": "Verifies searching in the attendance view narrows results to the matching student.",
+    "category": "Attendance Tracking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to view attendance"
+      },
+      {
+        "type": "action",
+        "description": "Fill a student identifier into the attendance search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance records match the search criteria"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Filter by date then search within filtered results",
+    "description": "Verifies combining date filtering and student search yields results consistent with both constraints.",
+    "category": "Attendance Tracking",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to view attendance"
+      },
+      {
+        "type": "action",
+        "description": "Filter attendance by selecting a valid date"
+      },
+      {
+        "type": "action",
+        "description": "Fill a student identifier into the attendance search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance records reflect both the selected date and the search criteria"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Clear search restores unfiltered attendance list",
+    "description": "Verifies clearing the search input returns the attendance view to the broader list state.",
+    "category": "Attendance Tracking",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to view attendance"
+      },
+      {
+        "type": "action",
+        "description": "Fill a student identifier into the attendance search field"
+      },
+      {
+        "type": "action",
+        "description": "Clear the attendance search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the attendance list is no longer restricted by the prior search"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Search with no matches shows an empty state",
+    "description": "Verifies entering a query that matches no students shows an empty results state.",
+    "category": "Attendance Tracking",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation item to view attendance"
+      },
+      {
+        "type": "action",
+        "description": "Fill a nonsensical unique query into the attendance search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state message is visible for no matching attendance records"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Attempt to access attendance while unauthenticated redirects to login",
+    "description": "Verifies protected attendance route requires authentication and sends the user to the login page.",
+    "category": "Attendance Tracking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /attendance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user is redirected to the login page"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "View classes list after login",
+    "description": "Verifies an authenticated instructor/admin can load the classes page and see a list of classes.",
+    "category": "Class Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a list of classes is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Open class details to view roster and recent attendance",
+    "description": "Verifies a user can open a class from the list and see the roster and recent attendance activity.",
+    "category": "Class Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "action",
+        "description": "Click on a class in the list to open its details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the class roster is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify recent attendance activity for the class is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Search for a non-existent class shows no results",
+    "description": "Verifies searching for a class that does not exist results in a no-results/empty-state message.",
+    "category": "Class Management",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the class search field with ClassThatShouldNotExist_987654"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a no results or empty state message is visible for the classes list"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Attempt to open a class that is not in the current list",
+    "description": "Verifies selecting a class that is not present (after filtering) does not show class details and presents an empty state.",
+    "category": "Class Management",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the class search field with ClassThatShouldNotExist_123456"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the filtered results to update"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no class details are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a no results or empty state message is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Classes page remains usable after clearing a search filter",
+    "description": "Verifies clearing a search restores the classes list after a no-results search.",
+    "category": "Class Management",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the class search field with ClassThatShouldNotExist_555555"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "action",
+        "description": "Clear the class search field"
+      },
+      {
+        "type": "action",
+        "description": "Press Enter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a list of classes is displayed"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Navigate away and back to Classes preserves ability to open class details",
+    "description": "Verifies the user can return to the classes page via in-app navigation and still open class details.",
+    "category": "Class Management",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the dashboard page"
+      },
+      {
+        "type": "action",
+        "description": "Click the navigation link to the classes page"
+      },
+      {
+        "type": "action",
+        "description": "Click on a class in the list to open its details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the class roster is displayed"
+      }
+    ]
+  }
+]

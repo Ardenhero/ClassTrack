@@ -1,0 +1,45 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - img "Northwestern University Seal" [ref=e6]
+        - generic [ref=e7]:
+          - heading "Northwestern University" [level=1] [ref=e8]
+          - paragraph [ref=e9]: Laoag City, Philippines
+        - img "ICPEP.SE Logo" [ref=e11]
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - heading "Attendance System Login" [level=2] [ref=e15]
+        - paragraph [ref=e16]: Enter your credentials to access the dashboard
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: Email address
+            - textbox "Email address" [ref=e21]:
+              - /placeholder: Enter your email
+              - text: adminme@engineering.edu
+          - generic [ref=e22]:
+            - generic [ref=e23]: Password
+            - textbox "Password" [ref=e24]:
+              - /placeholder: Enter your password
+              - text: adminme123
+        - button "SIGN IN" [ref=e26] [cursor=pointer]
+      - paragraph [ref=e28]: System access is strictly Invite-Only. If you require an account, please contact the University IT Department.
+      - link "Student Portal" [ref=e30] [cursor=pointer]:
+        - /url: /student/portal
+        - img [ref=e31]
+        - text: Student Portal
+    - contentinfo [ref=e37]:
+      - paragraph [ref=e38]: © 2026 Northwestern University Attendance System. All rights reserved.
+      - generic [ref=e39]:
+        - link "Privacy Policy" [ref=e40] [cursor=pointer]:
+          - /url: /privacy-policy
+        - generic [ref=e41]: "|"
+        - generic [ref=e42]: ClassTrack Security v2.0
+  - button [ref=e44] [cursor=pointer]:
+    - img [ref=e46]
+  - alert [ref=e48]
+```

@@ -1,7 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 
 export async function POST(req: NextRequest) {
+    const cookieStore = cookies();
+    const supabaseAuth = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() { return cookieStore.getAll(); },
+            },
+        }
+    );
+
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+
+    // Block if no Session is valid (Enrollment is an admin action)
+    if (!user) {
+        return NextResponse.json({ 
+            error: "Unauthorized",
+            message: "Authentication session required (Enrollment is an admin action)."
+        }, { status: 401 });
+    }
+
+    // --- 🛡️ FINANCIAL GUARD: Rate-limit audit log writes ---
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const { success } = await checkRateLimit(ip, "audit");
+    if (!success) {
+        return NextResponse.json({
+            error: "Too many requests",
+            message: "Logging and commands are throttled. Please try again later."
+        }, { status: 429 });
+    }
+
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!

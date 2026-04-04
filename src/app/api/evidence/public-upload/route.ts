@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
             if (!allowedTypes.includes(file.type)) {
                 return NextResponse.json({ error: `Invalid file type: ${file.name}. Only JPG, PNG, PDF, and DOC are allowed.` }, { status: 400 });
             }
-            if (file.size > 5 * 1024 * 1024) {
-                return NextResponse.json({ error: `File too large: ${file.name}. Maximum size is 5MB.` }, { status: 400 });
+            if (file.size > 2 * 1024 * 1024) {
+                return NextResponse.json({ error: `File too large: ${file.name}. Maximum size is 2MB to ensure fast processing and cost efficiency.` }, { status: 400 });
             }
         }
 

@@ -2,30 +2,9 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cookies } from "next/headers";
-import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import { hashPassword, verifyPassword } from "@/utils/supabase/password-utils";
 
-// Security constants
-const SALT_SIZE = 16;
-const KEY_LEN = 64;
-
-/**
- * Hash a password using scrypt
- */
-function hashPassword(password: string): string {
-    const salt = randomBytes(SALT_SIZE).toString("hex");
-    const derivedKey = scryptSync(password, salt, KEY_LEN);
-    return `${salt}:${derivedKey.toString("hex")}`;
-}
-
-/**
- * Verify a password against a hash
- */
-function verifyPassword(password: string, hash: string): boolean {
-    const [salt, key] = hash.split(":");
-    if (!salt || !key) return false;
-    const derivedKey = scryptSync(password, salt, KEY_LEN);
-    return timingSafeEqual(Buffer.from(key, "hex"), derivedKey);
-}
+// Security utilities imported from @/utils/supabase/password-utils
 
 export async function loginStudent(formData: FormData) {
     const sin = formData.get("sin")?.toString().trim();

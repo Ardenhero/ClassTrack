@@ -365,3 +365,25 @@
     0%, 100% { transform: perspective(1000px) translateY(0) rotateX(8deg) rotateY(-15deg) rotateZ(-1.5deg); }
     50% { transform: perspective(1000px) translateY(-16px) rotateX(-5deg) rotateY(15deg) rotateZ(2deg); }
 }
+
+/* CSP Compliant 3D Sensor Styles */
+.as608-svg {
+    width: 1.8em;
+    height: 1.8em;
+    overflow: visible;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.6));
+    display: block;
+}
+
+.mimg-as608-container {
+    font-size: 140px;
+    filter: drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35));
+    animation: mfl 4s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hwc:hover .hwcimg .as608-svg {
+    filter: drop-shadow(0 30px 50px rgba(123, 17, 19, 0.5));
+}

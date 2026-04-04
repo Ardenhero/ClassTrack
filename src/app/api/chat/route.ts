@@ -3,6 +3,7 @@ import { streamText } from 'ai';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getStudentSession } from "@/app/student/portal/actions";
 
 // Next.js App Router route settings for unbuffered streaming - Perfect Mirror + Zero-Spam Hardening
 export const runtime = 'edge';
@@ -13,10 +14,10 @@ const SYSTEM_PROMPT = `
 You are the ClassTrack AI Assistant. Your goal is to provide helpful, well-formatted support for the ClassTrack platform.
 
 ### RESPONSE STYLE
-- **MIXED FORMAT:** Use natural paragraphs for general explanations and a warmer, human-like tone.
-- **INSTRUCTIONAL BULLETS:** Use bullet points ONLY for step-by-step instructions, lists of features, or troubleshooting steps.
-- **LENGTH:** Keep explanations concise, short, and to the point while still being fully understandable. Do NOT over-explain.
-- **SCOPE:** ClassTrack ONLY. Decline all other topics.
+- **BREVITY IS KEY:** Keep responses under 3-4 sentences maximum. Use punchy, direct language.
+- **NO PLEASANTRIES:** Skip the "Hello" and "How can I help" after the first message. Get straight to the facts.
+- **INSTRUCTIONAL BULLETS:** Use bullet points ONLY for steps. Limit to 3 bullets max.
+- **SCOPE:** ClassTrack ONLY. Decline all other topics immediately.
 
 ### SYSTEM KNOWLEDGE
 - **ESP32 Kiosk:** Hardware station with AS608 fingerprint sensor for biometric attendance.
@@ -49,9 +50,20 @@ export async function POST(req: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
+    let userId = user?.id;
+    let userRole = "instructor";
+
+    // --- 🛡️ STUDENT SESSION CHECK ---
+    if (!userId) {
+        const studentSession = await getStudentSession();
+        if (studentSession) {
+            userId = studentSession.id;
+            userRole = "student";
+        }
+    }
 
     // Block Guests: Total spam protection
-    if (!user) {
+    if (!userId) {
         return new Response(JSON.stringify({ 
             error: "unauthorized",
             message: "Please log in to use ClassTrack Intelligence."
@@ -69,8 +81,8 @@ export async function POST(req: Request) {
 
     try {
         // --- 🛡️ RATE LIMITING (Account-Based UUID Guard) ---
-        // We use user.id (UUID) instead of IP to prevent evasion via devices/networks
-        const { success, limit, remaining } = await checkRateLimit(user.id, "chat");
+        // We use userId (UUID) instead of IP to prevent evasion via devices/networks
+        const { success, limit, remaining } = await checkRateLimit(userId, "chat");
 
         if (!success) {
             return new Response(JSON.stringify({
@@ -105,9 +117,13 @@ export async function POST(req: Request) {
 
         const response = result.toTextStreamResponse();
         
-        // Add rate limit headers for transparency
-        response.headers.set('X-RateLimit-Remaining', remaining.toString());
-        response.headers.set('X-RateLimit-Limit', limit.toString());
+        // Add rate limit headers for transparency - Strictly forced to 10-message cap
+        const displayLimit = 10;
+        const limitDifference = limit - displayLimit;
+        const displayRemaining = Math.max(0, remaining - (limitDifference > 0 ? limitDifference : 0));
+
+        response.headers.set('X-RateLimit-Remaining', displayRemaining.toString());
+        response.headers.set('X-RateLimit-Limit', displayLimit.toString());
         
         return response;
     } catch (err: unknown) {
