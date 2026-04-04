@@ -109,7 +109,6 @@ export async function updateSession(request: NextRequest) {
 
     // --- 🛡️ PAGE ACCESS CONTROL ---
     const isPublicPath = 
-        pathname === '/' || 
         pathname === '/login' || 
         pathname === '/privacy-policy' ||
         pathname.startsWith('/about') || 

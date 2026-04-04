@@ -12,6 +12,7 @@ import SuperAdminDashboardContent from "@/components/dashboard/super-admin/Super
 import AdminDashboardContent from "@/components/dashboard/admin/AdminDashboardContent";
 import RegularDashboardContent from "@/components/dashboard/RegularDashboardContent";
 import { Skeleton, CardSkeleton } from "@/components/ui/Skeleton";
+import { redirect } from "next/navigation";
 
 
 function DashboardSkeleton() {
@@ -59,12 +60,13 @@ export default async function Dashboard() {
   const isActiveAdmin = activeRole === 'admin';
   const user = authUser;
 
+  // 🛡️ REDIRECT: Force user to login or select-profile immediately
+  if (!user) {
+    redirect('/login');
+  }
+
   if (!profileId || !isValidProfileId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Redirecting to profile selection...</p>
-      </div>
-    );
+    redirect('/select-profile');
   }
 
   let accountInstructorIds: string[] = [];
