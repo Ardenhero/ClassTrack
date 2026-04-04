@@ -3,42 +3,48 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { checkRateLimit, getClientIP } from '@/lib/rate-limit'
 
 export async function updateSession(request: NextRequest) {
+    const pathname = request.nextUrl.pathname;
+    const isProd = process.env.NODE_ENV === 'production';
+    const isPlaywright = request.headers.get('user-agent')?.includes('Playwright');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // --- 🛡️ SAFETY CHECK: Missing Environment Variables ---
+    // Prevent 500 errors during migration if keys aren't set yet
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.warn("Middleware: Missing Supabase Environment Variables. Bypassing session check.");
+        return NextResponse.next({ request });
+    }
+
     let supabaseResponse = NextResponse.next({
         request,
     })
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll()
+    try {
+        const supabase = createServerClient(
+            supabaseUrl,
+            supabaseAnonKey,
+            {
+                cookies: {
+                    getAll() {
+                        return request.cookies.getAll()
+                    },
+                    setAll(cookiesToSet) {
+                        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+                        supabaseResponse = NextResponse.next({
+                            request,
+                        })
+                        cookiesToSet.forEach(({ name, value, options }) =>
+                            supabaseResponse.cookies.set(name, value, options)
+                        )
+                    },
                 },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    )
-                },
-            },
-        }
-    )
+            }
+        )
 
-    // IMPORTANT: Avoid writing any logic between createServerClient and
-    // getUser(). A simple mistake could make it very hard to debug
-    // sessions are being refreshed incorrectly.
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
-
-    const pathname = request.nextUrl.pathname;
-    const isProd = process.env.NODE_ENV === 'production';
-    const isPlaywright = request.headers.get('user-agent')?.includes('Playwright');
+        const {
+            data: { user },
+        } = await supabase.auth.getUser()
 
     // --- 🛡️ RATE LIMITING (Pragmatic Security) ---
     // Only rate limit API, Login, and sensitive routes
@@ -147,5 +153,9 @@ export async function updateSession(request: NextRequest) {
         }
     }
 
-    return supabaseResponse
+        return supabaseResponse
+    } catch (e) {
+        console.error("Middleware Error Caught:", e);
+        return NextResponse.next({ request });
+    }
 }
