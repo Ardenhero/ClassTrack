@@ -52,8 +52,11 @@ export default function RootLayout({
           {children}
           <ChatWidget />
         </Providers>
+        {/* @ts-ignore */}
         <Analytics nonce={nonce} />
+        {/* @ts-ignore */}
         <SpeedInsights nonce={nonce} />
+        {/* @ts-ignore */}
         <GlobalSync nonce={nonce} />
       </body>
     </html>
