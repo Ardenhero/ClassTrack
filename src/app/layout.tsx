@@ -52,9 +52,9 @@ export default function RootLayout({
           {children}
           <ChatWidget />
         </Providers>
-        <Analytics />
-        <SpeedInsights />
-        <GlobalSync />
+        <Analytics nonce={nonce} />
+        <SpeedInsights nonce={nonce} />
+        <GlobalSync nonce={nonce} />
       </body>
     </html>
   );
