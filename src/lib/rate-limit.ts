@@ -121,15 +121,7 @@ export async function checkRateLimit(
     // If Upstash Redis is configured, use it
     if (limiter) {
         try {
-            // Add a more generous timeout to avoid hanging the middleware (especially in dev)
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Rate limit timeout")), 1000)
-            );
-
-            const result = (await Promise.race([
-                limiter.limit(identifier),
-                timeoutPromise
-            ])) as { success: boolean; remaining: number; reset: number; limit: number };
+            const result = await limiter.limit(identifier);
 
             return {
                 success: result.success,
