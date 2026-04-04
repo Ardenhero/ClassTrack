@@ -42,6 +42,8 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [uploadMessage, setUploadMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [usageCount, setUsageCount] = useState(0);
+    const [usageLimit] = useState(5);
 
     // Filter classes by selected instructor
     const filteredClasses = selectedInstructor
@@ -54,14 +56,12 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
             const res = await fetch(`/api/evidence/public-upload?sin=${encodeURIComponent(sinToLookup.trim())}`);
             const data = await res.json();
 
-            // Fallback: If not ok, we just return. No setLookupError since it's removed.
-            if (!res.ok) {
-                return;
-            }
+            if (!res.ok) return;
 
             setStudent(data.student);
             setAllClasses(data.classes || []);
             setInstructors(data.instructors || []);
+            if (data.uploads_used !== undefined) setUsageCount(data.uploads_used);
         } catch {
             // connection error handled silently
         } finally {
@@ -69,17 +69,15 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
         }
     };
 
-    // Auto-lookup since sin is always provided by the Portal
     useEffect(() => {
         if (sin && (!student || student.sin !== sin)) {
             handleLookup(sin);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sin, student]);
 
     const handleInstructorChange = (instructorId: string) => {
         setSelectedInstructor(instructorId);
-        setSelectedClass(""); // Reset class when instructor changes
+        setSelectedClass(""); 
     };
 
     const addDate = () => {
@@ -91,7 +89,13 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = Array.from(e.target.files || []);
+        // Prevent exceeding limit in selection
+        if (usageCount + files.length + selected.length > usageLimit) {
+            setUploadMessage({ type: "error", text: `Selection exceeds your remaining limit (${usageLimit - usageCount - files.length} slots left).` });
+            return;
+        }
         setFiles([...files, ...selected]);
+        setUploadMessage(null);
     };
 
     const removeFile = (index: number) => {
@@ -99,7 +103,6 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
     };
 
     const handleSubmit = async () => {
-        // Allow submission if dates array has items OR if there is a pending currentDate
         const effectiveDates = [...dates];
         if (currentDate && !effectiveDates.includes(currentDate)) {
             effectiveDates.push(currentDate);
@@ -123,6 +126,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
 
             if (res.ok) {
                 setStep("success");
+                setUsageCount(data.total_used || usageCount + files.length); 
             } else {
                 setUploadMessage({ type: "error", text: data.error });
             }
@@ -144,7 +148,6 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
         setFiles([]);
         setDescription("");
         setUploadMessage(null);
-        // Ensure lookup is re-triggered
         setLoadingData(true);
     };
 
@@ -152,18 +155,16 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
         <div className="flex flex-col h-full p-2">
             <div className="flex-grow flex items-center justify-center">
                 <div className="w-full">
-                    {/* Wait for initial data load */}
                     {loadingData && (
-                        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
                             <Loader2 className="h-8 w-8 text-nwu-red animate-spin" />
-                            <p className="text-sm font-medium text-gray-500 mt-4">Loading form data...</p>
+                            <p className="text-sm font-medium text-gray-500 mt-4 uppercase tracking-widest font-black">Loading form data...</p>
                         </div>
                     )}
 
-                    {/* Step 2: Upload Form */}
                     {step === "form" && student && !loadingData && (
                         <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12">
-                            {/* Instructor Selection */}
+                            {/* Form Header */}
                             <div className="space-y-4">
                                 <label className="block text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-800">
@@ -178,9 +179,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                 >
                                     <option value="">Choose your instructor...</option>
                                     {instructors.map((inst) => (
-                                        <option key={inst.id} value={inst.id}>
-                                            {inst.name}
-                                        </option>
+                                        <option key={inst.id} value={inst.id}>{inst.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -191,59 +190,50 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     <div className="h-8 w-8 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-800">
                                         <FileText className="h-4 w-4 text-nwu-red" />
                                     </div>
-                                    Select Class(es) to Excuse From
+                                    Select Class(es)
                                 </label>
 
                                 {!selectedInstructor ? (
                                     <div className="text-sm text-gray-400 italic p-12 bg-white/20 dark:bg-gray-900/20 rounded-[2.5rem] border-2 border-dashed border-gray-100 dark:border-gray-800 text-center backdrop-blur-sm">
-                                        Select an instructor above to see their classes
+                                        Select an instructor to see classes
                                     </div>
                                 ) : filteredClasses.length === 0 ? (
                                     <div className="p-6 bg-amber-50/50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/30 flex items-center gap-4 backdrop-blur-sm">
                                         <Info className="h-5 w-5 text-amber-500" />
-                                        <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">No active classes found for this instructor.</p>
+                                        <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">No active classes found.</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {filteredClasses.map((c) => (
-                                            <label
-                                                key={c.id}
-                                                className={`flex items-start gap-4 p-5 rounded-[2rem] border-2 cursor-pointer transition-all duration-300 ${selectedClass.includes(String(c.id))
-                                                    ? "bg-red-50/50 dark:bg-red-900/20 border-nwu-red shadow-xl shadow-red-100/20 ring-4 ring-red-500/5"
-                                                    : "bg-white/40 dark:bg-gray-900/40 border-gray-50 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 hover:bg-white/60 dark:hover:bg-gray-900/60"
-                                                    }`}
-                                            >
-                                                <div className={`mt-1 h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedClass.includes(String(c.id)) ? "bg-nwu-red border-nwu-red" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
-                                                    {selectedClass.includes(String(c.id)) && <CheckCircle className="h-4 w-4 text-white" />}
-                                                    <input
-                                                        type="checkbox"
-                                                        value={c.id}
-                                                        checked={selectedClass.includes(String(c.id))}
-                                                        onChange={(e) => {
-                                                            const id = String(c.id);
-                                                            const current = selectedClass ? selectedClass.split(',') : [];
-                                                            let newSelection;
-                                                            if (e.target.checked) {
-                                                                newSelection = [...current, id];
-                                                            } else {
-                                                                newSelection = current.filter(cid => cid !== id);
-                                                            }
-                                                            setSelectedClass(newSelection.join(','));
-                                                        }}
-                                                        className="hidden"
-                                                    />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="font-black text-gray-900 dark:text-white tracking-tight leading-tight">{c.subject_name}</div>
-                                                    <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">{c.section} • {c.year_level}</div>
-                                                </div>
-                                            </label>
-                                        ))}
+                                        {filteredClasses.map((c) => {
+                                            const isChecked = selectedClass.split(',').includes(String(c.id));
+                                            return (
+                                                <label key={c.id} className={`flex items-start gap-4 p-5 rounded-[2rem] border-2 cursor-pointer transition-all duration-300 ${isChecked ? "bg-red-50/50 dark:bg-red-900/20 border-nwu-red shadow-xl" : "bg-white/40 dark:bg-gray-900/40 border-gray-50 dark:border-gray-800"}`}>
+                                                    <div className={`mt-1 h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all ${isChecked ? "bg-nwu-red border-nwu-red" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"}`}>
+                                                        {isChecked && <CheckCircle className="h-4 w-4 text-white" />}
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={(e) => {
+                                                                const id = String(c.id);
+                                                                const current = selectedClass ? selectedClass.split(',') : [];
+                                                                const newSelection = e.target.checked ? [...current, id] : current.filter(cid => cid !== id);
+                                                                setSelectedClass(newSelection.join(','));
+                                                            }}
+                                                            className="hidden"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="font-black text-gray-900 dark:text-white tracking-tight leading-tight">{c.subject_name}</div>
+                                                        <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">{c.section} • {c.year_level}</div>
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Date Selection */}
+                            {/* Absence Dates */}
                             <div className="space-y-4">
                                 <label className="block text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-800">
@@ -256,13 +246,9 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                         type="date"
                                         value={currentDate}
                                         onChange={(e) => setCurrentDate(e.target.value)}
-                                        className="flex-1 px-6 py-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-2xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-nwu-red/20 focus:border-nwu-red outline-none transition-all shadow-sm"
+                                        className="flex-1 px-6 py-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-2xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-nwu-red/20 focus:border-nwu-red outline-none shadow-sm"
                                     />
-                                    <button 
-                                        onClick={addDate} 
-                                        disabled={!currentDate} 
-                                        className="h-14 w-14 flex items-center justify-center bg-red-100/50 dark:bg-red-900/30 text-nwu-red rounded-2xl hover:bg-nwu-red hover:text-white disabled:opacity-30 transition-all shadow-lg active:scale-90"
-                                    >
+                                    <button onClick={addDate} disabled={!currentDate} className="h-14 w-14 flex items-center justify-center bg-red-100/50 dark:bg-red-900/30 text-nwu-red rounded-2xl hover:bg-nwu-red hover:text-white disabled:opacity-30 transition-all shadow-lg active:scale-90">
                                         <Plus className="h-7 w-7" />
                                     </button>
                                 </div>
@@ -280,7 +266,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                 )}
                             </div>
 
-                            {/* File Upload */}
+                            {/* File Upload & Usage Counter */}
                             <div className="space-y-4">
                                 <label className="block text-xs font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em] flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-800">
@@ -288,29 +274,42 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     </div>
                                     Upload Documents (Images/PDF/DOC)
                                 </label>
-                                <div className="space-y-4">
-                                    <div className="relative">
-                                        <input
-                                            type="file"
-                                            id="file-upload"
-                                            accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                                            multiple
-                                            onChange={handleFileSelect}
-                                            className="hidden"
-                                        />
-                                        <div className="flex items-center gap-4">
-                                            <label htmlFor="file-upload" className="flex items-center gap-3 px-8 py-4 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-nwu-red rounded-2xl font-black text-xs cursor-pointer transition-all border border-red-100 dark:border-red-800 shadow-md active:scale-95 w-fit">
+                                
+                                <div className="space-y-6">
+                                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                                        <div className="relative">
+                                            <input
+                                                type="file"
+                                                id="file-upload"
+                                                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                                                multiple
+                                                onChange={handleFileSelect}
+                                                disabled={usageCount >= usageLimit}
+                                                className="hidden"
+                                            />
+                                            <label 
+                                                htmlFor="file-upload" 
+                                                className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-xs transition-all border shadow-md active:scale-95 w-fit ${
+                                                    usageCount >= usageLimit 
+                                                    ? "bg-gray-100 dark:bg-gray-800 text-gray-400 border-gray-200 cursor-not-allowed" 
+                                                    : "bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-nwu-red border-red-100 dark:border-red-800 cursor-pointer"
+                                                }`}
+                                            >
                                                 <Upload className="h-5 w-5" />
-                                                CHOOSE FILES
+                                                {usageCount >= usageLimit ? "LIMIT REACHED" : "CHOOSE FILES"}
                                             </label>
-                                            <span className="text-xs text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">
-                                                {files.length === 0 ? "Choose your files" : `${files.length} selected`}
-                                            </span>
+                                        </div>
+                                        <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                                            usageCount >= usageLimit 
+                                            ? "bg-red-100 dark:bg-red-900/40 text-nwu-red border-red-200" 
+                                            : "bg-white dark:bg-gray-800 text-gray-500 border-gray-100 dark:border-gray-800"
+                                        }`}>
+                                            Documents: {usageCount} / {usageLimit}
                                         </div>
                                     </div>
 
                                     {files.length > 0 && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
                                             {files.map((f, i) => (
                                                 <div key={i} className="flex items-center justify-between px-5 py-4 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-[1.5rem] shadow-sm">
                                                     <span className="flex items-center gap-4 text-gray-700 dark:text-gray-300 truncate font-black text-[11px] uppercase tracking-wide">
@@ -334,63 +333,55 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     rows={4}
-                                    placeholder="e.g. Medical certificate for illness on Feb 10"
-                                    className="w-full px-6 py-5 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-3xl text-gray-900 dark:text-white text-sm resize-none focus:ring-2 focus:ring-nwu-red/20 focus:border-nwu-red outline-none transition-all shadow-sm"
+                                    placeholder="e.g. Medical certificate for absence"
+                                    className="w-full px-6 py-5 bg-white/40 dark:bg-gray-900/40 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-3xl text-gray-900 dark:text-white text-sm outline-none transition-all shadow-sm focus:ring-2 focus:ring-nwu-red/20 focus:border-nwu-red"
                                 />
                             </div>
 
-                            {/* Messages */}
+                            {/* Status Messages */}
                             {uploadMessage && (
-                                <div className={`flex items-center gap-4 p-6 rounded-[2rem] text-sm font-black animate-in slide-in-from-top-2 duration-300 border backdrop-blur-md ${uploadMessage.type === "error" ? "bg-red-50/80 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-100 dark:border-red-900" : "bg-green-50/80 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-100 dark:border-green-900"}`}>
+                                <div className={`flex items-center gap-4 p-6 rounded-[2rem] text-sm font-black border backdrop-blur-md animate-in slide-in-from-top-2 ${uploadMessage.type === "error" ? "bg-red-50/80 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-100 dark:border-red-900" : "bg-green-50/80 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-100 dark:border-green-900"}`}>
                                     {uploadMessage.type === "error" ? <XCircle className="h-6 w-6 shrink-0" /> : <CheckCircle className="h-6 w-6 shrink-0" />}
                                     {uploadMessage.text}
                                 </div>
                             )}
 
-                            {/* Action Buttons */}
-                            <div className="pt-8">
+                            {/* Submission Button */}
+                            <div className="pt-8 pb-20">
                                 <button
                                     onClick={handleSubmit}
-                                    disabled={!selectedClass || dates.length === 0 || files.length === 0 || uploading}
+                                    disabled={!selectedClass || dates.length === 0 || files.length === 0 || uploading || usageCount >= usageLimit}
                                     className="w-full py-4 bg-nwu-red hover:bg-red-800 text-white font-black rounded-[2rem] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-red-200 dark:shadow-none flex items-center justify-center gap-3 text-sm tracking-[0.15em] active:scale-95 group uppercase"
                                 >
                                     {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5 transition-transform group-hover:-translate-y-1" />}
-                                    Submit Excuse Letter
+                                    {usageCount >= usageLimit ? "Storage Limit Reached" : "Submit Excuse Evidence"}
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* Step 3: Success */}
                     {step === "success" && (
-                        <div className="max-w-2xl mx-auto py-20 animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12 text-center flex flex-col items-center">
+                        <div className="max-w-2xl mx-auto py-20 animate-in fade-in slide-in-from-bottom-4 duration-700 text-center flex flex-col items-center space-y-12">
                             <div className="h-24 w-24 bg-green-500/10 dark:bg-green-500/20 rounded-full flex items-center justify-center border-4 border-white dark:border-gray-900 shadow-2xl animate-bounce">
                                 <CheckCircle className="h-12 w-12 text-green-500" />
                             </div>
                             
                             <div className="space-y-4">
-                                <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Submitted Successfully!</h2>
-                                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed text-lg font-medium">
-                                    Your excuse letter has been submitted. Your instructor will be notified to review your documents.
-                                </p>
+                                <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Submitted Successfully!</h1>
+                                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed text-lg font-medium">Your evidence has been received. Your instructor will review it soon.</p>
                             </div>
 
                             <div className="flex flex-col items-center gap-6 w-full max-w-xs">
                                 <div className="px-8 py-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-3xl w-full">
-                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Documents attached</p>
-                                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{files.length}</p>
+                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">New Total Documents</p>
+                                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{usageCount} / {usageLimit}</p>
                                 </div>
-                                
-                                <button 
-                                    onClick={resetForm} 
-                                    className="w-full py-4 bg-nwu-red hover:bg-red-800 text-white font-black rounded-[2rem] transition-all shadow-xl shadow-red-200 dark:shadow-none text-sm tracking-[0.15em] active:scale-95 uppercase"
-                                >
+                                <button onClick={resetForm} className="w-full py-4 bg-nwu-red hover:bg-red-800 text-white font-black rounded-[2rem] transition-all shadow-xl shadow-red-200 dark:shadow-none text-sm tracking-[0.15em] active:scale-95 uppercase">
                                     Submit Another
                                 </button>
                             </div>
                         </div>
                     )}
-
                 </div>
             </div>
         </div>

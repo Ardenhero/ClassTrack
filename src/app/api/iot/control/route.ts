@@ -93,6 +93,28 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "forbidden_no_instructor_profile" }, { status: 403 });
         }
 
+        // --- 🛡️ BILLING PROTECTION: 5s SMART COOLDOWN ---
+        if (instructor) {
+            const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+            const { data: recentLog } = await supabase
+                .from('iot_device_logs')
+                .select('created_at')
+                .eq('triggered_by', instructor.id)
+                .gt('created_at', fiveSecondsAgo)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (recentLog) {
+                const lastTime = new Date(recentLog.created_at).getTime();
+                const waitSec = Math.ceil((5000 - (Date.now() - lastTime)) / 1000);
+                return NextResponse.json({ 
+                    error: "rate_limit_exceeded", 
+                    message: `Slow down! Please wait ${waitSec}s before next command.` 
+                }, { status: 429 });
+            }
+        }
+
         // --- SCOPED PERMISSION: Ensure instructor is authorized for this room/group ---
         if (instructor && !instructor.is_super_admin) {
             const roomIds = Array.isArray(instructor.assigned_room_ids) ? instructor.assigned_room_ids : [];
