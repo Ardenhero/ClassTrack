@@ -2,6 +2,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 // Next.js App Router route settings for unbuffered streaming - Perfect Mirror + Zero-Spam Hardening
 export const runtime = 'edge';
@@ -54,26 +55,26 @@ export async function POST(req: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    let authId = user?.id;
+    
+    // Identify Profile (Per-Profile Rate Limiting)
+    const cookieStore = cookies();
+    const profileId = cookieStore.get("sc_profile_id")?.value;
+    
+    let authId = profileId || user?.id; // Prefer Profile ID if it exists
     let isAuthorized = !!user;
+    let authType = user ? 'standard' : 'none';
 
     // Fallback: Check for Student Portal session
     if (!isAuthorized) {
-        const cookieHeader = req.headers.get('cookie') ?? '';
-        const cookies = cookieHeader.split(';').reduce((acc, c) => {
-            const [name, ...val] = c.trim().split('=');
-            acc[name] = val.join('=');
-            return acc;
-        }, {} as Record<string, string>);
-
-        const studentSessionCookie = cookies["student_session"];
+        const studentSessionCookie = cookieStore.get("student_session");
         if (studentSessionCookie) {
-            const payload = await verifySession(studentSessionCookie);
+            const payload = await verifySession(studentSessionCookie.value);
             if (payload) {
                 const session = JSON.parse(payload);
                 if (session.role === 'student' && session.id) {
                     isAuthorized = true;
                     authId = session.id;
+                    authType = 'student';
                 }
             }
         }
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
     if (!isAuthorized || !authId) {
         return new Response(JSON.stringify({
             error: "unauthorized",
-            message: "Authentication failed. Please refresh and log in again."
+            message: `Identity check failed (Type: ${authType}). Please refresh and log in again.`
         }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -92,13 +93,13 @@ export async function POST(req: Request) {
     if (!apiKey) {
         return new Response(JSON.stringify({
             error: "brain_key_missing",
-            message: "My AI brain key is missing on the server! Please verify GOOGLE_GENERATIVE_AI_API_KEY."
+            message: "My AI brain key is missing on the server!"
         }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
     try {
-        // --- 🛡️ RATE LIMITING (Account-Based UUID Guard) ---
-        // We use authId (UUID/Student ID) instead of IP to prevent evasion via devices/networks
+        // --- 🛡️ RATE LIMITING (Profile-Based UUID Guard) ---
+        // authId is now either the sc_profile_id (Instructor/Admin) or Student UUID
         const { success, limit, remaining } = await checkRateLimit(authId, "chat");
 
         if (!success) {
