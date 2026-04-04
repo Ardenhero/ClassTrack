@@ -2,7 +2,6 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 
 // Next.js App Router route settings for unbuffered streaming - Perfect Mirror + Zero-Spam Hardening
 export const runtime = 'edge';
@@ -35,14 +34,19 @@ Always open with a brief paragraph followed by clear bulleted points.
 `;
 
 export async function POST(req: Request) {
-    // --- 🛡️ IDENTITY VERIFICATION (Zero-Spam Hardening) ---
-    const cookieStore = cookies();
+    // --- 🛡️ IDENTITY VERIFICATION (Edge-Optimized Auth) ---
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                getAll() { return cookieStore.getAll(); },
+                getAll() {
+                    const cookieHeader = req.headers.get('cookie') ?? '';
+                    return cookieHeader.split(';').map(c => {
+                        const [name, ...val] = c.trim().split('=');
+                        return { name, value: val.join('=') };
+                    });
+                },
             },
         }
     );
@@ -53,7 +57,7 @@ export async function POST(req: Request) {
     if (!user) {
         return new Response(JSON.stringify({
             error: "unauthorized",
-            message: "Please log in to use ClassTrack Intelligence."
+            message: "Authentication failed. Please refresh and log in again."
         }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 
