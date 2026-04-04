@@ -50,10 +50,10 @@ export const rateLimiters = {
         prefix: "ratelimit:mutations",
     }) : null,
 
-    // AI Chatbot: 10 requests per day per user (to prevent cost explosion)
+    // AI Chatbot: 5 requests per day per user (Strict cost control)
     chat: redis ? new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(10, "1 d"),
+        limiter: Ratelimit.slidingWindow(5, "1 d"),
         analytics: true,
         prefix: "ratelimit:chat",
     }) : null,
@@ -101,8 +101,8 @@ export class RateLimiter {
 // Global fallback instance for general APIs (1000/min for shared school data)
 export const globalLimiter = new RateLimiter(1000, 60 * 1000);
 
-// Specific fallback for AI Chatbot (10/day)
-export const chatFallbackLimiter = new RateLimiter(10, 24 * 60 * 60 * 1000);
+// Specific fallback for AI Chatbot (5/day)
+export const chatFallbackLimiter = new RateLimiter(5, 24 * 60 * 60 * 1000);
 
 // ============================================
 // UNIFIED RATE LIMIT CHECK
