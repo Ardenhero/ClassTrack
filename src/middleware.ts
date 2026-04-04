@@ -76,16 +76,11 @@ export async function updateSession(request: NextRequest) {
     }
 
     // --- 🛡️ CONTENT SECURITY POLICY (CSP) ---
-    // Universal nonce generator (Works in every JS environment)
-    const nonce = Array.from({ length: 16 }, () => 
-        Math.floor(Math.random() * 36).toString(36)
-    ).join('');
-    
-    // Nonce is used primarily for scripts. Styles and frames are relaxed for Vercel/Tailwind compatibility.
+    // Relaxed for production stability: Removed nonces to allow Next.js/Supabase inline scripts to run.
     const cspHeader = `
-        default-src 'none';
-        script-src 'self' 'nonce-${nonce}' ${isProd ? '' : "'unsafe-eval'"} *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live;
-        script-src-elem 'self' 'nonce-${nonce}' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live 'unsafe-inline';
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live;
+        script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live;
         style-src 'self' 'unsafe-inline' fonts.googleapis.com;
         style-src-elem 'self' 'unsafe-inline' fonts.googleapis.com;
         img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.com https://vercel.live;
@@ -101,7 +96,6 @@ export async function updateSession(request: NextRequest) {
     `.replace(/\s{2,}/g, ' ').trim();
 
     supabaseResponse.headers.set('Content-Security-Policy', cspHeader);
-    supabaseResponse.headers.set('x-nonce', nonce);
     supabaseResponse.headers.set('X-Frame-Options', 'DENY');
     supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
     supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -178,6 +172,6 @@ export const config = {
          * - favicon.ico (favicon file)
          * Feel free to modify this matcher to fit your needs.
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json|woff2?)$).*)',
     ],
 }
