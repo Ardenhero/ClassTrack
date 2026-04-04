@@ -126,11 +126,14 @@ export async function middleware(request: NextRequest) {
     const cspHeader = `
         default-src 'none';
         script-src 'self' 'nonce-${nonce}' ${isProd ? '' : "'unsafe-eval'"} *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live;
-        style-src 'self' 'nonce-${nonce}' 'unsafe-inline' fonts.googleapis.com;
-        img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL};
+        script-src-elem 'self' 'nonce-${nonce}' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live 'unsafe-inline';
+        style-src 'self' 'unsafe-inline' fonts.googleapis.com;
+        style-src-elem 'self' 'unsafe-inline' fonts.googleapis.com;
+        img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.com https://vercel.live;
         font-src 'self' fonts.gstatic.com;
         connect-src 'self' *.supabase.co wss://*.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} ${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', 'wss://')} *.vercel-analytics.com *.vitals.vercel-insights.com https://vercel.live;
         manifest-src 'self' https://classtrack-navy.vercel.app;
+        frame-src 'self' https://vercel.live;
         frame-ancestors 'none';
         object-src 'none';
         base-uri 'self';
