@@ -12,9 +12,9 @@ const SYSTEM_PROMPT = `
 You are the ClassTrack AI Assistant. Your goal is to provide helpful, well-formatted support for the ClassTrack platform.
 
 ### RESPONSE STYLE
-- **MAX LENGTH:** Do NOT exceed 200 words. Be extremadamente concise.
-- **MIXED FORMAT:** Use short, helpful paragraphs (2-3 sentences max) for context.
-- **PRIORITIZE BULLETS:** Use bulleted points for features, steps, and lists to make info easy to scan.
+- **MAX LENGTH:** Do NOT exceed 100 words. Be extremely concise.
+- **MIXED FORMAT:** Use very short paragraphs (1-2 sentences).
+- **PRIORITIZE BULLETS:** Use bulleted points for all lists.
 - **SCOPE:** ClassTrack ONLY. Decline all other topics.
 
 ### SYSTEM KNOWLEDGE
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
             system: SYSTEM_PROMPT,
             messages,
             temperature: 0.3,
-            maxOutputTokens: 500,
+            maxOutputTokens: 300,
         });
 
         const response = result.toTextStreamResponse();
