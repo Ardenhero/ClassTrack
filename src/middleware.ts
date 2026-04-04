@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { checkRateLimit, getClientIP } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIP } from '@/lib/rate-limit' // eslint-disable-line @typescript-eslint/no-unused-vars
 
 export async function updateSession(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
     const isStatic = pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|woff2?|json)$/);
 
     if ((isApi || isAuth) && !isRSC && !isStatic && !isPlaywright) {
-        const clientIP = getClientIP(request);
+        const clientIP = getClientIP(request); // eslint-disable-line @typescript-eslint/no-unused-vars
         // [ISOLATION CHECK] Temporarily bypassing rate limit check in middleware
         // to troubleshoot 500 errors on old Vercel accounts.
         // const rateLimit = await checkRateLimit(clientIP, isAuth ? 'auth' : 'api');
