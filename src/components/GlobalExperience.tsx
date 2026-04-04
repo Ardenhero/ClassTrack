@@ -32,20 +32,19 @@ export default function GlobalExperience() {
       if (isTouch) return;
       mx = e.clientX; 
       my = e.clientY; 
-      if(dot) {
-        dot.style.left = mx + 'px'; 
-        dot.style.top = my + 'px';
-      }
+      // Handled in rAF for sync
     };
     if (!isTouch) document.addEventListener('mousemove', handleMouseMove);
 
     let cursorRaf: number;
     const animateCursor = () => {
-      rx += (mx - rx) * 0.11; 
-      ry += (my - ry) * 0.11; 
+      rx += (mx - rx) * 0.3; 
+      ry += (my - ry) * 0.3; 
       if(ring) {
-        ring.style.left = rx + 'px'; 
-        ring.style.top = ry + 'px';
+        ring.style.transform = `translate3d(${rx}px, ${ry}px, 0) translate(-50%, -50%)`;
+      }
+      if(dot) {
+        dot.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
       }
       cursorRaf = requestAnimationFrame(animateCursor);
     };
