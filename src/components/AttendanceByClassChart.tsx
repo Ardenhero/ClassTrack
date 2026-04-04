@@ -32,7 +32,7 @@ export function AttendanceByClassChart({ data }: AttendanceByClassChartProps) {
 
     return (
         <div className="w-full h-full relative">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart
                     data={chartData}
                     layout="vertical"

@@ -35,7 +35,7 @@ export function AttendanceChart({ data, title, subtitle }: AttendanceChartProps)
             </div>
 
             <div className="flex-1 w-full min-h-[250px] relative">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <AreaChart
                         data={data}
                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
