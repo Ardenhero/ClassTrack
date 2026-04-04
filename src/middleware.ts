@@ -106,7 +106,7 @@ export async function updateSession(request: NextRequest) {
         pathname === '/privacy-policy' ||
         pathname.startsWith('/about') || 
         pathname.startsWith('/auth') ||
-        pathname.startsWith('/student/portal/excuse');
+        pathname.startsWith('/student/portal');
 
     if (!user) {
         if (!isPublicPath && !pathname.startsWith('/api')) {
