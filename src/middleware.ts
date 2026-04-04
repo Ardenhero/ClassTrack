@@ -75,11 +75,12 @@ export async function updateSession(request: NextRequest) {
     }
 
     // --- 🛡️ CONTENT SECURITY POLICY (CSP) ---
-    // Relaxed for production stability: Removed nonces to allow Next.js/Supabase inline scripts to run.
+    // High-Security A+ Configuration: Nonce-based protection.
+    const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
     const cspHeader = `
-        default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live;
-        script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.live;
+        default-src 'none';
+        script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline' 'unsafe-eval';
+        script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline' 'unsafe-eval';
         style-src 'self' 'unsafe-inline' fonts.googleapis.com;
         style-src-elem 'self' 'unsafe-inline' fonts.googleapis.com;
         img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.com https://vercel.live;
@@ -94,7 +95,10 @@ export async function updateSession(request: NextRequest) {
         upgrade-insecure-requests;
     `.replace(/\s{2,}/g, ' ').trim();
 
+    // Set CSP on response
     supabaseResponse.headers.set('Content-Security-Policy', cspHeader);
+    // Set custom x-nonce on request so server components can access it
+    request.headers.set('x-nonce', nonce);
     supabaseResponse.headers.set('X-Frame-Options', 'DENY');
     supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
     supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
