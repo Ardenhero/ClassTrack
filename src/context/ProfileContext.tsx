@@ -33,6 +33,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
 
     useEffect(() => {
+        if (!supabase) return;
         const initializeProfile = async () => {
             // Priority 1: LocalStorage (Fastest)
             const stored = localStorage.getItem("sc_profile");

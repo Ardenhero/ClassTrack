@@ -94,6 +94,7 @@ export function Sidebar({ onLinkClick, isCollapsed = false, toggleCollapse }: Si
     const navItems = isSuperAdmin ? superAdminNavigation : isAdmin ? adminNavigation : instructorNavigation;
 
     useEffect(() => {
+        if (!supabase) return;
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);

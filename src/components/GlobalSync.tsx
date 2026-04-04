@@ -37,6 +37,7 @@ export function GlobalSync() {
 
     // Real-time Listener — invalidates SWR instead of router.refresh()
     useEffect(() => {
+        if (!supabase) return;
         const channel = supabase
             .channel('global-db-changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_logs' }, () => triggerSync())

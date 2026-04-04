@@ -47,7 +47,7 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_evidence_docs_student_id ON evidence_documents(student_id);
 
 -- 9. FINGERPRINTS (biometric lookup)
-CREATE INDEX IF NOT EXISTS idx_fingerprints_student_id ON fingerprints(student_id);
+CREATE INDEX IF NOT EXISTS idx_fingerprint_device_links_student_id ON fingerprint_device_links(student_id);
 
 -- Verify indexes were created
 SELECT tablename, indexname FROM pg_indexes WHERE schemaname = 'public' ORDER BY tablename;
