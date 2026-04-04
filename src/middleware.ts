@@ -49,9 +49,12 @@ export async function middleware(request: NextRequest) {
         "/api/attendance",
         "/api/sync",
         "/api/health",
+        "/api/metrics",
         "/api/kiosk",
         "/api/status",
+        "/api/debug/logs",
         "/api/auth/signout",
+        "/api/evidence/public-upload",
         "/api/fingerprint",
         "/api/iot",
         "/student/portal",
@@ -75,12 +78,10 @@ export async function middleware(request: NextRequest) {
     if (isApiRequest || isAuthRequest) {
         const clientIP = getClientIP(request);
         const isMutation = ["POST", "PUT", "DELETE"].includes(request.method);
-        let rateLimitType: "api" | "auth" | "attendance" | "mutations" | "chat" = "api";
+        let rateLimitType: "api" | "auth" | "attendance" | "mutations" = "api";
 
         if (isAuthRequest) {
             rateLimitType = "auth";
-        } else if (pathname.startsWith("/api/chat")) {
-            rateLimitType = "chat";
         } else if (pathname.startsWith("/api/attendance") || pathname.startsWith("/api/sync")) {
             rateLimitType = "attendance";
         } else if (isMutation) {
@@ -90,12 +91,12 @@ export async function middleware(request: NextRequest) {
         // IDENTITY ISOLATION: Prevent web-users from spoofing legacy hardware credentials
         const hasSession = request.cookies.has("sb-blpjvjqozhtzectndmxk-auth-token"); // Supabase session cookie
         const hasLegacyEmail = request.nextUrl.searchParams.has("email");
-        
+
         if (hasSession && hasLegacyEmail && isApiRequest) {
             console.warn(`[SECURITY] Blocked browser-based legacy auth attempt for: ${pathname}`);
-            return new NextResponse(JSON.stringify({ error: "Legacy authentication is restricted to hardware devices." }), { 
-                status: 403, 
-                headers: { "Content-Type": "application/json" } 
+            return new NextResponse(JSON.stringify({ error: "Legacy authentication is restricted to hardware devices." }), {
+                status: 403,
+                headers: { "Content-Type": "application/json" }
             });
         }
 
@@ -155,17 +156,6 @@ export async function middleware(request: NextRequest) {
     supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, x-client-info, x-nonce');
     supabaseResponse.headers.set('Access-Control-Allow-Credentials', 'true');
     supabaseResponse.headers.set('Vary', 'Origin');
-
-    // ============================================
-    // 5b. HARDENED SECURITY HEADERS
-    // ============================================
-    supabaseResponse.headers.set('X-Frame-Options', 'DENY');
-    supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
-    supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block');
-    supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
-    supabaseResponse.headers.set('X-DNS-Prefetch-Control', 'on');
-    supabaseResponse.headers.set('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining');
 
     if (request.method === 'OPTIONS') {
         return new NextResponse(null, {

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession } from '@/app/student/portal/actions';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { subDays, differenceInDays } from 'date-fns';
 
@@ -197,14 +197,14 @@ export async function GET(request: Request) {
 
             records.forEach(log => {
                 const logDateStr = manilaFormatter.format(new Date(log.timestamp));
-                
+
                 // Check for No Class overrides on this specific log's day
-                const hasOverride = dayOverrides.some(o => 
-                    o.class_id === cls.id && 
-                    o.date === logDateStr && 
+                const hasOverride = dayOverrides.some(o =>
+                    o.class_id === cls.id &&
+                    o.date === logDateStr &&
                     ['holiday', 'suspended', 'cancelled', 'No Class'].includes(o.type)
                 );
-                
+
                 if (hasOverride) return; // Ignore logs on cancelled class days
 
                 logDatesWithActivity.add(logDateStr);
@@ -217,11 +217,11 @@ export async function GET(request: Request) {
             // --- NO-CRON DYNAMIC SYNC: Handle historical missed sessions (All-Time) ---
             const enrollmentDateStr = enrollmentData.find(e => e.class_id === cls.id)?.enrolled_at;
             const enrollmentDate = enrollmentDateStr ? new Date(enrollmentDateStr) : (cls.created_at ? new Date(cls.created_at) : new Date('2024-01-01'));
-            
+
             // The start date for synthetic absences should be the LATER of (class creation, enrollment date)
             const classCreatedDate = cls.created_at ? new Date(cls.created_at) : new Date('2024-01-01');
             const effectiveStartDate = enrollmentDate > classCreatedDate ? enrollmentDate : classCreatedDate;
-            
+
             const totalDaysBack = Math.min(365, differenceInDays(nowManila, effectiveStartDate) + 1);
 
             const pastDays = Array.from({ length: totalDaysBack }, (_, i) => {
@@ -367,9 +367,9 @@ export async function GET(request: Request) {
             class_stats: finalClassStats,
             recent_logs: attendanceLogs.slice(0, 10).map(log => {
                 const logDateStr = manilaFormatter.format(new Date(log.timestamp));
-                const override = dayOverrides.find(o => 
-                    o.class_id === log.class_id && 
-                    o.date === logDateStr && 
+                const override = dayOverrides.find(o =>
+                    o.class_id === log.class_id &&
+                    o.date === logDateStr &&
                     ['holiday', 'suspended', 'cancelled', 'No Class'].includes(o.type)
                 );
                 if (override) {
@@ -377,11 +377,13 @@ export async function GET(request: Request) {
                 }
                 return log;
             }),
-            debug: {
-                resolved_student_id: studentId,
-                allowed_class_ids: allowedClassIds,
-                total_logs_fetched: attendanceLogs.length
-            }
+            ...(process.env.NODE_ENV === 'development' ? {
+                debug: {
+                    resolved_student_id: studentId,
+                    allowed_class_ids: allowedClassIds,
+                    total_logs_fetched: attendanceLogs.length
+                }
+            } : {})
         }, { status: 200 });
 
     } catch (error) {

@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
-
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
@@ -17,15 +16,14 @@ const HeartbeatSchema = z.object({
  * Updates kiosk_devices.last_heartbeat and is_online.
  * Auto-creates the device record if it doesn't exist (self-registration).
  */
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
     try {
-        const body = await req.json();
+        const body = await request.json();
         const result = HeartbeatSchema.safeParse(body);
 
         if (!result.success) {

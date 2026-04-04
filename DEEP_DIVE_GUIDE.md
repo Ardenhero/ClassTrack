@@ -35,7 +35,7 @@ The platform is built on three core pillars:
 
 ---
 
-## 🔌 Chapter 2: The Silicon Layer (ESP32-S3 Deep-Dive)
+## 🔌 Chapter 2: The Silicon Layer (ESP32-S3 Components)
 The **SmartClassroom Kiosk** is the physical anchor of the ecosystem. It manages high-resolution graphics, complex UART communications with the bio-sensor, and asynchronous WiFi tasks.
 
 ### 2.1 Hardware Specifications (The "Raw Metal")
@@ -432,7 +432,7 @@ In the next version, the **ClassTrack Intelligence Assistant** will be able to c
 
 ---
 
-## ⚡ Chapter 21: Hardware Firmware Analysis (The 5,000-Line Deep-Dive)
+## ⚡ Chapter 21: Hardware Firmware Analysis (The 5,000-Line Component Study)
 The `main.cpp` is the "Source of Truth" for the SmartClassroom Kiosk.
 
 ### 21.1 Task Priority & Core Affinity
@@ -543,7 +543,7 @@ ClassTrack’s APIs are deployed on **Vercel Edge Functions** to ensure low-late
 
 ---
 
-## ⚡ Chapter 30: Hardware Firmware Deep-Dive (Task Management)
+## ⚡ Chapter 30: Hardware Firmware Components (Task Management)
 The `main.cpp` uses FreeRTOS tasks to maintain a split-second responsive interface.
 
 ### 30.1 `heartbeat_task` logic
@@ -556,7 +556,7 @@ The `main.cpp` uses FreeRTOS tasks to maintain a split-second responsive interfa
 
 ---
 
-## 🌐 Chapter 31: Web API Deep-Dive (Security Hardening)
+## 🌐 Chapter 31: Web API Components (Security Hardening)
 Documentation of the security protocols used in our Next.js API routes.
 
 ### 31.1 JWT Verification in Middleware
@@ -931,7 +931,7 @@ Exhaustive metadata for the ClassTrack performance layer.
 
 ---
 
-## 🎨 Chapter 59: Student Portal Functional Deep-Dive
+## 🎨 Chapter 59: Student Portal Functional Components
 The Student Portal is a mobile-optimized gateway for academic visibility.
 
 ### 59.1 Personal Attendance Registry
@@ -1076,7 +1076,7 @@ Detailed technical mapping of the professional-grade utility libraries.
 
 ---
 
-## ⚡ Chapter 69: Hardware Schematic & Bus Mapping (Deep-Dive)
+## ⚡ Chapter 69: Hardware Schematic & Bus Mapping (Components)
 ClassTrack’s hardware relies on a precise electrical configuration.
 
 ### 69.1 GPIO & Bus Logic Mapping

@@ -1,8 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { controlDevice } from "../../../../lib/tuya";
 import { z } from "zod";
-
 
 export const dynamic = 'force-dynamic';
 
@@ -43,29 +42,28 @@ interface IotGroup {
     room_id: string | null;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
     try {
-        const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
 
         let rawBody: unknown;
         try {
-            rawBody = await req.json();
+            rawBody = await request.json();
         } catch {
             return NextResponse.json({ error: "Malformed JSON" }, { status: 400 });
         }
 
         const result = ControlSchema.safeParse(rawBody);
         if (!result.success) {
-            return NextResponse.json({ 
-                error: "Invalid Request", 
-                details: result.error.issues.map(e => `${e.path.join('.')}: ${e.message}`) 
+            return NextResponse.json({
+                error: "Invalid Request",
+                details: result.error.issues.map(e => `${e.path.join('.')}: ${e.message}`)
             }, { status: 400 });
         }
 
@@ -76,11 +74,11 @@ export async function POST(req: NextRequest) {
         const { data: userData } = await supabase.auth.getUser();
         const user = userData?.user;
         if (!user && !email) {
-             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         let instructor: InstructorProfile | null = null;
-        
+
         // Resolve instructor from session
         if (user) {
             const { data } = await supabase.from('instructors').select('id, department_id, is_super_admin, assigned_room_ids, name').eq('auth_user_id', user.id).maybeSingle();
@@ -98,7 +96,7 @@ export async function POST(req: NextRequest) {
         // --- SCOPED PERMISSION: Ensure instructor is authorized for this room/group ---
         if (instructor && !instructor.is_super_admin) {
             const roomIds = Array.isArray(instructor.assigned_room_ids) ? instructor.assigned_room_ids : [];
-            
+
             if (device_id) {
                 const { data: device } = await supabase.from('iot_devices').select('room_id').eq('id', device_id).single();
                 if (device?.room_id && !roomIds.includes(device.room_id)) {

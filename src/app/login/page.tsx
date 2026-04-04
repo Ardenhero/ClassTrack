@@ -164,7 +164,7 @@ export default function LoginPage() {
                 <div className="flex justify-center gap-4">
                     <a href="/privacy-policy" className="hover:text-nwu-red transition-colors underline underline-offset-2">Privacy Policy</a>
                     <span className="text-gray-300">|</span>
-                    <span className="text-gray-400">ClassTrack Security v1</span>
+                    <span className="text-gray-400">ClassTrack Security v1.0</span>
                 </div>
             </footer>
         </div>

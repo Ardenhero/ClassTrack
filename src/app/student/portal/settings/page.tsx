@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { changeStudentPassword } from "../actions";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession, changeStudentPassword } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
-import { 
+import {
     Lock,
-    ShieldCheck, 
-    Loader2, 
-    AlertTriangle, 
+    ShieldCheck,
+    Loader2,
+    AlertTriangle,
     Eye,
     EyeOff,
     CheckCircle2,
@@ -75,7 +74,7 @@ export default function SettingsPage() {
             const formData = new FormData();
             formData.append("currentPassword", passwords.current);
             formData.append("newPassword", passwords.new);
-            
+
             const result = await changeStudentPassword(formData);
             if (result.success) {
                 setMsg({ text: "Password changed successfully!", type: "success" });
@@ -110,7 +109,7 @@ export default function SettingsPage() {
                 {/* Profile Section */}
                 <div className="flex flex-col items-center">
                     <div className="relative group mb-8">
-                        <PhotoUpload 
+                        <PhotoUpload
                             currentImageUrl={student.image_url}
                             tableName="students"
                             recordId={student.id}
@@ -119,7 +118,7 @@ export default function SettingsPage() {
                             hideInstructions={true}
                         />
                     </div>
-                    
+
                     <div className="text-center space-y-2">
                         <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">{student.name}</h2>
                         <p className="text-sm font-black text-nwu-red dark:text-red-400 uppercase tracking-[0.3em]">Student Account</p>
@@ -190,11 +189,10 @@ export default function SettingsPage() {
 
                         <form onSubmit={handlePasswordChange} className="space-y-6">
                             {msg && (
-                                <div className={`p-5 rounded-2xl border flex items-center gap-4 animate-in slide-in-from-top-4 duration-500 ${
-                                    msg.type === "success" 
-                                    ? "bg-green-500/10 border-green-500/20 text-green-400" 
-                                    : "bg-red-500/10 border-red-500/20 text-red-400"
-                                }`}>
+                                <div className={`p-5 rounded-2xl border flex items-center gap-4 animate-in slide-in-from-top-4 duration-500 ${msg.type === "success"
+                                        ? "bg-green-500/10 border-green-500/20 text-green-400"
+                                        : "bg-red-500/10 border-red-500/20 text-red-400"
+                                    }`}>
                                     {msg.type === "success" ? <CheckCircle2 className="h-6 w-6" /> : <AlertTriangle className="h-6 w-6" />}
                                     <p className="text-xs font-black tracking-wide uppercase">{msg.text}</p>
                                 </div>
@@ -208,12 +206,12 @@ export default function SettingsPage() {
                                             id="current-password"
                                             type={showPasswords ? "text" : "password"}
                                             value={passwords.current}
-                                            onChange={(e) => setPasswords({...passwords, current: e.target.value})}
+                                            onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
                                             className="w-full pl-6 pr-14 py-4 rounded-2xl bg-white/5 border border-white/10 focus:bg-white/10 focus:ring-4 focus:ring-nwu-gold/20 focus:border-nwu-gold transition-all text-sm font-bold text-white placeholder-gray-600 outline-none"
                                             placeholder="Verification Required"
                                             required
                                         />
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => setShowPasswords(!showPasswords)}
                                             aria-label={showPasswords ? "Hide current password" : "Show current password"}
@@ -231,7 +229,7 @@ export default function SettingsPage() {
                                             id="new-password"
                                             type={showPasswords ? "text" : "password"}
                                             value={passwords.new}
-                                            onChange={(e) => setPasswords({...passwords, new: e.target.value})}
+                                            onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
                                             className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:bg-white/10 focus:ring-4 focus:ring-nwu-gold/20 focus:border-nwu-gold transition-all text-sm font-bold text-white placeholder-gray-600 outline-none"
                                             placeholder="••••••••"
                                             required
@@ -243,7 +241,7 @@ export default function SettingsPage() {
                                             id="confirm-password"
                                             type={showPasswords ? "text" : "password"}
                                             value={passwords.confirm}
-                                            onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
+                                            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                                             className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:bg-white/10 focus:ring-4 focus:ring-nwu-gold/20 focus:border-nwu-gold transition-all text-sm font-bold text-white placeholder-gray-600 outline-none"
                                             placeholder="••••••••"
                                             required
@@ -266,7 +264,7 @@ export default function SettingsPage() {
 
                 {/* Footer Info */}
                 <div className="text-center pt-8 border-t border-gray-100 dark:border-gray-800">
-                    <button 
+                    <button
                         onClick={() => router.push("/student/portal/dashboard")}
                         className="text-[10px] font-black text-gray-400 dark:text-gray-500 hover:text-nwu-red transition-colors uppercase tracking-[0.4em]"
                     >

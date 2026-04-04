@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
-
+import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,15 +8,14 @@ export const dynamic = 'force-dynamic';
  * Sets pending_command = 'ping' on the kiosk_devices row.
  * The ESP32 will detect this on its next heartbeat and respond.
  */
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
     try {
-        const { device_serial, command } = await req.json();
+        const { device_serial, command } = await request.json();
         const validCommands = ['ping', 'pin', 'pair', 'reboot', 'sync'];
         const cmd = validCommands.includes(command) ? command : 'ping';
 

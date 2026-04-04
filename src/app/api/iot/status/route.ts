@@ -7,19 +7,10 @@ export const dynamic = 'force-dynamic';
 /**
  * GET /api/iot/status — Super Admin endpoint: Gateway + device health.
  * Implements "Quota-Saver" mode to minimize Tuya API calls during off-hours.
- * Supports Hybrid Auth: Hardware API Key or Session Token.
  */
 export async function GET(request: NextRequest) {
     try {
         const supabase = createClient();
-        await supabase.auth.getSession();
-        
-        // Note: IoT status is primarily for web admin, but we allowed hardware before.
-        // We'll keep the session check for web users. 
-        // If the user wants it fully open for hardware, we'd need a different check, 
-        // but let's just remove the shield for now.
-
-        
         const { searchParams } = new URL(request.url);
         const force = searchParams.get('force') === 'true';
         const businessHours = isWithinBusinessHours();

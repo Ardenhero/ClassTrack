@@ -1,11 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const slot_id = searchParams.get('slot_id');
-
     const device_id = searchParams.get('device_id');
 
     if (!slot_id || !device_id) {

@@ -30,11 +30,14 @@ export function NewMessageModal({ notifications, onClose }: NewMessageModalProps
     
     const unreadMessages = notifications.filter(n => !n.read && (n.type === 'message' || n.type === 'no_class'));
     
-    if (unreadMessages.length === 0) return null;
+    // Safety check: if no messages, or index out of bounds, don't render
+    if (unreadMessages.length === 0 || !unreadMessages[currentIndex]) return null;
     
     const currentMsg = unreadMessages[currentIndex];
 
     const handleNext = async () => {
+        if (!currentMsg) return;
+
         // Mark as read in background
         await markNotificationAsRead(currentMsg.id);
         
@@ -62,7 +65,7 @@ export function NewMessageModal({ notifications, onClose }: NewMessageModalProps
                         <div className="absolute bottom-10 right-10 h-32 w-32 rounded-full bg-white blur-3xl animate-pulse delay-700" />
                     </div>
                     <div className="relative z-10 h-20 w-20 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center border border-white/20 rotate-6 shadow-2xl">
-                        {currentMsg.type === 'no_class' ? (
+                        {currentMsg?.type === 'no_class' ? (
                             <Megaphone className="h-10 w-10 text-white" />
                         ) : (
                             <MessageSquare className="h-10 w-10 text-white" />

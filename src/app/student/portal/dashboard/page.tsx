@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStudentNotifications, getLatestStudentRecord, markNotificationAsRead } from "../actions";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession, getStudentNotifications, getLatestStudentRecord, markNotificationAsRead } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import {
     Calendar,
@@ -343,8 +342,8 @@ export default function DashboardPage() {
                             <div>
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Status</p>
                                 <p className={`text-lg font-black ${student.status?.toLowerCase() === 'enrolled' || student.status?.toLowerCase() === 'active' ? 'text-green-600 dark:text-green-400' :
-                                        student.status?.toLowerCase() === 'graduated' ? 'text-blue-600 dark:text-blue-400' :
-                                            'text-red-600 dark:text-red-400'
+                                    student.status?.toLowerCase() === 'graduated' ? 'text-blue-600 dark:text-blue-400' :
+                                        'text-red-600 dark:text-red-400'
                                     }`}>
                                     {(student.status || "Enrolled").toUpperCase()}
                                 </p>

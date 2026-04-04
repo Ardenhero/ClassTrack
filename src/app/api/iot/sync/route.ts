@@ -9,7 +9,6 @@ export const dynamic = 'force-dynamic';
  * Call this every 30-60 minutes via Cron.
  */
 export async function GET() {
-
     const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -35,14 +34,14 @@ export async function GET() {
 
                         if (dp !== undefined) {
                             const actualState = Boolean(dp.value);
-                            
+
                             // Update if different
                             if (actualState !== Boolean(device.current_state)) {
                                 await adminClient
                                     .from('iot_devices')
-                                    .update({ 
-                                        current_state: actualState, 
-                                        updated_at: new Date().toISOString() 
+                                    .update({
+                                        current_state: actualState,
+                                        updated_at: new Date().toISOString()
                                     })
                                     .eq('id', device.id);
                                 return { id: device.id, synced: true, state: actualState };

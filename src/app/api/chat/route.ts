@@ -3,7 +3,6 @@ import { streamText } from 'ai';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { getStudentSession } from "@/lib/student-session";
 
 // Next.js App Router route settings for unbuffered streaming - Perfect Mirror + Zero-Spam Hardening
 export const runtime = 'edge';
@@ -14,10 +13,10 @@ const SYSTEM_PROMPT = `
 You are the ClassTrack AI Assistant. Your goal is to provide helpful, well-formatted support for the ClassTrack platform.
 
 ### RESPONSE STYLE
-- **BREVITY IS KEY:** Keep responses under 3-4 sentences maximum. Use punchy, direct language.
-- **NO PLEASANTRIES:** Skip the "Hello" and "How can I help" after the first message. Get straight to the facts.
-- **INSTRUCTIONAL BULLETS:** Use bullet points ONLY for steps. Limit to 3 bullets max.
-- **SCOPE:** ClassTrack ONLY. Decline all other topics immediately.
+- **MIXED FORMAT:** Use natural paragraphs for general explanations and a warmer, human-like tone.
+- **INSTRUCTIONAL BULLETS:** Use bullet points ONLY for step-by-step instructions, lists of features, or troubleshooting steps.
+- **LENGTH:** Keep explanations concise, short, and to the point while still being fully understandable. Do NOT over-explain.
+- **SCOPE:** ClassTrack ONLY. Decline all other topics.
 
 ### SYSTEM KNOWLEDGE
 - **ESP32 Kiosk:** Hardware station with AS608 fingerprint sensor for biometric attendance.
@@ -50,19 +49,10 @@ export async function POST(req: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    let userId = user?.id;
-
-    // --- 🛡️ STUDENT SESSION CHECK ---
-    if (!userId) {
-        const studentSession = await getStudentSession();
-        if (studentSession) {
-            userId = studentSession.id;
-        }
-    }
 
     // Block Guests: Total spam protection
-    if (!userId) {
-        return new Response(JSON.stringify({ 
+    if (!user) {
+        return new Response(JSON.stringify({
             error: "unauthorized",
             message: "Please log in to use ClassTrack Intelligence."
         }), { status: 401, headers: { 'Content-Type': 'application/json' } });
@@ -71,7 +61,7 @@ export async function POST(req: Request) {
     // --- 🛡️ PRE-FLIGHT CHECK (Brain Identity) ---
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) {
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
             error: "brain_key_missing",
             message: "My AI brain key is missing on the server! Please verify GOOGLE_GENERATIVE_AI_API_KEY."
         }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -79,8 +69,8 @@ export async function POST(req: Request) {
 
     try {
         // --- 🛡️ RATE LIMITING (Account-Based UUID Guard) ---
-        // We use userId (UUID) instead of IP to prevent evasion via devices/networks
-        const { success, limit, remaining } = await checkRateLimit(userId, "chat");
+        // We use user.id (UUID) instead of IP to prevent evasion via devices/networks
+        const { success, limit, remaining } = await checkRateLimit(user.id, "chat");
 
         if (!success) {
             return new Response(JSON.stringify({
@@ -100,9 +90,18 @@ export async function POST(req: Request) {
             }
         }
 
-        // Limit context for cost/security
-        if (messages.length > 10) {
-            messages = messages.slice(-10);
+        // Limit context for cost/security (last 5 exchanges only)
+        if (messages.length > 5) {
+            messages = messages.slice(-5);
+        }
+
+        // Server-side input length guard (prevent token-bleed from long messages)
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage && typeof lastMessage.content === 'string' && lastMessage.content.length > 500) {
+            return new Response(JSON.stringify({
+                error: "message_too_long",
+                message: "Please keep your message under 500 characters."
+            }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
 
         const google = createGoogleGenerativeAI({ apiKey });
@@ -110,19 +109,16 @@ export async function POST(req: Request) {
             model: google('gemini-2.5-flash'),
             system: SYSTEM_PROMPT,
             messages,
-            temperature: 0.7,
+            temperature: 0.3,
+            maxOutputTokens: 300,
         });
 
         const response = result.toTextStreamResponse();
-        
-        // Add rate limit headers for transparency - Strictly forced to 10-message cap
-        const displayLimit = 10;
-        const limitDifference = limit - displayLimit;
-        const displayRemaining = Math.max(0, remaining - (limitDifference > 0 ? limitDifference : 0));
 
-        response.headers.set('X-RateLimit-Remaining', displayRemaining.toString());
-        response.headers.set('X-RateLimit-Limit', displayLimit.toString());
-        
+        // Add rate limit headers for transparency
+        response.headers.set('X-RateLimit-Remaining', remaining.toString());
+        response.headers.set('X-RateLimit-Limit', limit.toString());
+
         return response;
     } catch (err: unknown) {
         const error = err as Error;

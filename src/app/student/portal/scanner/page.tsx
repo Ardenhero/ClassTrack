@@ -2,17 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getLatestStudentRecord } from "../actions";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession, getLatestStudentRecord } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
-import { 
-    Loader2, 
-    QrCode, 
-    AlertTriangle, 
-    Camera, 
-    CheckCircle2, 
-    ShieldCheck, 
-    Info 
+import {
+    Loader2,
+    QrCode,
+    AlertTriangle,
+    Camera,
+    CheckCircle2,
+    ShieldCheck,
+    Info
 } from "lucide-react";
 
 interface Student {
@@ -46,7 +45,7 @@ export default function ScannerPage() {
                 router.push("/student/portal");
                 return;
             }
-            
+
             // Sync live status
             const latest = await getLatestStudentRecord();
             if (latest.student) {
@@ -215,7 +214,7 @@ export default function ScannerPage() {
                         <div className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white">Access Restricted</h2>
                             <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto leading-relaxed text-balance">
-                                QR Scanning is disabled because your account status is currently set to 
+                                QR Scanning is disabled because your account status is currently set to
                                 <span className="text-nwu-red font-bold uppercase mx-1">{(student.status || "UNKNOWN").toUpperCase()}</span>.
                                 Please contact the Registrar for assistance.
                             </p>
@@ -248,7 +247,7 @@ export default function ScannerPage() {
                                             <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-2xl" />
                                             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-2xl" />
                                             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-2xl" />
-                                            
+
                                             {/* Scanning Line */}
                                             <div className="absolute left-4 right-4 h-[2px] bg-red-400 animate-[bounce_3s_ease-in-out_infinite] shadow-[0_0_15px_rgba(239,68,68,0.8)]" style={{ top: '50%' }} />
                                         </div>
@@ -307,33 +306,28 @@ export default function ScannerPage() {
 
                             {/* Result State */}
                             {scanResult && (
-                                <div className={`absolute inset-0 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-300 ${
-                                    scanResult.success 
-                                    ? 'bg-green-50/95 dark:bg-green-900/20 backdrop-blur-md' 
-                                    : 'bg-red-50/95 dark:bg-red-900/20 backdrop-blur-md'
-                                }`}>
-                                    <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl ${
-                                        scanResult.success ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                                <div className={`absolute inset-0 flex flex-col items-center justify-center p-8 text-center animate-in zoom-in duration-300 ${scanResult.success
+                                        ? 'bg-green-50/95 dark:bg-green-900/20 backdrop-blur-md'
+                                        : 'bg-red-50/95 dark:bg-red-900/20 backdrop-blur-md'
                                     }`}>
+                                    <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-6 shadow-2xl ${scanResult.success ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                                        }`}>
                                         {scanResult.success ? <CheckCircle2 className="h-12 w-12" /> : <AlertTriangle className="h-12 w-12" />}
                                     </div>
-                                    <h2 className={`text-2xl font-black tracking-tight mb-2 ${
-                                        scanResult.success ? 'text-green-900 dark:text-green-400' : 'text-red-900 dark:text-red-400'
-                                    }`}>
+                                    <h2 className={`text-2xl font-black tracking-tight mb-2 ${scanResult.success ? 'text-green-900 dark:text-green-400' : 'text-red-900 dark:text-red-400'
+                                        }`}>
                                         {scanResult.success ? (scanResult.action === 'check_out' ? 'Checked Out!' : 'Attendance Logged!') : 'Scan Error'}
                                     </h2>
-                                    <p className={`text-sm font-medium max-w-[280px] mb-8 ${
-                                        scanResult.success ? 'text-green-700/80 dark:text-green-500' : 'text-red-700/80 dark:text-red-500'
-                                    }`}>
+                                    <p className={`text-sm font-medium max-w-[280px] mb-8 ${scanResult.success ? 'text-green-700/80 dark:text-green-500' : 'text-red-700/80 dark:text-red-500'
+                                        }`}>
                                         {scanResult.message}
                                     </p>
                                     <button
                                         onClick={() => setScanResult(null)}
-                                        className={`px-10 py-4 rounded-2xl font-black transition-all active:scale-95 shadow-xl ${
-                                            scanResult.success 
-                                            ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-200' 
-                                            : 'bg-red-600 hover:bg-red-700 text-white shadow-red-200'
-                                        }`}
+                                        className={`px-10 py-4 rounded-2xl font-black transition-all active:scale-95 shadow-xl ${scanResult.success
+                                                ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-200'
+                                                : 'bg-red-600 hover:bg-red-700 text-white shadow-red-200'
+                                            }`}
                                     >
                                         {scanResult.success ? 'CONTINUE' : 'TRY AGAIN'}
                                     </button>

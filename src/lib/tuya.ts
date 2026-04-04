@@ -53,16 +53,32 @@ export function isWithinBusinessHours(): boolean {
 // DP codes for locks
 const LOCK_DP_CODES = ['unlock_ble', 'unlock_fingerprint', 'unlock_temporary', 'unlock_card'];
 
+// IN-MEMORY DEVICE TOGGLE COOLDOWN (Relay Welding Protection)
+const lastToggle = new Map<string, number>();
+const TOGGLE_COOLDOWN_MS = 3000; // 3 seconds
+
 /**
  * Send a command to a Tuya device.
  * COMMANDS ALWAYS BYPASS CACHE (Priority Sync).
+ * Enforces a 3-second cooldown per device to protect physical relays.
  */
 export async function controlDevice(deviceId: string, code: string, value: boolean | string | number): Promise<{ success: boolean; msg?: string }> {
+    // --- RELAY WELDING GUARD ---
+    const lastTime = lastToggle.get(deviceId);
+    if (lastTime && (Date.now() - lastTime) < TOGGLE_COOLDOWN_MS) {
+        const remaining = Math.ceil((TOGGLE_COOLDOWN_MS - (Date.now() - lastTime)) / 1000);
+        return { success: false, msg: `Hardware cooldown in progress. Please wait ${remaining}s.` };
+    }
+    lastToggle.set(deviceId, Date.now());
+
     const tuya = getTuyaClient();
-    
+
     // Invalidate status cache immediately after command
     statusCache.delete(`status:${deviceId}`);
     statusCache.delete(`info:${deviceId}`);
+
+
+
 
     const isLockCmd = LOCK_DP_CODES.includes(code);
 

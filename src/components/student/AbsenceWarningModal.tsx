@@ -19,7 +19,7 @@ export function AbsenceWarningModal({ alerts, onClose }: AbsenceWarningModalProp
     const [isExiting, setIsExiting] = useState(false);
     const [acknowledged, setAcknowledged] = useState(false);
 
-    if (alerts.length === 0) return null;
+    if (alerts.length === 0 || !alerts[currentIndex]) return null;
 
     const current = alerts[currentIndex];
 

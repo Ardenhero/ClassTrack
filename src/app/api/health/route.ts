@@ -30,10 +30,11 @@ export async function GET() {
         const missing = essentials.filter(key => !process.env[key]);
         
         if (missing.length > 0) {
+            console.error(`[HEALTH] Missing env vars: ${missing.join(', ')}`);
             return NextResponse.json({
                 status: 'degraded',
                 uptime: `${process.uptime()}s`,
-                error: `Missing configuration: ${missing.join(', ')}`,
+                error: `Missing ${missing.length} required configuration key(s). Check server logs.`,
                 latency: `${Date.now() - startTime}ms`
             }, { status: 503 });
         }

@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,14 +14,13 @@ interface ClassRow {
     room_id: string | null;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = new URL(request.url);
     const instructor_id = searchParams.get('instructor_id') || searchParams.get('instructorId') || searchParams.get('id');
     const room_id = searchParams.get('room_id');
 
@@ -53,7 +52,7 @@ export async function GET(req: NextRequest) {
                 .select('id')
                 .ilike('name', room_id.trim())
                 .maybeSingle();
-            
+
             if (roomData) {
                 effectiveRoomId = roomData.id;
             } else {
@@ -88,7 +87,7 @@ export async function GET(req: NextRequest) {
             minute: 'numeric',
             hour12: false
         });
-        
+
         const parts = manilaFormatter.formatToParts(new Date());
         const todayDay = parts.find(p => p.type === 'weekday')?.value || ""; // "Fri"
         const hour = parseInt(parts.find(p => p.type === 'hour')?.value || "0");
@@ -111,7 +110,7 @@ export async function GET(req: NextRequest) {
             .map((c: ClassRow) => {
                 const startMin = getMinutes(c.start_time);
                 const endMin = getMinutes(c.end_time);
-                
+
                 // Recommended if current time is in window
                 const isRecommended = currentMinutes >= (startMin - 15) && currentMinutes <= endMin;
 

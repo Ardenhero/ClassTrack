@@ -1,23 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
-
+import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-/**
- * GET /api/kiosk/resolve-room?name=<string>
- * Resolves a room name to its ID.
- * Supports Hybrid Auth: Hardware API Key or Session Token.
- */
-export async function GET(req: NextRequest) {
+export async function GET(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
     try {
-        const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(request.url);
         const name = searchParams.get("name");
 
         if (!name) {

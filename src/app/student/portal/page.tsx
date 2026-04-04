@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, Loader2, AlertTriangle, KeyRound, Search, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { loginStudent } from "./actions";
-import { getStudentSession } from "@/lib/student-session";
+import { loginStudent, getStudentSession } from "./actions";
 
 export default function LoginPage() {
     const [sin, setSin] = useState("");

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getLatestStudentRecord } from "../actions";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession, getLatestStudentRecord } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import { Loader2, AlertTriangle, Activity, TrendingUp, CheckCircle2, Clock, XCircle, FileQuestion, ChevronDown } from "lucide-react";
 
@@ -115,7 +114,7 @@ function StudentAttendance({ sin }: { sin: string }) {
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
                     </div>
                 </div>
-                
+
                 {activeTerm && (
                     <div className="hidden md:block text-right">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${activeTerm.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -247,8 +246,8 @@ function StudentAttendance({ sin }: { sin: string }) {
 
                                         <div className="mt-6 flex items-center gap-3">
                                             <div className="h-2 flex-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                                <div 
-                                                    className={`h-full transition-all duration-1000 ${cls.percentage >= 80 ? 'bg-green-500' : cls.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+                                                <div
+                                                    className={`h-full transition-all duration-1000 ${cls.percentage >= 80 ? 'bg-green-500' : cls.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
                                                     style={{ width: `${cls.percentage}%` }}
                                                 />
                                             </div>

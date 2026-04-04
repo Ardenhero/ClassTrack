@@ -314,7 +314,7 @@ export default function IdentityPage() {
                 </div>
 
                 <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 text-center">
-                    <p className="text-xs text-gray-400">ClassTrack v1 • Secure Access</p>
+                    <p className="text-xs text-gray-400">ClassTrack v1.1.0 • Secure Access</p>
                 </div>
             </div>
         </div>

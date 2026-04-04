@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { encryptPayload, decryptPayload } from "@/lib/qr-utils";
 import crypto from "crypto";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession } from '@/app/student/portal/actions';
 import { createClient as createServerClient } from "@/utils/supabase/server";
 
 export const dynamic = 'force-dynamic';
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
             .from('classes')
             .select('id, name, start_time, end_time, day_of_week, term_id')
             .eq('id', class_id);
-            
+
         if (activeTerm) {
             classQuery = classQuery.eq('term_id', activeTerm.id);
         } else {
@@ -77,9 +77,9 @@ export async function POST(request: Request) {
         // Expecting day_of_week like "Mon", "Tue" or "MWF"
         const classDays = classData.day_of_week || "";
         if (!classDays.includes(currentDayName)) {
-            return NextResponse.json({ 
-                error: "not_scheduled_today", 
-                message: `This class is not scheduled for today (${currentDayName}).` 
+            return NextResponse.json({
+                error: "not_scheduled_today",
+                message: `This class is not scheduled for today (${currentDayName}).`
             }, { status: 403 });
         }
 
@@ -97,17 +97,17 @@ export async function POST(request: Request) {
         if (action === 'check_in') {
             // Check-in opens 15 mins before start, stays open until end
             if (currentMinutes < (startM - 15) || currentMinutes > endM) {
-                return NextResponse.json({ 
-                    error: "outside_window", 
-                    message: `Time In is only allowed from 15 minutes before class starts until the class ends.` 
+                return NextResponse.json({
+                    error: "outside_window",
+                    message: `Time In is only allowed from 15 minutes before class starts until the class ends.`
                 }, { status: 403 });
             }
         } else {
             // Check-out opens 15 mins before end, stays open until 30 mins after end
             if (currentMinutes < (endM - 15) || currentMinutes > (endM + 30)) {
-                return NextResponse.json({ 
-                    error: "outside_window", 
-                    message: "Time Out is only allowed 15 minutes before and up to 30 minutes after class ends." 
+                return NextResponse.json({
+                    error: "outside_window",
+                    message: "Time Out is only allowed 15 minutes before and up to 30 minutes after class ends."
                 }, { status: 403 });
             }
         }

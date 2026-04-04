@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
-
+import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,15 +8,14 @@ export const dynamic = 'force-dynamic';
  * Returns all fingerprint_slots for a device with student names.
  * Used by ESP32 on boot to reconcile local sensor memory.
  */
-export async function GET(req: NextRequest) {
+export async function GET(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
     try {
-        const { searchParams } = new URL(req.url);
+        const { searchParams } = new URL(request.url);
         const device_id = searchParams.get("device_id");
 
         if (!device_id) {

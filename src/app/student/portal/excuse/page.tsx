@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getLatestStudentRecord } from "../actions";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession, getLatestStudentRecord } from "../actions";
 import { StudentLayout } from "@/components/student/StudentLayout";
 import { FileText, Loader2, Info, ShieldCheck } from "lucide-react";
 import { SubmitEvidenceContent } from "@/components/SubmitEvidenceContent";
@@ -27,7 +26,7 @@ export default function ExcusePage() {
                 router.push("/student/portal");
                 return;
             }
-            
+
             // Sync live status
             const latest = await getLatestStudentRecord();
             if (latest.student) {
@@ -71,7 +70,7 @@ export default function ExcusePage() {
                         <div className="space-y-4">
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white">Access Restricted</h2>
                             <p className="text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto leading-relaxed">
-                                Excuse letter submission is disabled because your account status is currently set to 
+                                Excuse letter submission is disabled because your account status is currently set to
                                 <span className="text-nwu-red font-bold uppercase mx-1">{(student.status || "UNKNOWN").toUpperCase()}</span>.
                                 Please contact the Registrar for assistance.
                             </p>

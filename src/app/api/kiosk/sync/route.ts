@@ -1,12 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
-
-import { checkRateLimit } from "@/lib/rate-limit";
+import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/kiosk/sync?device_id=<string>
+ * POST /api/kiosk/sync
  *
  * Zero-Touch onboarding endpoint.
  * - If device_id is unknown → auto-create with status='pending'
@@ -14,16 +12,15 @@ export const dynamic = 'force-dynamic';
  * - If approved + no room → return empty data
  * - If approved + bound → return room-scoped schedule + students
  */
-export async function GET(request: NextRequest) {
+export async function POST(request: Request) {
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-
     try {
-        const { searchParams } = new URL(request.url);
-        const device_id = searchParams.get("device_id");
+        const body = await request.json();
+        const device_id = body.device_id as string | undefined;
 
         if (!device_id) {
             return NextResponse.json(
@@ -39,17 +36,7 @@ export async function GET(request: NextRequest) {
             .eq('device_serial', device_id)
             .maybeSingle();
 
-        // --- 🛡️ FINANCIAL GUARD: Rate-limit new device registrations ---
         if (!existing) {
-            const ip = request.headers.get("x-forwarded-for") || "unknown";
-            const { success } = await checkRateLimit(ip, "audit"); // Also using 'audit' limiter for new devices
-            if (!success) {
-                return NextResponse.json({
-                    error: "Too many registration attempts",
-                    message: "Device registration is throttled. Please try again later."
-                }, { status: 429 });
-            }
-
             // Auto-register as pending
             const { error: insertError } = await supabase
                 .from('kiosk_devices')

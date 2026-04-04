@@ -1,15 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
-
+import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
-
-
-
+export async function POST(request: Request) {
     try {
-        const body = await req.json();
+        const body = await request.json();
         const { device_serial, slot_id } = body;
 
         if (!device_serial || !slot_id) {

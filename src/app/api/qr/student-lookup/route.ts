@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { getStudentSession } from "@/lib/student-session";
+import { getStudentSession } from '@/app/student/portal/actions';
 
 export const dynamic = 'force-dynamic';
 

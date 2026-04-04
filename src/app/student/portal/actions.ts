@@ -2,10 +2,57 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cookies } from "next/headers";
-import { hashPassword, verifyPassword } from "@/utils/supabase/password-utils";
-import { getStudentSession } from "@/lib/student-session";
+import { scryptSync, randomBytes, timingSafeEqual, createHmac } from "crypto";
 
-// Security utilities imported from @/utils/supabase/password-utils
+// Security constants
+const SALT_SIZE = 16;
+const KEY_LEN = 64;
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.QR_SIGNING_SECRET || 'classtrack-session-fallback-key-change-me';
+
+/**
+ * Sign a session payload with HMAC-SHA256 to prevent cookie tampering
+ */
+function signSession(payload: string): string {
+    const signature = createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+    return `${payload}.${signature}`;
+}
+
+/**
+ * Verify and extract a signed session payload. Returns null if tampered.
+ */
+function verifySession(signed: string): string | null {
+    const lastDot = signed.lastIndexOf('.');
+    if (lastDot === -1) return null;
+    const payload = signed.substring(0, lastDot);
+    const signature = signed.substring(lastDot + 1);
+    const expected = createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+    // Use timingSafeEqual to prevent timing attacks
+    try {
+        if (!timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'))) return null;
+    } catch {
+        return null; // Invalid hex or length mismatch
+    }
+    return payload;
+}
+
+/**
+ * Hash a password using scrypt
+ */
+function hashPassword(password: string): string {
+    const salt = randomBytes(SALT_SIZE).toString("hex");
+    const derivedKey = scryptSync(password, salt, KEY_LEN);
+    return `${salt}:${derivedKey.toString("hex")}`;
+}
+
+/**
+ * Verify a password against a hash
+ */
+function verifyPassword(password: string, hash: string): boolean {
+    const [salt, key] = hash.split(":");
+    if (!salt || !key) return false;
+    const derivedKey = scryptSync(password, salt, KEY_LEN);
+    return timingSafeEqual(Buffer.from(key, "hex"), derivedKey);
+}
 
 export async function loginStudent(formData: FormData) {
     const sin = formData.get("sin")?.toString().trim();
@@ -60,12 +107,12 @@ export async function loginStudent(formData: FormData) {
         year_level: student.year_level,
         image_url: student.image_url,
         role: "student",
-        status: student.status, // Added status to session data
+        status: student.status,
         timestamp: Date.now()
     });
 
     const cookieStore = cookies();
-    cookieStore.set("student_session", sessionData, {
+    cookieStore.set("student_session", signSession(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -76,7 +123,31 @@ export async function loginStudent(formData: FormData) {
     return { success: true };
 }
 
-// getStudentSession removed (now in @/lib/student-session)
+export async function getStudentSession() {
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get("student_session");
+
+    if (!sessionCookie) return null;
+
+    try {
+        // Verify HMAC signature before trusting the cookie
+        const payload = verifySession(sessionCookie.value);
+        if (!payload) {
+            // Tampered cookie detected — destroy it
+            console.warn('[SECURITY] Tampered student_session cookie detected. Clearing.');
+            cookieStore.delete('student_session');
+            return null;
+        }
+        const session = JSON.parse(payload);
+        // Basic validation: check if it's not too old (e.g., 30 days)
+        if (Date.now() - session.timestamp > 1000 * 60 * 60 * 24 * 30) {
+            return null;
+        }
+        return session;
+    } catch {
+        return null;
+    }
+}
 
 export async function logoutStudent() {
     const cookieStore = cookies();
@@ -86,7 +157,7 @@ export async function logoutStudent() {
 
 export async function updateStudentProfile(formData: FormData) {
     const imageUrl = formData.get("imageUrl")?.toString();
-    
+
     const session = await getStudentSession();
     if (!session) return { error: "Not authenticated" };
 
@@ -101,10 +172,10 @@ export async function updateStudentProfile(formData: FormData) {
         return { error: "Failed to update profile" };
     }
 
-    // Refresh session cookie with new image
+    // Refresh session cookie with new image (signed)
     const updatedSession = { ...session, image_url: imageUrl };
     const cookieStore = cookies();
-    cookieStore.set("student_session", JSON.stringify(updatedSession), {
+    cookieStore.set("student_session", signSession(JSON.stringify(updatedSession)), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

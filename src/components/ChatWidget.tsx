@@ -7,6 +7,8 @@ import remarkGfm from 'remark-gfm';
 
 type ChatMessage = { id: string; role: string; content: string };
 
+const MAX_CHARS = 500;
+
 const WELCOME: ChatMessage = {
     id: '1', role: 'assistant',
     content: 'Hi there! I am the **ClassTrack AI Assistant**. How can I help you today? I can assist with attendance questions, portal features, or technical support.'
@@ -25,7 +27,7 @@ export function ChatWidget() {
     // Load chat history from localStorage on first mount
     useEffect(() => {
         try {
-            const saved = localStorage.getItem("classtrack_chat_v2");
+            const saved = localStorage.getItem("classtrack_chat_v1");
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
@@ -36,19 +38,19 @@ export function ChatWidget() {
 
     // Persist whenever messages change (after hydration)
     useEffect(() => {
-        if (didHydrate) localStorage.setItem("classtrack_chat_v2", JSON.stringify(messages));
+        if (didHydrate) localStorage.setItem("classtrack_chat_v1", JSON.stringify(messages));
     }, [messages, didHydrate]);
 
     const clearChat = () => {
         if (confirm("Are you sure you want to clear your chat history?")) {
             setMessages([WELCOME]);
-            localStorage.setItem("classtrack_chat_v2", JSON.stringify([WELCOME]));
+            localStorage.setItem("classtrack_chat_v1", JSON.stringify([WELCOME]));
         }
     };
 
     const handleManualSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!localInput.trim() || isLoading) return;
+        if (!localInput.trim() || isLoading || localInput.length > MAX_CHARS) return;
 
         const userMessage = { id: Date.now().toString(), role: 'user', content: localInput };
         setMessages((prev) => [...prev, userMessage]);
@@ -211,17 +213,23 @@ export function ChatWidget() {
                                 onChange={(e) => setLocalInput(e.target.value)}
                                 placeholder="Ask about ClassTrack..."
                                 disabled={isLoading}
+                                maxLength={MAX_CHARS}
                                 className="flex-1 bg-gray-100 dark:bg-gray-900 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-nwu-red text-gray-900 dark:text-white disabled:opacity-50 placeholder:text-gray-400 dark:placeholder:text-gray-600"
                             />
-                            <button type="submit" disabled={!localInput.trim() || isLoading}
+                            <button type="submit" disabled={!localInput.trim() || isLoading || localInput.length > MAX_CHARS}
                                 className="p-2.5 bg-nwu-red hover:bg-[#5d0d0f] disabled:opacity-30 disabled:hover:bg-nwu-red text-white rounded-xl transition-all flex-shrink-0 active:scale-95 shadow-md">
                                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                             </button>
                         </form>
                         <p className="text-[10px] text-center text-gray-400 mt-2 font-medium">Powered by ClassTrack Intelligence</p>
                         <div className="flex justify-between items-center mt-2 px-1">
+                            {localInput.length > MAX_CHARS * 0.8 && (
+                                <p className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${localInput.length > MAX_CHARS ? 'text-red-500 bg-red-50 border-red-200' : 'text-gray-400 bg-gray-50 border-gray-200'}`}>
+                                    {localInput.length}/{MAX_CHARS}
+                                </p>
+                            )}
                             {remaining !== null && (
-                                <p className="text-[9px] font-bold text-nwu-red bg-nwu-red/5 px-2 py-0.5 rounded-full border border-nwu-red/10">
+                                <p className="text-[9px] font-bold text-nwu-red bg-nwu-red/5 px-2 py-0.5 rounded-full border border-nwu-red/10 ml-auto">
                                     {remaining} / {limit} Left Today
                                 </p>
                             )}

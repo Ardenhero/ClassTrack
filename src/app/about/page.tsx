@@ -41,8 +41,8 @@ export default function AboutPage() {
     document.querySelectorAll('.rv').forEach(el => obs.observe(el));
 
     const handleScroll = () => {
-        const nav = document.getElementById('nav');
-        if(nav) nav.classList.toggle('sc', window.scrollY > 40);
+      const nav = document.getElementById('nav');
+      if (nav) nav.classList.toggle('sc', window.scrollY > 40);
     };
     window.addEventListener('scroll', handleScroll);
 
@@ -62,9 +62,9 @@ export default function AboutPage() {
       entries.forEach(e => {
         if (e.isIntersecting) {
           e.target.querySelectorAll('.snum').forEach((el: Element) => {
-             const t = el.getAttribute('data-t');
-             const s = el.getAttribute('data-s') || '';
-             countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), s);
+            const t = el.getAttribute('data-t');
+            const s = el.getAttribute('data-s') || '';
+            countUp(el as HTMLElement, t === 'inf' ? 'inf' : parseInt(t || '0'), s);
           });
           sObs.unobserve(e.target);
         }
@@ -79,10 +79,10 @@ export default function AboutPage() {
       sObs.disconnect();
     };
   }, []);
-  
+
   const toggleFlow = (id: string) => {
     const el = document.getElementById(id);
-    if(!el) return;
+    if (!el) return;
     const was = el.classList.contains('act');
     document.querySelectorAll('.fs').forEach(x => x.classList.remove('act'));
     if (!was) el.classList.add('act');
@@ -90,47 +90,46 @@ export default function AboutPage() {
 
 
   const hwData: Record<string, HWComponent> = {
-    esp:{
-      fb:'<div class=\"esp-screen\"></div>',badge:'Microcontroller Unit',title:'ESP32-S3 Touch LCD',subt:'// WAVESHARE ESP32-S3-TOUCH-LCD-7',
-      desc:'The brain and face of the ClassTrack kiosk. Features a dual-core Xtensa LX7 processor paired with an integrated 7-inch capacitive touch display. Handles fingerprint UART communication, WiFi HTTP requests to Supabase, touch UI rendering, and GPIO LED control — all simultaneously at 240MHz.',
-      dims:'PCB: 165.72 × 97.60mm · Display: 192.96 × 110.76mm · 4×M3 + 4×M2.5 mount',
-      specs:[{k:'Processor',v:'Dual-Core LX7 @ 240MHz'},{k:'Memory',v:'512KB SRAM + 8MB PSRAM'},{k:'Flash',v:'16MB Onboard Flash'},{k:'Display',v:'7\" Capacitive Touch LCD'},{k:'Connectivity',v:'WiFi 802.11 b/g/n + BLE 5.0'},{k:'Interfaces',v:'UART, SPI, I²C, GPIO'},{k:'Operating Voltage',v:'5V via USB-C'},{k:'Baud Rate',v:'57600 (AS608 comms)'}],
-      role:'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7\" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
-      tags:['Dual-Core LX7','WiFi 2.4GHz','BLE 5.0','7\" Touch LCD','UART + SPI + I²C']
+    esp: {
+      fb: '<div class=\"esp-screen\"></div>', badge: 'Microcontroller Unit', title: 'ESP32-S3 Touch LCD', subt: '// WAVESHARE ESP32-S3-TOUCH-LCD-7',
+      desc: 'The brain and face of the ClassTrack kiosk. Features a dual-core Xtensa LX7 processor paired with an integrated 7-inch capacitive touch display. Handles fingerprint UART communication, WiFi HTTP requests to Supabase, touch UI rendering, and GPIO LED control — all simultaneously at 240MHz.',
+      dims: 'PCB: 165.72 × 97.60mm · Display: 192.96 × 110.76mm · 4×M3 + 4×M2.5 mount',
+      specs: [{ k: 'Processor', v: 'Dual-Core LX7 @ 240MHz' }, { k: 'Memory', v: '512KB SRAM + 8MB PSRAM' }, { k: 'Flash', v: '16MB Onboard Flash' }, { k: 'Display', v: '7\" Capacitive Touch LCD' }, { k: 'Connectivity', v: 'WiFi 802.11 b/g/n + BLE 5.0' }, { k: 'Interfaces', v: 'UART, SPI, I²C, GPIO' }, { k: 'Operating Voltage', v: '5V via USB-C' }, { k: 'Baud Rate', v: '57600 (AS608 comms)' }],
+      role: 'Acts as the central controller of the ClassTrack kiosk. Receives fingerprint match data from the AS608 via UART, packages the attendance payload, and sends it to Supabase via WiFi HTTPS POST. Simultaneously drives the 7\" touch LCD for real-time user feedback and controls green/red LEDs for visual confirmation of scan results.',
+      tags: ['Dual-Core LX7', 'WiFi 2.4GHz', 'BLE 5.0', '7\" Touch LCD', 'UART + SPI + I²C']
     },
-    as608:{
-      fb:'<svg viewBox="52 4 105 105" class="as608-svg"><defs><linearGradient id="as608-gYellowTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a" /><stop offset="100%" stop-color="#eab308" /></linearGradient><linearGradient id="as608-gYellowRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ca8a04" /><stop offset="100%" stop-color="#854d0e" /></linearGradient><linearGradient id="as608-gBlackTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3f3f46" /><stop offset="100%" stop-color="#18181b" /></linearGradient><linearGradient id="as608-gBlackRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#18181b" /><stop offset="100%" stop-color="#000000" /></linearGradient><linearGradient id="as608-gBlackSlant" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#27272a" /><stop offset="100%" stop-color="#09090b" /></linearGradient><linearGradient id="as608-gGlass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e4e4e7" /><stop offset="30%" stop-color="#71717a" /><stop offset="60%" stop-color="#27272a" /><stop offset="100%" stop-color="#000000" /></linearGradient></defs><!-- Yellow Block --><polygon points="127.3,15.8 151.5,29.8 144.2,34.0 120.0,20.0" fill="url(#as608-gYellowTop)" /><polygon points="151.5,29.8 144.2,34.0 144.2,64.1 151.5,59.9" fill="url(#as608-gYellowRight)" /><ellipse cx="128.8" cy="20.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 128.8 20.9)" /><ellipse cx="131.1" cy="22.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 131.1 22.2)" /><ellipse cx="133.4" cy="23.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 133.4 23.6)" /><ellipse cx="135.8" cy="24.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 135.8 24.9)" /><ellipse cx="138.1" cy="26.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 138.1 26.2)" /><ellipse cx="140.4" cy="27.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 140.4 27.6)" /><ellipse cx="142.7" cy="28.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 142.7 28.9)" /><!-- Black Body --><polygon points="120.0,20.0 144.2,34.0 120.0,48.0 95.8,34.0" fill="url(#as608-gBlackTop)" /><polygon points="144.2,34.0 120.0,48.0 83.6,92.1 83.6,99.1 144.2,64.1" fill="url(#as608-gBlackRight)" /><!-- Split line right face --><line x1="129.7" y1="42.4" x2="129.7" y2="72.5" stroke="#000" stroke-width="1.2" /><line x1="130.2" y1="42.9" x2="130.2" y2="73.0" stroke="#3f3f46" stroke-width="0.6" /><!-- Details on top face --><ellipse cx="120.0" cy="34.0" rx="2" ry="1.2" fill="#09090b" transform="rotate(30 120.0 34.0)" /><ellipse cx="120.0" cy="34.0" rx="0.8" ry="0.5" fill="#3f3f46" transform="rotate(30 120.0 34.0)" /><polygon points="95.8,34.0 120.0,48.0 83.6,92.1 59.4,78.1" fill="url(#as608-gBlackSlant)" /><polygon points="59.4,78.1 83.6,92.1 83.6,99.1 59.4,85.1" fill="#050505" /><!-- Window --><polygon points="88.3,48.2 106.8,58.9 105.0,65.5 86.5,54.8" fill="#09090b" /><polygon points="106.8,58.9 87.5,82.3 85.7,88.9 105.0,65.5" fill="#000000" /><polygon points="88.3,48.2 68.9,71.6 67.2,78.2 86.5,54.8" fill="#27272a" /><polygon points="68.9,71.6 87.5,82.3 85.7,88.9 67.2,78.2" fill="#3f3f46" /><polygon points="86.5,54.8 105.0,65.5 85.7,88.9 67.2,78.2" fill="url(#as608-gGlass)" /><!-- Glass Reflection --><polygon points="86.5,54.8 105.0,65.5 97.3,74.9 78.8,64.2" fill="white" opacity="0.08" /></svg>',badge:'Biometric Sensor',title:'AS608 Fingerprint',subt:'// OPTICAL FINGERPRINT MODULE',
-      desc:'An optical fingerprint sensor with a built-in DSP chip. Captures high-resolution fingerprint images at 500 DPI, extracts minutiae points, and performs template matching entirely onboard — delivering a match result to the ESP32-S3 via UART in under one second. Supports 360° finger placement rotation.',
-      dims:'Module: ~20 × 21 × 21.5mm · Connector: UART TTL · Power: 3.3V/5V',
-      specs:[{k:'Scan Resolution',v:'500 DPI'},{k:'Template Storage',v:'Up to 162 templates'},{k:'Match Time',v:'< 1 second'},{k:'Interface',v:'UART TTL 3.3V / 5V'},{k:'Baud Rate',v:'57600 bps'},{k:'FAR',v:'< 0.001%'},{k:'FRR',v:'< 0.1%'},{k:'Rotation Support',v:'360° recognition'}],
-      role:'Serves as the biometric input device of the ClassTrack kiosk. When a student places their finger, the AS608 performs an optical scan, extracts minutiae points using its onboard DSP, matches against stored templates, and sends a confirmation packet — including matched template ID and confidence score — to the ESP32-S3 via UART at 57600 baud.',
-      tags:['500 DPI','162 Templates','< 1s Match','UART 57600 bps','Onboard DSP']
+    as608: {
+      fb: '<svg viewBox="52 4 105 105" class="as608-svg"><defs><linearGradient id="p-as608-gYellowTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fef08a" /><stop offset="100%" stop-color="#eab308" /></linearGradient><linearGradient id="p-as608-gYellowRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ca8a04" /><stop offset="100%" stop-color="#854d0e" /></linearGradient><linearGradient id="p-as608-gBlackTop" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3f3f46" /><stop offset="100%" stop-color="#18181b" /></linearGradient><linearGradient id="p-as608-gBlackRight" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#18181b" /><stop offset="100%" stop-color="#000000" /></linearGradient><linearGradient id="p-as608-gBlackSlant" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#27272a" /><stop offset="100%" stop-color="#09090b" /></linearGradient><linearGradient id="p-as608-gGlass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e4e4e7" /><stop offset="30%" stop-color="#71717a" /><stop offset="60%" stop-color="#27272a" /><stop offset="100%" stop-color="#000000" /></linearGradient></defs><polygon points="127.3,15.8 151.5,29.8 144.2,34.0 120.0,20.0" fill="url(#p-as608-gYellowTop)" /><polygon points="151.5,29.8 144.2,34.0 144.2,64.1 151.5,59.9" fill="url(#p-as608-gYellowRight)" /><ellipse cx="128.8" cy="20.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 128.8 20.9)" /><ellipse cx="131.1" cy="22.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 131.1 22.2)" /><ellipse cx="133.4" cy="23.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 133.4 23.6)" /><ellipse cx="135.8" cy="24.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 135.8 24.9)" /><ellipse cx="138.1" cy="26.2" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 138.1 26.2)" /><ellipse cx="140.4" cy="27.6" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 140.4 27.6)" /><ellipse cx="142.7" cy="28.9" rx="0.8" ry="0.5" fill="#111" transform="rotate(30 142.7 28.9)" /><polygon points="120.0,20.0 144.2,34.0 120.0,48.0 95.8,34.0" fill="url(#p-as608-gBlackTop)" /><polygon points="144.2,34.0 120.0,48.0 83.6,92.1 83.6,99.1 144.2,64.1" fill="url(#p-as608-gBlackRight)" /><line x1="129.7" y1="42.4" x2="129.7" y2="72.5" stroke="#000" stroke-width="1.2" /><line x1="130.2" y1="42.9" x2="130.2" y2="73.0" stroke="#3f3f46" stroke-width="0.6" /><ellipse cx="120.0" cy="34.0" rx="2" ry="1.2" fill="#09090b" transform="rotate(30 120.0 34.0)" /><ellipse cx="120.0" cy="34.0" rx="0.8" ry="0.5" fill="#3f3f46" transform="rotate(30 120.0 34.0)" /><polygon points="95.8,34.0 120.0,48.0 83.6,92.1 59.4,78.1" fill="url(#p-as608-gBlackSlant)" /><polygon points="59.4,78.1 83.6,92.1 83.6,99.1 59.4,85.1" fill="#050505" /><polygon points="88.3,48.2 106.8,58.9 105.0,65.5 86.5,54.8" fill="#09090b" /><polygon points="106.8,58.9 87.5,82.3 85.7,88.9 105.0,65.5" fill="#000000" /><polygon points="88.3,48.2 68.9,71.6 67.2,78.2 86.5,54.8" fill="#27272a" /><polygon points="68.9,71.6 87.5,82.3 85.7,88.9 67.2,78.2" fill="#3f3f46" /><polygon points="86.5,54.8 105.0,65.5 85.7,88.9 67.2,78.2" fill="url(#p-as608-gGlass)" /><polygon points="86.5,54.8 105.0,65.5 97.3,74.9 78.8,64.2" fill="white" opacity="0.08" /></svg>', badge: 'Biometric Sensor', title: 'AS608 Fingerprint', subt: '// OPTICAL FINGERPRINT MODULE',
+      desc: 'An optical fingerprint sensor with a built-in DSP chip. Captures high-resolution fingerprint images at 500 DPI, extracts minutiae points, and performs template matching entirely onboard — delivering a match result to the ESP32-S3 via UART in under one second. Supports 360° finger placement rotation.',
+      dims: 'Module: ~20 × 21 × 21.5mm · Connector: UART TTL · Power: 3.3V/5V',
+      specs: [{ k: 'Scan Resolution', v: '500 DPI' }, { k: 'Template Storage', v: 'Up to 162 templates' }, { k: 'Match Time', v: '< 1 second' }, { k: 'Interface', v: 'UART TTL 3.3V / 5V' }, { k: 'Baud Rate', v: '57600 bps' }, { k: 'FAR', v: '< 0.001%' }, { k: 'FRR', v: '< 0.1%' }, { k: 'Rotation Support', v: '360° recognition' }],
+      role: 'Serves as the biometric input device of the ClassTrack kiosk. When a student places their finger, the AS608 performs an optical scan, extracts minutiae points using its onboard DSP, matches against stored templates, and sends a confirmation packet — including matched template ID and confidence score — to the ESP32-S3 via UART at 57600 baud.',
+      tags: ['500 DPI', '162 Templates', '< 1s Match', 'UART 57600 bps', 'Onboard DSP']
     }
   };
 
   const openModal = (key: string) => {
     const d = hwData[key];
     const mfb = document.getElementById('mfb');
-    if(mfb) {
+    if (mfb) {
       mfb.innerHTML = d.fb;
-      // If it's the sensor, ensure we add the modal container class if it was stripped
       if (key === 'as608') {
         mfb.className = 'mimg-as608-container';
       } else {
         mfb.className = '';
       }
     }
-    
+
     document.getElementById('mdims')!.textContent = d.dims;
     document.getElementById('mbadge-txt')!.textContent = d.badge;
     document.getElementById('mtitle')!.textContent = d.title;
     document.getElementById('msubt')!.textContent = d.subt;
     document.getElementById('mdesc')!.textContent = d.desc;
     document.getElementById('mrld')!.textContent = d.role;
-    
+
     document.getElementById('mspgrid')!.innerHTML = d.specs.map((s: Spec) => `<div class=\"msp\"><div class=\"mspk\">${s.k}</div><div class=\"mspv\">${s.v}</div></div>`).join('');
     document.getElementById('mtagbar')!.innerHTML = d.tags.map((tg: string) => `<div class=\"mtag\">${tg}</div>`).join('');
-    
+
     document.getElementById('modal')!.classList.add('open');
     document.body.style.overflow = 'hidden';
   };
@@ -141,65 +140,69 @@ export default function AboutPage() {
   };
 
   useEffect(() => {
-     const down = (e: KeyboardEvent) => { if(e.key === 'Escape') closeModal(); };
-     document.addEventListener('keydown', down);
-     return () => document.removeEventListener('keydown', down);
+    const down = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal(); };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
   }, []);
 
   let busy = false;
   const kleds = (c: string) => {
-    [1,2,3,4].forEach(n => {
-       const el = document.getElementById('kl'+n);
-       if(el) el.className = 'led' + (c ? ' '+c : '');
+    [1, 2, 3, 4].forEach(n => {
+      const el = document.getElementById('kl' + n);
+      if (el) el.className = 'led' + (c ? ' ' + c : '');
     });
   };
   const kladd = (msg: string, cls = '') => {
     const klog = document.getElementById('klog');
-    if(!klog) return;
+    if (!klog) return;
     const d = document.createElement('div');
-    d.className = 'll' + (cls ? ' '+cls : '');
+    d.className = 'll' + (cls ? ' ' + cls : '');
     d.textContent = msg;
     klog.appendChild(d);
     klog.scrollTop = klog.scrollHeight;
   };
-  const setKS = (mainClass:string, mainTxt:string, subTxt:string, senClass:string) => {
+  const setKS = (mainClass: string, mainTxt: string, subTxt: string, senClass: string) => {
     const ksm = document.getElementById('ksm');
     const kss = document.getElementById('kss');
     const ksen = document.getElementById('ksen');
-    if(ksm) { ksm.className = 'kmain ' + mainClass; ksm.textContent = mainTxt; }
-    if(kss) { kss.textContent = subTxt; }
-    if(ksen) { ksen.className = 'ksen ' + senClass; }
+    if (ksm) { ksm.className = 'kmain ' + mainClass; ksm.textContent = mainTxt; }
+    if (kss) { kss.textContent = subTxt; }
+    if (ksen) { ksen.className = 'ksen ' + senClass; }
   };
 
   const kScan = (ok: boolean) => {
     if (busy) return;
-    busy = true; 
+    busy = true;
     kleds('');
     setKS('scan', 'SCANNING', '', 'scan');
     kladd('[AS608] Optical scan initiated...');
-    setTimeout(() => { kladd('[AS608] Extracting minutiae points...');
-    setTimeout(() => { kladd('[AS608] DSP template matching...');
     setTimeout(() => {
-      if (ok) {
-        kladd('[AS608] Match → ID:0x03 · Juan Dela Cruz', 'lok');
-        kladd('[ESP32] HTTPS POST /attendance → 200 OK', 'lok');
-        kladd('[SUPABASE] Row inserted + RT broadcast','lok');
-        kladd('[UI] Dashboard updated in real-time','lok');
-        setKS('ok', 'SUCCESS', 'Juan Dela Cruz — Present', 'ok');
-        kleds('g');
-      } else {
-        kladd('[AS608] No match · Confidence: 22 (threshold: 60)', 'lerr');
-        kladd('[ESP32] Attendance rejected', 'lerr');
-        setKS('fail', 'FAILED', 'Fingerprint not recognized', 'fail');
-        kleds('r');
-      }
+      kladd('[AS608] Extracting minutiae points...');
       setTimeout(() => {
-        setKS('idle', 'READY', 'Place finger on sensor', '');
-        kleds('');
-        kladd('[READY] Awaiting next input...', 'lsys');
-        busy = false;
-      }, 3200);
-    }, 700)}, 600)}, 500);
+        kladd('[AS608] DSP template matching...');
+        setTimeout(() => {
+          if (ok) {
+            kladd('[AS608] Match → ID:0x03 · Juan Dela Cruz', 'lok');
+            kladd('[ESP32] HTTPS POST /attendance → 200 OK', 'lok');
+            kladd('[SUPABASE] Row inserted + RT broadcast', 'lok');
+            kladd('[UI] Dashboard updated in real-time', 'lok');
+            setKS('ok', 'SUCCESS', 'Juan Dela Cruz — Present', 'ok');
+            kleds('g');
+          } else {
+            kladd('[AS608] No match · Confidence: 22 (threshold: 60)', 'lerr');
+            kladd('[ESP32] Attendance rejected', 'lerr');
+            setKS('fail', 'FAILED', 'Fingerprint not recognized', 'fail');
+            kleds('r');
+          }
+          setTimeout(() => {
+            setKS('idle', 'READY', 'Place finger on sensor', '');
+            kleds('');
+            kladd('[READY] Awaiting next input...', 'lsys');
+            busy = false;
+          }, 3200);
+        }, 700)
+      }, 600)
+    }, 500);
   };
 
   const kReboot = () => {
@@ -207,27 +210,27 @@ export default function AboutPage() {
     busy = true;
     setKS('scan', 'REBOOTING', 'Please wait...', '');
     const klog = document.getElementById('klog');
-    if(klog) klog.innerHTML = '';
+    if (klog) klog.innerHTML = '';
     const ls = [
-        '[SYS] Reboot signal received...',
-        '[SYS] Halting all processes...',
-        '[SYS] Clearing SRAM buffer...',
-        '[SYS] ESP32-S3 core restart',
-        '[AS608] Sensor handshake...',
-        '[NET] WiFi reconnecting...',
-        '[NET] Supabase → Connected',
-        '[SYS] ClassTrack Kiosk Online ✓'
+      '[SYS] Reboot signal received...',
+      '[SYS] Halting all processes...',
+      '[SYS] Clearing SRAM buffer...',
+      '[SYS] ESP32-S3 core restart',
+      '[AS608] Sensor handshake...',
+      '[NET] WiFi reconnecting...',
+      '[NET] Supabase → Connected',
+      '[SYS] ClassTrack Kiosk Online ✓'
     ];
     let i = 0;
     const nb = () => {
       if (i < ls.length) {
         kladd(ls[i], 'lsys');
-        [1,2,3,4].forEach((n, idx) => {
-           const l = document.getElementById('kl'+n);
-           if(l) {
-               l.className = 'led o';
-               setTimeout(() => l.className = 'led', 200 + idx * 80);
-           }
+        [1, 2, 3, 4].forEach((n, idx) => {
+          const l = document.getElementById('kl' + n);
+          if (l) {
+            l.className = 'led o';
+            setTimeout(() => l.className = 'led', 200 + idx * 80);
+          }
         });
         i++;
         setTimeout(nb, 340);
@@ -243,7 +246,7 @@ export default function AboutPage() {
 
   const toggleTech = (id: string) => {
     const el = document.getElementById(id);
-    if(!el) return;
+    if (!el) return;
     const was = el.classList.contains('op');
     document.querySelectorAll('.tt').forEach(t => t.classList.remove('op'));
     if (!was) el.classList.add('op');
@@ -252,7 +255,7 @@ export default function AboutPage() {
   return (
     <DashboardLayout isFullWidth>
       <div className={`about-container ${syne.variable} ${dmSans.variable} ${jetbrains.variable}`}>
-        
+
         <nav id="nav">
           <ul className="nlinks">
             <li><a href="#what">System</a></li>
@@ -272,17 +275,17 @@ export default function AboutPage() {
           </h1>
           <p className="hsub">A collaborative masterpiece by three passionate student developers from the Institute of Computer Engineers of the Philippines Student Edition (ICpEP.SE).</p>
           <div className="hbtns">
-            <button className="bp" onClick={() => document.getElementById('what')?.scrollIntoView({behavior:'smooth'})}>
-              Explore ClassTrack <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <button className="bp" onClick={() => document.getElementById('what')?.scrollIntoView({ behavior: 'smooth' })}>
+              Explore ClassTrack <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </button>
-            <button className="bo" onClick={() => document.getElementById('hardware')?.scrollIntoView({behavior:'smooth'})}>See Hardware</button>
+            <button className="bo" onClick={() => document.getElementById('hardware')?.scrollIntoView({ behavior: 'smooth' })}>See Hardware</button>
           </div>
           <div className="hscroll"><div className="sbar"></div>Scroll</div>
         </section>
 
         {/* WHAT IS CLASSTRACK */}
         <section id="what">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">The System</div>
             <h2 className="stit rv d1">What is ClassTrack?</h2>
             <div className="wgrid">
@@ -311,7 +314,7 @@ export default function AboutPage() {
 
         {/* FLOW */}
         <section id="flow">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">Data Journey</div>
             <h2 className="stit rv d1">The Life of a Log</h2>
             <p className="sdesc rv d2">Click any step to see what happens inside. Every attendance record makes this exact journey &mdash; in under 2 seconds.</p>
@@ -319,22 +322,22 @@ export default function AboutPage() {
               <div id="flow-1" className="fs rv" onClick={() => toggleFlow('flow-1')}>
                 <div className="fdot">👆</div>
                 <div className="fbody"><div className="fnum">{"// 01"}</div><div className="fname">Touch</div><div className="fdesc">Student places finger on AS608. Optical scan captures template in ~400ms.</div>
-                <div className="fcode"><div className="cblock">{"[AS608] Optical scan → ID:0x03\n[AS608] Confidence: 97 → MATCH\n[UART] Payload ready → sending"}</div></div></div>
+                  <div className="fcode"><div className="cblock">{"[AS608] Optical scan → ID:0x03\n[AS608] Confidence: 97 → MATCH\n[UART] Payload ready → sending"}</div></div></div>
               </div>
               <div id="flow-2" className="fs rv d1" onClick={() => toggleFlow('flow-2')}>
                 <div className="fdot">⚡</div>
                 <div className="fbody"><div className="fnum">{"// 02"}</div><div className="fname">Process</div><div className="fdesc">ESP32 receives UART, packages event, fires HTTPS POST to Supabase.</div>
-                <div className="fcode"><div className="cblock">{"[ESP32] UART: 0xEF01 received\n[ESP32] WiFi POST /attendance\nBody:{id:3,ts:1700000000}\n[ESP32] HTTP 200 OK ✓"}</div></div></div>
+                  <div className="fcode"><div className="cblock">{"[ESP32] UART: 0xEF01 received\n[ESP32] WiFi POST /attendance\nBody:{id:3,ts:1700000000}\n[ESP32] HTTP 200 OK ✓"}</div></div></div>
               </div>
               <div id="flow-3" className="fs rv d2" onClick={() => toggleFlow('flow-3')}>
                 <div className="fdot">☁️</div>
                 <div className="fbody"><div className="fnum">{"// 03"}</div><div className="fname">Cloud</div><div className="fdesc">Supabase validates, stores to PostgreSQL, broadcasts real-time event.</div>
-                <div className="fcode"><div className="cblock">{"[PG] INSERT attendance row\n[RLS] Policy check → pass\n[RT] Broadcast → all clients\n[WS] Event fired ✓"}</div></div></div>
+                  <div className="fcode"><div className="cblock">{"[PG] INSERT attendance row\n[RLS] Policy check → pass\n[RT] Broadcast → all clients\n[WS] Event fired ✓"}</div></div></div>
               </div>
               <div id="flow-4" className="fs rv d3" onClick={() => toggleFlow('flow-4')}>
                 <div className="fdot">🖥️</div>
                 <div className="fbody"><div className="fnum">{"// 04"}</div><div className="fname">Dashboard</div><div className="fdesc">Admin browser receives WS event. Row animates in. Toast notification fires.</div>
-                <div className="fcode"><div className="cblock">{"[WS] attendance:INSERT\n[UI] Row injected at index 0\n[UI] Toast: \"Juan → Present\"\n[UI] Analytics recalculated"}</div></div></div>
+                  <div className="fcode"><div className="cblock">{"[WS] attendance:INSERT\n[UI] Row injected at index 0\n[UI] Toast: \"Juan → Present\"\n[UI] Analytics recalculated"}</div></div></div>
               </div>
             </div>
           </div>
@@ -342,7 +345,7 @@ export default function AboutPage() {
 
         {/* HARDWARE */}
         <section id="hardware">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">The Machines</div>
             <h2 className="stit rv d1">Hardware Components</h2>
             <p className="sdesc rv d2">Click either hardware component to explore its full spec sheet, technical role, and how it fits into ClassTrack.</p>
@@ -350,7 +353,7 @@ export default function AboutPage() {
               <div className="hwc rv d2" onClick={() => openModal('esp')}>
                 <div className="hwcimg">
                   <div className="hwgbg"></div>
-                  <div style={{fontSize:'72px', filter:'drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35))', zIndex:1, position:'relative'}} dangerouslySetInnerHTML={{__html: hwData.esp.fb}}></div>
+                  <div style={{ fontSize: '72px', filter: 'drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35))', zIndex: 1, position: 'relative' }} dangerouslySetInnerHTML={{ __html: hwData.esp.fb }}></div>
                   <div className="hwov"></div>
                   <div className="hwch">Click to explore</div>
                 </div>
@@ -370,7 +373,7 @@ export default function AboutPage() {
               <div className="hwc rv d3" onClick={() => openModal('as608')}>
                 <div className="hwcimg">
                   <div className="hwgbg"></div>
-                  <div style={{fontSize:'72px', filter:'drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35))', zIndex:1, position:'relative'}} dangerouslySetInnerHTML={{__html: hwData.as608.fb}}></div>
+                  <div style={{ fontSize: '72px', filter: 'drop-shadow(0 20px 40px rgba(123, 17, 19, 0.35))', zIndex: 1, position: 'relative' }} dangerouslySetInnerHTML={{ __html: hwData.as608.fb }}></div>
                   <div className="hwov"></div>
                   <div className="hwch">Click to explore</div>
                 </div>
@@ -392,11 +395,11 @@ export default function AboutPage() {
             <div id="mleft">
               <div id="mlglow"></div>
               <div id="miwrap">
-                <div id="mimg-container" style={{display:'flex', alignItems:'center', justifyContent:'center', width:'100%', minHeight:'200px'}}>
-                  <div id="mfb"></div>
+                <div id="mimg-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: '200px' }}>
+                  <div id="mfb" style={{ fontSize: '120px', animation: 'mfl 4s ease-in-out infinite', filter: 'drop-shadow(0 30px 60px rgba(123, 17, 19, 0.38))' }}></div>
                 </div>
-                <div id="mdims" style={{fontFamily:'var(--fm)', fontSize:'.65rem', color:'var(--mu)', letterSpacing:'.1em', textAlign:'center', lineHeight:1.6, marginBottom:'24px'}}></div>
-                <div id="mtagbar" style={{display:'flex', gap:'8px', flexWrap:'wrap', justifyContent:'center', marginTop:'4px'}}></div>
+                <div id="mdims" style={{ fontFamily: 'var(--fm)', fontSize: '.65rem', color: 'var(--mu)', letterSpacing: '.1em', textAlign: 'center', lineHeight: 1.6, marginBottom: '24px' }}></div>
+                <div id="mtagbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}></div>
               </div>
             </div>
             <div id="mright">
@@ -408,29 +411,29 @@ export default function AboutPage() {
               <div className="msptt">Technical Specifications</div>
               <div className="mspgrid" id="mspgrid"></div>
               <div className="mrl"><div className="mrlt">Role in ClassTrack</div><div className="mrld" id="mrld">—</div></div>
-              <button className="mtrybtn" onClick={() => { closeModal(); setTimeout(()=>document.getElementById('lab')?.scrollIntoView({behavior:'smooth'}),300); }}>Try the Simulator →</button>
+              <button className="mtrybtn" onClick={() => { closeModal(); setTimeout(() => document.getElementById('lab')?.scrollIntoView({ behavior: 'smooth' }), 300); }}>Try the Simulator →</button>
             </div>
           </div>
         </div>
 
         {/* LAB */}
         <section id="lab">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">Interactive</div>
             <h2 className="stit rv d1">The Lab</h2>
             <p className="sdesc rv d2">A fully interactive ClassTrack kiosk simulator. Try scanning, failing, and rebooting the device.</p>
             <div className="kwrap">
               <div className="kdev rv">
                 <div className="kscr">
-                  <div className="kstat">CLASSTRACK KIOSK v1 · ESP32-S3</div>
+                  <div className="kstat">CLASSTRACK KIOSK v1.1</div>
                   <div className="kmain idle" id="ksm">READY</div>
                   <div className="ksub" id="kss">Place finger on sensor</div>
                 </div>
                 <div className="kleds">
-                    <div className="led" id="kl1"></div>
-                    <div className="led" id="kl2"></div>
-                    <div className="led" id="kl3"></div>
-                    <div className="led" id="kl4"></div>
+                  <div className="led" id="kl1"></div>
+                  <div className="led" id="kl2"></div>
+                  <div className="led" id="kl3"></div>
+                  <div className="led" id="kl4"></div>
                 </div>
                 <div className="ksen" id="ksen" onClick={() => kScan(true)}>
                   🫆
@@ -456,7 +459,7 @@ export default function AboutPage() {
 
         {/* OVERVIEW */}
         <section id="overview">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">Features</div>
             <h2 className="stit rv d1">System Overview</h2>
             <div className="ovgrid">
@@ -470,7 +473,7 @@ export default function AboutPage() {
 
         {/* STACK */}
         <section id="stack">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">Under the Hood</div>
             <h2 className="stit rv d1">Tech Stack</h2>
             <div className="tgrid">
@@ -487,24 +490,24 @@ export default function AboutPage() {
 
         {/* TEAM */}
         <section id="team">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">The Builders</div>
             <h2 className="stit rv d1">Meet the Team</h2>
             <div className="tgr">
               <div className="tcard rv">
-                <div className="tav av1"><Image src="/team/arden.png" alt="Arden" width={120} height={120} style={{objectFit:'cover', borderRadius:'50%'}} /></div>
+                <div className="tav av1"><Image src="/team/arden.png" alt="Arden" width={120} height={120} style={{ objectFit: 'cover', borderRadius: '50%' }} /></div>
                 <div className="tnm">Arden Hero Damaso</div>
                 <div className="trl">Full Stack Developer</div>
                 <div className="tqt">&quot;Building ClassTrack taught me that great software lives at the intersection of hardware, data, and UX &mdash; all three have to sing together.&quot;</div>
               </div>
               <div className="tcard rv d2">
-                <div className="tav av2"><Image src="/team/clemen.png" alt="Clemen" width={120} height={120} style={{objectFit:'cover', borderRadius:'50%'}} /></div>
+                <div className="tav av1"><Image src="/team/clemen.png" alt="Clemen" width={120} height={120} style={{ objectFit: 'cover', borderRadius: '50%' }} /></div>
                 <div className="tnm">Clemen Jay Luis</div>
                 <div className="trl">Frontend Developer</div>
                 <div className="tqt">&quot;Every pixel is a decision. Making ClassTrack feel premium meant obsessing over the details no one notices &mdash; until they do.&quot;</div>
               </div>
               <div className="tcard rv d3">
-                <div className="tav av3"><Image src="/team/ace.png" alt="Ace" width={120} height={120} style={{objectFit:'cover', borderRadius:'50%'}} /></div>
+                <div className="tav av3"><Image src="/team/ace.png" alt="Ace" width={120} height={120} style={{ objectFit: 'cover', borderRadius: '50%' }} /></div>
                 <div className="tnm">Ace Donner Dane Asuncion</div>
                 <div className="trl">Backend Developer</div>
                 <div className="tqt">&quot;The database schema is the foundation of trust. When attendance data is accurate, everything else falls into place.&quot;</div>
@@ -515,7 +518,7 @@ export default function AboutPage() {
 
         {/* ROADMAP */}
         <section id="roadmap">
-          <div className="si" style={{padding:'0 52px'}}>
+          <div className="si" style={{ padding: '0 52px' }}>
             <div className="slbl rv">What&apos;s Next</div>
             <h2 className="stit rv d1">Future Roadmap</h2>
             <div className="rmgrid">
@@ -531,8 +534,8 @@ export default function AboutPage() {
 
         {/* STATS */}
         <section id="stats">
-          <div className="si" style={{padding:'0 52px'}}>
-            <div className="slbl rv" style={{justifyContent:'center'}}>By The Numbers</div>
+          <div className="si" style={{ padding: '0 52px' }}>
+            <div className="slbl rv" style={{ justifyContent: 'center' }}>By The Numbers</div>
             <div className="sgrid">
               <div className="sbox rv"><div className="snum" data-t="37200" data-s="+">0</div><div className="slb">Lines of Code</div></div>
               <div className="sbox rv d1"><div className="snum" data-t="1480" data-s="+">0</div><div className="slb">Bugs Crushed</div></div>
