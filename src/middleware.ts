@@ -73,7 +73,10 @@ export async function updateSession(request: NextRequest) {
     }
 
     // --- 🛡️ CONTENT SECURITY POLICY (CSP) ---
-    const nonce = btoa(crypto.randomUUID());
+    // Universal nonce generator (Works in every JS environment)
+    const nonce = Array.from({ length: 16 }, () => 
+        Math.floor(Math.random() * 36).toString(36)
+    ).join('');
     
     // Nonce is used primarily for scripts. Styles and frames are relaxed for Vercel/Tailwind compatibility.
     const cspHeader = `
