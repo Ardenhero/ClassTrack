@@ -33,6 +33,8 @@ You are the ClassTrack AI Assistant. Your goal is to provide helpful, well-forma
 Always open with a brief paragraph followed by clear bulleted points.
 `;
 
+import { verifySession } from "@/utils/session";
+
 export async function POST(req: Request) {
     // --- 🛡️ IDENTITY VERIFICATION (Edge-Optimized Auth) ---
     const supabase = createServerClient(
@@ -52,9 +54,33 @@ export async function POST(req: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
+    let authId = user?.id;
+    let isAuthorized = !!user;
+
+    // Fallback: Check for Student Portal session
+    if (!isAuthorized) {
+        const cookieHeader = req.headers.get('cookie') ?? '';
+        const cookies = cookieHeader.split(';').reduce((acc, c) => {
+            const [name, ...val] = c.trim().split('=');
+            acc[name] = val.join('=');
+            return acc;
+        }, {} as Record<string, string>);
+
+        const studentSessionCookie = cookies["student_session"];
+        if (studentSessionCookie) {
+            const payload = await verifySession(studentSessionCookie);
+            if (payload) {
+                const session = JSON.parse(payload);
+                if (session.role === 'student' && session.id) {
+                    isAuthorized = true;
+                    authId = session.id;
+                }
+            }
+        }
+    }
 
     // Block Guests: Total spam protection
-    if (!user) {
+    if (!isAuthorized || !authId) {
         return new Response(JSON.stringify({
             error: "unauthorized",
             message: "Authentication failed. Please refresh and log in again."
@@ -72,8 +98,8 @@ export async function POST(req: Request) {
 
     try {
         // --- 🛡️ RATE LIMITING (Account-Based UUID Guard) ---
-        // We use user.id (UUID) instead of IP to prevent evasion via devices/networks
-        const { success, limit, remaining } = await checkRateLimit(user.id, "chat");
+        // We use authId (UUID/Student ID) instead of IP to prevent evasion via devices/networks
+        const { success, limit, remaining } = await checkRateLimit(authId, "chat");
 
         if (!success) {
             return new Response(JSON.stringify({

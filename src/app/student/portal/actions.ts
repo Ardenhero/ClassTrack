@@ -2,38 +2,12 @@
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cookies } from "next/headers";
-import { scryptSync, randomBytes, timingSafeEqual, createHmac } from "crypto";
+import { signSession, verifySession } from "@/utils/session";
+import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 
 // Security constants
 const SALT_SIZE = 16;
 const KEY_LEN = 64;
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.QR_SIGNING_SECRET || 'classtrack-session-fallback-key-change-me';
-
-/**
- * Sign a session payload with HMAC-SHA256 to prevent cookie tampering
- */
-function signSession(payload: string): string {
-    const signature = createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
-    return `${payload}.${signature}`;
-}
-
-/**
- * Verify and extract a signed session payload. Returns null if tampered.
- */
-function verifySession(signed: string): string | null {
-    const lastDot = signed.lastIndexOf('.');
-    if (lastDot === -1) return null;
-    const payload = signed.substring(0, lastDot);
-    const signature = signed.substring(lastDot + 1);
-    const expected = createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
-    // Use timingSafeEqual to prevent timing attacks
-    try {
-        if (!timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'))) return null;
-    } catch {
-        return null; // Invalid hex or length mismatch
-    }
-    return payload;
-}
 
 /**
  * Hash a password using scrypt
@@ -112,7 +86,7 @@ export async function loginStudent(formData: FormData) {
     });
 
     const cookieStore = cookies();
-    cookieStore.set("student_session", signSession(sessionData), {
+    cookieStore.set("student_session", await signSession(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -131,7 +105,7 @@ export async function getStudentSession() {
 
     try {
         // Verify HMAC signature before trusting the cookie
-        const payload = verifySession(sessionCookie.value);
+        const payload = await verifySession(sessionCookie.value);
         if (!payload) {
             // Tampered cookie detected — destroy it
             console.warn('[SECURITY] Tampered student_session cookie detected. Clearing.');
@@ -175,7 +149,7 @@ export async function updateStudentProfile(formData: FormData) {
     // Refresh session cookie with new image (signed)
     const updatedSession = { ...session, image_url: imageUrl };
     const cookieStore = cookies();
-    cookieStore.set("student_session", signSession(JSON.stringify(updatedSession)), {
+    cookieStore.set("student_session", await signSession(JSON.stringify(updatedSession)), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

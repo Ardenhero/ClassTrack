@@ -18,7 +18,7 @@ export async function deleteAccount() {
     }
 
     // Sign out to clean up session
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     revalidatePath("/", "layout");
     redirect("/login");
 }

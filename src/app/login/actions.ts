@@ -82,7 +82,7 @@ export async function signout() {
     const cookieStore = await cookies();
     cookieStore.delete("sc_profile_id");
 
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     revalidatePath("/", "layout");
     redirect("/login");
 }

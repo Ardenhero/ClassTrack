@@ -65,6 +65,7 @@ export function ChatWidget() {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ messages: [...refinedMessages, currentMessage] })
             });
 
