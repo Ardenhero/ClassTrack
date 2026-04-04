@@ -272,7 +272,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     <div className="h-8 w-8 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-800">
                                         <Upload className="h-4 w-4 text-nwu-red" />
                                     </div>
-                                    Upload Documents (Images/PDF/DOC)
+                                    Upload Excuse Letter (Images/PDF/DOC)
                                 </label>
                                 
                                 <div className="space-y-6">
@@ -304,7 +304,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                             ? "bg-red-100 dark:bg-red-900/40 text-nwu-red border-red-200" 
                                             : "bg-white dark:bg-gray-800 text-gray-500 border-gray-100 dark:border-gray-800"
                                         }`}>
-                                            Documents: {usageCount} / {usageLimit}
+                                            Monthly: {usageCount} / {usageLimit}
                                         </div>
                                     </div>
 
@@ -354,7 +354,7 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                                     className="w-full py-4 bg-nwu-red hover:bg-red-800 text-white font-black rounded-[2rem] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-red-200 dark:shadow-none flex items-center justify-center gap-3 text-sm tracking-[0.15em] active:scale-95 group uppercase"
                                 >
                                     {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5 transition-transform group-hover:-translate-y-1" />}
-                                    {usageCount >= usageLimit ? "Storage Limit Reached" : "Submit Excuse Evidence"}
+                                    {usageCount >= usageLimit ? "Limit Reached" : "Submit Excuse Letter"}
                                 </button>
                             </div>
                         </div>
@@ -368,12 +368,12 @@ export function SubmitEvidenceContent({ sin }: { sin: string }) {
                             
                             <div className="space-y-4">
                                 <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Submitted Successfully!</h1>
-                                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed text-lg font-medium">Your evidence has been received. Your instructor will review it soon.</p>
+                                <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed text-lg font-medium">Your excuse letter has been received. Your instructor will review it soon.</p>
                             </div>
 
                             <div className="flex flex-col items-center gap-6 w-full max-w-xs">
                                 <div className="px-8 py-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-3xl w-full">
-                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">New Total Documents</p>
+                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Total Letters Filed</p>
                                     <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{usageCount} / {usageLimit}</p>
                                 </div>
                                 <button onClick={resetForm} className="w-full py-4 bg-nwu-red hover:bg-red-800 text-white font-black rounded-[2rem] transition-all shadow-xl shadow-red-200 dark:shadow-none text-sm tracking-[0.15em] active:scale-95 uppercase">

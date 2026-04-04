@@ -60,15 +60,20 @@ export async function POST(request: NextRequest) {
         }
 
         // Check upload limit: count total uploads for this student
-        const { count } = await supabase
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count, error: countError } = await supabase
             .from("evidence_documents")
             .select("*", { count: "exact", head: true })
-            .eq("student_id", student.id);
+            .eq("student_id", student.id)
+            .gte("created_at", startOfMonth.toISOString());
 
         const currentCount = count || 0;
         if (currentCount >= MAX_UPLOADS_PER_STUDENT) {
             return NextResponse.json({
-                error: `Upload limit reached. You have already submitted ${currentCount}/${MAX_UPLOADS_PER_STUDENT} documents. Contact your instructor for assistance.`,
+                error: `Monthly limit reached. You have already submitted ${currentCount}/${MAX_UPLOADS_PER_STUDENT} excuse letters this month. Contact your instructor for assistance.`,
                 remaining: 0,
             }, { status: 429 });
         }
@@ -280,11 +285,18 @@ export async function GET(request: NextRequest) {
         });
         const instructors = Array.from(instructorMap.entries()).map(([id, name]) => ({ id, name }));
 
-        // Get upload count
+        // Get current month's count
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
         const { count } = await supabase
             .from("evidence_documents")
             .select("*", { count: "exact", head: true })
-            .eq("student_id", student.id);
+            .eq("student_id", student.id)
+            .gte("created_at", startOfMonth.toISOString());
+
+        const currentCount = count || 0;
 
         return NextResponse.json({
             student: {
@@ -294,8 +306,8 @@ export async function GET(request: NextRequest) {
             },
             classes: classesWithInstructor,
             instructors,
-            uploads_used: count || 0,
-            uploads_remaining: MAX_UPLOADS_PER_STUDENT - (count || 0),
+            uploads_used: currentCount,
+            uploads_remaining: MAX_UPLOADS_PER_STUDENT - currentCount,
         });
     } catch (err) {
         console.error("Student lookup error:", err);

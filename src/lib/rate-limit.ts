@@ -26,10 +26,10 @@ export const rateLimiters = {
         prefix: "ratelimit:api",
     }) : null,
 
-    // Auth rate limit: 5 attempts per 15 minutes (brute-force protection)
+    // Auth rate limit: 20 attempts per 15 minutes (brute-force protection - relaxed for developer testing)
     auth: redis ? new Ratelimit({
         redis,
-        limiter: Ratelimit.slidingWindow(5, "15 m"),
+        limiter: Ratelimit.slidingWindow(20, "15 m"),
         analytics: true,
         prefix: "ratelimit:auth",
     }) : null,
