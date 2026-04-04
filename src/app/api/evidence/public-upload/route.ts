@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        const { count, error: countError } = await supabase
+        const { count } = await supabase
             .from("evidence_documents")
             .select("*", { count: "exact", head: true })
             .eq("student_id", student.id)
