@@ -131,26 +131,6 @@ export async function POST(request: Request) {
             const triggerId = instructor?.id || 'system-authorized';
             const triggerName = instructor?.name || 'Authorized User';
 
-            // --- 🛡️ BILLING PROTECTION: 5s SMART COOLDOWN ---
-            const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
-            const { data: recentLog } = await supabase
-                .from('iot_device_logs')
-                .select('created_at')
-                .eq('triggered_by', triggerId)
-                .gt('created_at', fiveSecondsAgo)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (recentLog) {
-                const lastTime = new Date(recentLog.created_at).getTime();
-                const waitSec = Math.ceil((5000 - (Date.now() - lastTime)) / 1000);
-                return NextResponse.json({ 
-                    error: "rate_limit_exceeded", 
-                    message: `Slow down! Please wait ${waitSec}s before next command.` 
-                }, { status: 429 });
-            }
-
             const { data: devices } = await supabase.from('iot_devices').select('id, current_state, dp_code').eq('room_id', targetRoomId);
             if (!devices || devices.length === 0) {
                 return NextResponse.json({ error: "no_devices_in_room", room_id: targetRoomId }, { status: 404 });
