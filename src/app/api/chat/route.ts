@@ -109,11 +109,11 @@ export async function POST(req: Request) {
 
         const google = createGoogleGenerativeAI({ apiKey });
         const result = await streamText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-2.5-flash'),
             system: SYSTEM_PROMPT,
             messages,
             temperature: 0.3,
-            maxOutputTokens: 250,
+            maxOutputTokens: 500,
         });
 
         const response = result.toTextStreamResponse();
