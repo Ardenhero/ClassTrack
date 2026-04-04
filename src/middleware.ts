@@ -56,7 +56,10 @@ export async function updateSession(request: NextRequest) {
 
     if ((isApi || isAuth) && !isRSC && !isStatic && !isPlaywright) {
         const clientIP = getClientIP(request);
-        const rateLimit = await checkRateLimit(clientIP, isAuth ? 'auth' : 'api');
+        // [ISOLATION CHECK] Temporarily bypassing rate limit check in middleware
+        // to troubleshoot 500 errors on old Vercel accounts.
+        // const rateLimit = await checkRateLimit(clientIP, isAuth ? 'auth' : 'api');
+        const rateLimit = { success: true, reset: Date.now() };
 
         if (!rateLimit.success) {
             return new NextResponse(JSON.stringify({
@@ -161,4 +164,21 @@ export async function updateSession(request: NextRequest) {
         console.error("Middleware Error Caught:", e);
         return NextResponse.next({ request });
     }
+}
+
+export async function middleware(request: NextRequest) {
+    return await updateSession(request)
+}
+
+export const config = {
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * Feel free to modify this matcher to fit your needs.
+         */
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    ],
 }
