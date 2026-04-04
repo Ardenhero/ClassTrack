@@ -75,14 +75,14 @@ export async function updateSession(request: NextRequest) {
     }
 
     // --- 🛡️ CONTENT SECURITY POLICY (CSP) ---
-    // High-Security A+ Configuration: Nonce-based protection.
+    // High-Security A+ Configuration: Nonce-based protection with selective hashing.
     const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64');
     const cspHeader = `
         default-src 'none';
-        script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
-        script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic';
-        style-src 'self' 'nonce-${nonce}' 'unsafe-inline' fonts.googleapis.com;
-        style-src-elem 'self' 'nonce-${nonce}' 'unsafe-inline' fonts.googleapis.com;
+        script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-Jd9G33bjhwopGiRZtfUvGvWzmU+Il8JS3V7ejGjBVgc=';
+        script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-Jd9G33bjhwopGiRZtfUvGvWzmU+Il8JS3V7ejGjBVgc=';
+        style-src 'self' 'unsafe-inline' fonts.googleapis.com;
+        style-src-elem 'self' 'unsafe-inline' fonts.googleapis.com;
         img-src 'self' blob: data: *.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://vercel.com https://vercel.live;
         font-src 'self' fonts.gstatic.com;
         connect-src 'self' *.supabase.co wss://*.supabase.co ${process.env.NEXT_PUBLIC_SUPABASE_URL} ${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', 'wss://')} *.vercel-analytics.com *.vitals.vercel-insights.com https://vercel.live;
