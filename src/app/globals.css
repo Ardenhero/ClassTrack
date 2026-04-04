@@ -44,10 +44,10 @@ body {
 #hc { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 @media (max-width: 768px) { #hc { display: none !important; } }
 #cur { position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; transition: transform 0.1s ease-out; }
-#cd { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; position: absolute; transform: translate(-50%,-50%); z-index: 10000; }
-#cr { width: 34px; height: 34px; border: 1.5px solid rgba(123, 17, 19, 0.5); border-radius: 50%; position: absolute; transform: translate(-50%,-50%); transition: width .3s, height .3s, border-color .3s; }
-.ch #cr { width: 54px; height: 54px; border-color: var(--orange2); }
-.dark #cr { border-color: rgba(255, 215, 0, 0.4); }
+#cd { width: 4px; height: 4px; background: var(--orange); border-radius: 50%; position: absolute; transform: translate(-50%,-50%); z-index: 10000; }
+#cr { width: 22px; height: 22px; border: 1px solid rgba(123, 17, 19, 0.4); border-radius: 50%; position: absolute; transform: translate(-50%,-50%); transition: width .3s, height .3s, border-color .3s; }
+.ch #cr { width: 36px; height: 36px; border-color: var(--orange2); }
+.dark #cr { border-color: rgba(255, 215, 0, 0.3); }
 .dark.ch #cr { border-color: var(--orange2); }
 
 @layer utilities {
