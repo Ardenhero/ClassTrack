@@ -67,7 +67,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     // --- 🛡️ CONTENT SECURITY POLICY (CSP) ---
-    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const nonce = btoa(crypto.randomUUID());
     
     // Nonce is used primarily for scripts. Styles and frames are relaxed for Vercel/Tailwind compatibility.
     const cspHeader = `
