@@ -31,9 +31,17 @@ CREATE INDEX IF NOT EXISTS idx_classes_instructor_id ON classes(instructor_id);
 CREATE INDEX IF NOT EXISTS idx_qr_sessions_class_instructor ON qr_sessions(class_id, instructor_id, status);
 CREATE INDEX IF NOT EXISTS idx_qr_scans_session_id ON qr_scans(session_id);
 
--- 7. IOT DEVICES (device control, room filtering)
-CREATE INDEX IF NOT EXISTS idx_iot_devices_room_id ON iot_devices(room_id);
-CREATE INDEX IF NOT EXISTS idx_iot_device_logs_device_id ON iot_device_logs(device_id);
+-- 7. IOT DEVICES (Safe Execution)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'iot_devices') THEN
+        CREATE INDEX IF NOT EXISTS idx_iot_devices_room_id ON iot_devices(room_id);
+    END IF;
+    
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'iot_device_logs') THEN
+        CREATE INDEX IF NOT EXISTS idx_iot_device_logs_device_id ON iot_device_logs(device_id);
+    END IF;
+END $$;
 
 -- 8. EVIDENCE DOCUMENTS (student upload tracking)
 CREATE INDEX IF NOT EXISTS idx_evidence_docs_student_id ON evidence_documents(student_id);
