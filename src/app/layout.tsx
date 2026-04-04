@@ -52,11 +52,11 @@ export default function RootLayout({
           {children}
           <ChatWidget />
         </Providers>
-        {/* @ts-expect-error */}
+        {/* @ts-expect-error: Nonce prop is missing from Vercel component types but required for A+ CSP */}
         <Analytics nonce={nonce} />
-        {/* @ts-expect-error */}
+        {/* @ts-expect-error: Nonce prop is missing from Vercel component types but required for A+ CSP */}
         <SpeedInsights nonce={nonce} />
-        {/* @ts-expect-error */}
+        {/* @ts-expect-error: Nonce prop is missing from Vercel component types but required for A+ CSP */}
         <GlobalSync nonce={nonce} />
       </body>
     </html>
