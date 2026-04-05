@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 /**
  * POST /api/kiosk/ping — Admin triggers a diagnostic ping to a kiosk.

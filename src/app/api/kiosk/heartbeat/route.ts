@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 const HeartbeatSchema = z.object({
     device_serial: z.string().min(1),

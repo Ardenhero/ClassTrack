@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 /**
  * GET /api/kiosk/schedule?room_id=<uuid>
